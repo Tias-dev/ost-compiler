@@ -1,19 +1,18 @@
 #ifndef LEXEM_ANALYZER_HPP_
 #define LEXEM_ANALYZER_HPP_
 
+#include "CharStream.hpp"
 #include "Lexem.hpp"
 #include <list>
-#include <string>
 
 class LexemList : public std::list<Lexem *> {
   public:
-    ~LexemList(); // Deallocate 
+    virtual ~LexemList(); // Deallocate 
 };
 
 class LexemAnalyzer {
-
 public:
-  LexemList parse(std::string textl);
+  LexemList parse(const CharStream & stream);
 };
 
 #endif //! LEXEM_ANALYZER_HPP_

@@ -1,3 +1,4 @@
+#include "CharStream.hpp"
 #include "LexemAnalizer.hpp"
 
 LexemList::~LexemList() {
@@ -6,7 +7,7 @@ LexemList::~LexemList() {
   }
 }
 
-LexemList LexemAnalyzer::parse(std::string text) {
+LexemList LexemAnalyzer::parse(const CharStream & stream) {
   LexemList lexems;
 
 
