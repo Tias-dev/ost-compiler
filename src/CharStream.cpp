@@ -1,14 +1,13 @@
 #include "CharStream.hpp"
-#include <iterator>
 
 char CharStream::getchar() {
   char result;
   if (buffer_.empty()) {
     is_ >> result;
   } else {
-    auto last = --std::end(buffer_);
-    result = *last;
-    buffer_.erase(last);
+    char last = buffer_.top();
+    result = last;
+    buffer_.pop();
   }
 
   onGetChar_.invoke(result);
@@ -16,14 +15,14 @@ char CharStream::getchar() {
 }
 
 void CharStream::ungetchar(char c) {
-  buffer_.push_back(c);
+  buffer_.push(c);
   onReturnChar_.invoke(c);
 }
 
 void CharStream::ungetstr(const std::string & s) {
-  for(char c : s) {
-    buffer_.push_back(c);
-    onReturnChar_.invoke(c);
+  for(auto it = --s.end(); it >= s.begin(); --it) {
+    buffer_.push(*it);
+    onReturnChar_.invoke(*it);
   }
 }
 

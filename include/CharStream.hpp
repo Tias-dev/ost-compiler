@@ -4,6 +4,7 @@
 #include "event.hpp"
 #include <istream>
 #include <list>
+#include <stack>
 #include <string>
 
 class ICharStream {
@@ -23,12 +24,12 @@ public:
 class CharStream : public ICharStream {
 private:
   std::istream &is_;
-  std::list<char> buffer_;
+  std::stack<char> buffer_;
   Event<char> onGetChar_;
   Event<char> onReturnChar_;
 
 public:
-  CharStream(std::istream &is, std::list<char> buffer = {})
+  CharStream(std::istream &is, std::stack<char> buffer = {})
       : ICharStream(onGetChar_, onReturnChar_), is_(is), buffer_(buffer) {}
 
   char getchar();

@@ -4,6 +4,7 @@
 #include "CharStream.hpp"
 #include "Lexem.hpp"
 #include <list>
+#include <memory>
 
 class LexemList : public std::list<Lexem *> {
   public:
@@ -12,7 +13,7 @@ class LexemList : public std::list<Lexem *> {
 
 class LexemAnalyzer {
 public:
-  LexemList parse(const CharStream & stream);
+  LexemList parse(std::shared_ptr<ICharStream> stream);
 };
 
 #endif //! LEXEM_ANALYZER_HPP_
