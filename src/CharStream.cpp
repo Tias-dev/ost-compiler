@@ -11,30 +11,33 @@ char CharStream::getchar() {
     buffer_.erase(last);
   }
 
+  onGetChar_.invoke(result);
   return result;
 }
 
 void CharStream::ungetchar(char c) {
   buffer_.push_back(c);
+  onReturnChar_.invoke(c);
 }
 
 void CharStream::ungetstr(const std::string & s) {
   for(char c : s) {
     buffer_.push_back(c);
+    onReturnChar_.invoke(c);
   }
 }
 
-CharStream & CharStream::operator>>(char &c) {
+ICharStream & CharStream::operator>>(char &c) {
   c = getchar();
   return *this;
 }
 
-CharStream & CharStream::operator<<(char c) {
+ICharStream & CharStream::operator<<(char c) {
   ungetchar(c);
   return *this;
 }
 
-CharStream & CharStream::operator<<(const std::string & s) {
+ICharStream & CharStream::operator<<(const std::string & s) {
   ungetstr(s);
   return *this;
 }

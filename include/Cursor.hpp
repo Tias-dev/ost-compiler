@@ -7,6 +7,8 @@
 #include "CharStream.hpp"
 #include "event.hpp"
 #include <cstddef>
+#include <memory>
+#include <stack>
 class ICursor {
 public:
   /**
@@ -28,19 +30,43 @@ public:
    *
    * @return The index
    */
-  virtual size_t curIndex() = 0;
+  virtual size_t index() = 0;
 };
 
+/**
+ * @brief Event based cursor
+ */
 class EventCursor : public ICursor {
 private:
+  std::shared_ptr<ICharStream> stream_;
+
   size_t line_ = 0;
   size_t column_ = 0;
   size_t index_ = 0;
+  std::stack<size_t> newLines_;
 
-  LambdaHandler<void (*)(char), char> onGetCharHandler;
+  struct EventHandler : public IEventHandler<char> {
+    EventCursor *cursor_ = nullptr;
+    void (*fun_)(EventCursor *, char) = nullptr;
+
+    EventHandler(EventCursor *cursor, void (*fun)(EventCursor *, char))
+        : fun_(fun), cursor_(cursor) {}
+
+    EventHandler() = default;
+
+    void operator()(char letter) { fun_(cursor_, letter); }
+  };
+
+  EventHandler onGetChar_;
+  EventHandler onReturnChar_;
 
 public:
-  EventCursor(CharStream &stream);
+  EventCursor(std::shared_ptr<ICharStream> stream);
+  virtual ~EventCursor();
+
+  size_t line() override { return line_; }
+  size_t column() override { return column_; }
+  size_t index() override { return index_; }
 };
 
 #endif // !CURSOR_HPP_

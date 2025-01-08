@@ -6,26 +6,38 @@
 #include <list>
 #include <string>
 
-class CharStream {
+class ICharStream {
+public:
+  ICharStream(IEvent<char> &onGetCh, IEvent<char> &onReturnCh)
+      : onGetChar(onGetCh), onReturnChar(onReturnCh) {}
+  virtual ~ICharStream() {}
+
+  IEvent<char> &onGetChar;
+  IEvent<char> &onReturnChar;
+
+  virtual ICharStream &operator>>(char &c) = 0;
+  virtual ICharStream &operator<<(char c) = 0;
+  virtual ICharStream &operator<<(const std::string &s) = 0;
+};
+
+class CharStream : public ICharStream {
 private:
   std::istream &is_;
   std::list<char> buffer_;
   Event<char> onGetChar_;
   Event<char> onReturnChar_;
+
 public:
   CharStream(std::istream &is, std::list<char> buffer = {})
-      : is_(is), buffer_(buffer), onGetChar(onGetChar_), onReturnChar(onReturnChar_) {}
+      : ICharStream(onGetChar_, onReturnChar_), is_(is), buffer_(buffer) {}
 
-  IEvent<char> &onGetChar;
-  IEvent<char> &onReturnChar;
-
-  char getchar(); 
+  char getchar();
   void ungetchar(char c);
-  void ungetstr(const std::string & s);
+  void ungetstr(const std::string &s);
 
-  CharStream & operator>>(char &c);
-  CharStream & operator<<(char c);
-  CharStream & operator<<(const std::string & s);
+  ICharStream &operator>>(char &c) override;
+  ICharStream &operator<<(char c) override;
+  ICharStream &operator<<(const std::string &s) override;
 };
 
 #endif // !CHAR_STREAM_HPP_
