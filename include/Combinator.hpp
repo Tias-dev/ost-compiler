@@ -31,6 +31,15 @@ template <typename ...Args>
 using ptr = std::shared_ptr<ICombinator<Args...>>;
 
 template <typename ...Args1, typename ...Args2>
-ptr<Args1..., Args2...> operator>>(ptr<Args1...> p1, ptr<Args2...> p2);
+ptr<Args2...> operator>>(ptr<Args1...> p1, ptr<Args2...> p2);
+
+template <typename ...Args1, typename ...Args2>
+ptr<Args1...> operator<<(ptr<Args1...> p1, ptr<Args2...> p2);
+
+template <typename ...Args1, typename ...Args2>
+ptr<Args1..., Args2...> operator&&(ptr<Args1...> p1, ptr<Args2...> p2);
+
+template <typename ...Args1, typename ...Args2>
+std::pair<ptr<Args1...>, ptr<Args2...>> operator||(ptr<Args1...> p1, ptr<Args2...> p2);
 
 #endif // !COMBINATOR_HPP_
