@@ -4,17 +4,15 @@
 #include "CharStream.hpp"
 #include "Combinator.hpp"
 
-class StringCombinator : public ICombinator<std::string> {
+namespace combinator {
+class String : public ICombinator<> {
 private:
   std::string pattern_;
 public:
-  StringCombinator(const std::string & pattern) : pattern_(pattern) {}
+  String(const std::string & pattern) : pattern_(pattern) {}
   
-  Result<std::string> parse(ICharStream & stream) override;
+  Result<> parse(ICharStream & stream) override;
 };
-
-namespace combinator {
-  using str = StringCombinator;
-}
+} // !combinator;
 
 #endif // !STRING_COMBINATOR_HPP_

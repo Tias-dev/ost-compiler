@@ -1,15 +1,13 @@
 #ifndef SPACE_COMBINATOR_HPP_
 #define SPACE_COMBINATOR_HPP_
 
-#include "CharStream.hpp"
-#include "Combinator.hpp"
-class SpaceCombinator : public ICombinator<> {
-public:
-  Result<> parse(ICharStream & stream) override;
-};
+#include "combinators/AnyOf.hpp"
 
 namespace combinator {
-  using space = SpaceCombinator;
+class Space : public AnyOf {
+public:
+  Space(std::string spaceLetters = " \t\n\r") : AnyOf(spaceLetters) {};
+};
 } // !combinator;
 
 #endif // !SPACE_COMBINATOR_HPP_
