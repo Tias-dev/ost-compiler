@@ -26,11 +26,23 @@ template <typename ...Args>
 class ICombinator {
 public:
   virtual Result<Args...> parse(ICharStream & stream) = 0;
+  virtual void revert(ICharStream & stream) = 0;
 };
 
 template <typename ...Args>
 using ptr = std::shared_ptr<ICombinator<Args...>>;
 
+/**
+ * @brief Consume first parser and if it succeed the second
+ * if the second is failed first not reverting
+ *
+ * @tparam ...Args1
+ * @tparam ...Args2
+ * @param p1
+ * @param p2
+ *
+ * @return 
+ */
 template <typename ...Args1, typename ...Args2>
 ptr<Args2...> operator>>(ptr<Args1...> p1, ptr<Args2...> p2);
 
