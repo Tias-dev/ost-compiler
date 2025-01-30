@@ -17,7 +17,8 @@ Result<> String::parse(ICharStream & stream) {
   }
   
   if(i < pattern_.size()) { // failure
-    for(size_t j = i; j != (size_t)(-1); --j) {
+    stream << c;
+    for(size_t j = i-1; j != (size_t)(-1); --j) {
       stream << pattern_[j];
     }
 
@@ -34,6 +35,10 @@ Result<> String::parse(ICharStream & stream) {
   result.status = ResultStatus::Success;
   result.parsedLen = pattern_.size();
   return result;
+}
+
+void String::revert(ICharStream & stream) {
+  stream << pattern_;
 }
 
 } // !combinator;

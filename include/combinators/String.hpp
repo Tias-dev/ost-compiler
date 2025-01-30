@@ -12,6 +12,7 @@ public:
   String(const std::string & pattern) : pattern_(pattern) {}
   
   Result<> parse(ICharStream & stream) override;
+  void revert(ICharStream & stream) override;
 };
 } // !combinator;
 

@@ -3,7 +3,6 @@
 
 #include "event.hpp"
 #include <istream>
-#include <list>
 #include <stack>
 #include <string>
 

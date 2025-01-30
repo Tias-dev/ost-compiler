@@ -57,4 +57,6 @@ std::pair<ptr<Args1...>, ptr<Args2...>> operator||(ptr<Args1...> p1, ptr<Args2..
 
 } // !combinator;
 
+namespace cmb = combinator;
+
 #endif // !COMBINATOR_HPP_

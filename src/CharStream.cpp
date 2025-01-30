@@ -3,7 +3,7 @@
 char CharStream::getchar() {
   char result;
   if (buffer_.empty()) {
-    is_ >> result;
+    result = is_.get();
   } else {
     char last = buffer_.top();
     result = last;

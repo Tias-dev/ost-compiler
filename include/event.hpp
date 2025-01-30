@@ -41,7 +41,7 @@ template <typename... Args> class Event : public IEvent<Args...> {
 public:
   virtual void invoke(Args... args) {
     for (auto &sub : subscribers_) {
-      sub->call(std::forward(args...));
+      (*sub)(args...);
     }
   }
 
