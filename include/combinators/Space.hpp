@@ -7,6 +7,9 @@ namespace combinator {
 class Space : public AnyOf {
 public:
   Space(std::string spaceLetters = " \t\n\r") : AnyOf(spaceLetters) {};
+	static ptr<char> create(std::string spaceLetters = " \t\n\r") {
+		return AnyOf::create(spaceLetters);
+	}
 };
 } // !combinator;
 

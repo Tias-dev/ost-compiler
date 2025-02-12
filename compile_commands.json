@@ -1,37 +1,37 @@
 [
 {
   "directory": "/home/raison/git/ost-compiler/build",
-  "command": "/usr/bin/c++ -Dsrc_lib_EXPORTS -I/home/raison/git/ost-compiler/include -fPIC -g -o CMakeFiles/src_lib.dir/src/CharStream.cpp.o -c /home/raison/git/ost-compiler/src/CharStream.cpp",
+  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -g -o CMakeFiles/src_lib.dir/src/CharStream.cpp.o -c /home/raison/git/ost-compiler/src/CharStream.cpp",
   "file": "/home/raison/git/ost-compiler/src/CharStream.cpp",
   "output": "CMakeFiles/src_lib.dir/src/CharStream.cpp.o"
 },
 {
   "directory": "/home/raison/git/ost-compiler/build",
-  "command": "/usr/bin/c++ -Dsrc_lib_EXPORTS -I/home/raison/git/ost-compiler/include -fPIC -g -o CMakeFiles/src_lib.dir/src/Combinator.cpp.o -c /home/raison/git/ost-compiler/src/Combinator.cpp",
+  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -g -o CMakeFiles/src_lib.dir/src/Combinator.cpp.o -c /home/raison/git/ost-compiler/src/Combinator.cpp",
   "file": "/home/raison/git/ost-compiler/src/Combinator.cpp",
   "output": "CMakeFiles/src_lib.dir/src/Combinator.cpp.o"
 },
 {
   "directory": "/home/raison/git/ost-compiler/build",
-  "command": "/usr/bin/c++ -Dsrc_lib_EXPORTS -I/home/raison/git/ost-compiler/include -fPIC -g -o CMakeFiles/src_lib.dir/src/Cursor.cpp.o -c /home/raison/git/ost-compiler/src/Cursor.cpp",
+  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -g -o CMakeFiles/src_lib.dir/src/Cursor.cpp.o -c /home/raison/git/ost-compiler/src/Cursor.cpp",
   "file": "/home/raison/git/ost-compiler/src/Cursor.cpp",
   "output": "CMakeFiles/src_lib.dir/src/Cursor.cpp.o"
 },
 {
   "directory": "/home/raison/git/ost-compiler/build",
-  "command": "/usr/bin/c++ -Dsrc_lib_EXPORTS -I/home/raison/git/ost-compiler/include -fPIC -g -o CMakeFiles/src_lib.dir/src/LexemAnalyzer.cpp.o -c /home/raison/git/ost-compiler/src/LexemAnalyzer.cpp",
+  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -g -o CMakeFiles/src_lib.dir/src/LexemAnalyzer.cpp.o -c /home/raison/git/ost-compiler/src/LexemAnalyzer.cpp",
   "file": "/home/raison/git/ost-compiler/src/LexemAnalyzer.cpp",
   "output": "CMakeFiles/src_lib.dir/src/LexemAnalyzer.cpp.o"
 },
 {
   "directory": "/home/raison/git/ost-compiler/build",
-  "command": "/usr/bin/c++ -Dsrc_lib_EXPORTS -I/home/raison/git/ost-compiler/include -fPIC -g -o CMakeFiles/src_lib.dir/src/combinators/AnyOf.cpp.o -c /home/raison/git/ost-compiler/src/combinators/AnyOf.cpp",
+  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -g -o CMakeFiles/src_lib.dir/src/combinators/AnyOf.cpp.o -c /home/raison/git/ost-compiler/src/combinators/AnyOf.cpp",
   "file": "/home/raison/git/ost-compiler/src/combinators/AnyOf.cpp",
   "output": "CMakeFiles/src_lib.dir/src/combinators/AnyOf.cpp.o"
 },
 {
   "directory": "/home/raison/git/ost-compiler/build",
-  "command": "/usr/bin/c++ -Dsrc_lib_EXPORTS -I/home/raison/git/ost-compiler/include -fPIC -g -o CMakeFiles/src_lib.dir/src/combinators/String.cpp.o -c /home/raison/git/ost-compiler/src/combinators/String.cpp",
+  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -g -o CMakeFiles/src_lib.dir/src/combinators/String.cpp.o -c /home/raison/git/ost-compiler/src/combinators/String.cpp",
   "file": "/home/raison/git/ost-compiler/src/combinators/String.cpp",
   "output": "CMakeFiles/src_lib.dir/src/combinators/String.cpp.o"
 },
@@ -43,9 +43,21 @@
 },
 {
   "directory": "/home/raison/git/ost-compiler/build",
+  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -isystem /home/raison/git/ost-compiler/build/_deps/googletest-src/googletest/include -isystem /home/raison/git/ost-compiler/build/_deps/googletest-src/googletest -g -o CMakeFiles/tests.dir/tests/combinators/Space.cpp.o -c /home/raison/git/ost-compiler/tests/combinators/Space.cpp",
+  "file": "/home/raison/git/ost-compiler/tests/combinators/Space.cpp",
+  "output": "CMakeFiles/tests.dir/tests/combinators/Space.cpp.o"
+},
+{
+  "directory": "/home/raison/git/ost-compiler/build",
   "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -isystem /home/raison/git/ost-compiler/build/_deps/googletest-src/googletest/include -isystem /home/raison/git/ost-compiler/build/_deps/googletest-src/googletest -g -o CMakeFiles/tests.dir/tests/combinators/String.cpp.o -c /home/raison/git/ost-compiler/tests/combinators/String.cpp",
   "file": "/home/raison/git/ost-compiler/tests/combinators/String.cpp",
   "output": "CMakeFiles/tests.dir/tests/combinators/String.cpp.o"
+},
+{
+  "directory": "/home/raison/git/ost-compiler/build",
+  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -isystem /home/raison/git/ost-compiler/build/_deps/googletest-src/googletest/include -isystem /home/raison/git/ost-compiler/build/_deps/googletest-src/googletest -g -o CMakeFiles/tests.dir/tests/combinators/cmbGrouping.cpp.o -c /home/raison/git/ost-compiler/tests/combinators/cmbGrouping.cpp",
+  "file": "/home/raison/git/ost-compiler/tests/combinators/cmbGrouping.cpp",
+  "output": "CMakeFiles/tests.dir/tests/combinators/cmbGrouping.cpp.o"
 },
 {
   "directory": "/home/raison/git/ost-compiler/build",

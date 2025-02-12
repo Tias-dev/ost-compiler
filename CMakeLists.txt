@@ -14,7 +14,7 @@ file(GLOB_RECURSE TESTS_FILES LIST_DIRECTORIES FALSE ./tests/*.cpp)
 include_directories("include")
 add_compile_options(-g)
 
-add_library(src_lib SHARED ${SRC_FILES})
+add_library(src_lib STATIC ${SRC_FILES})
 
 add_executable(main main.cpp)
 target_link_libraries(main src_lib)

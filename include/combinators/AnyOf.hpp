@@ -4,11 +4,15 @@
 #include "CharStream.hpp"
 #include "Combinator.hpp"
 namespace combinator {
-class AnyOf : public ICombinator<> {
+class AnyOf : public ICombinator<char> {
   std::string letters_;
+  char lastChar = 0;
 public:
-  AnyOf(std::string letters) : letters_(letters) {}
-  Result<> parse(ICharStream & stream) override;
+  AnyOf(std::string &letters) : letters_(letters) {}
+  Result<char> parse(ICharStream & stream) override;
+  void revert(Result<char> & res, ICharStream & stream) override;
+
+	static ptr<char> create(std::string & letters);
 };
 
 

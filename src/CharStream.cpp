@@ -1,4 +1,6 @@
 #include "CharStream.hpp"
+#include <cstdio>
+#include <string>
 
 char CharStream::getchar() {
   char result;

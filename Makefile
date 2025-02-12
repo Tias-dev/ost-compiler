@@ -4,5 +4,3 @@ all:
 	mv ./build/compile_commands.json .
 	cmake --build ./build
 
-run:
-	./build/main
