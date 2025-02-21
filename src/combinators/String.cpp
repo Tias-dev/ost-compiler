@@ -1,12 +1,12 @@
 #include "combinators/String.hpp"
 #include "Combinator.hpp"
 #include <memory>
+#include <optional>
 #include <sstream>
 
 namespace combinator {
 
-Result<> String::parse(ICharStream &stream) {
-  Result<> result;
+ptr_res<> String::parse(ICharStream &stream) {
   size_t i = 0;
   char c;
   while (i < pattern_.size()) {
@@ -23,26 +23,28 @@ Result<> String::parse(ICharStream &stream) {
       stream << pattern_[j];
     }
 
-    result.status = ResultStatus::Failure;
-    result.errorMessage =
+    auto result = std::make_shared<StringResult>(
+        pattern_, ResultStatus::Failure, std::nullopt, 0,
         (std::stringstream()
          << "Letter mismatch at " << i << "index\n"
          << "Expected: " << pattern_.substr(0, i) << "\nGiven: "
          << pattern_.substr(0, i - 1 < pattern_.size() ? i - 1 : 0) << c
          << '\n')
-            .str();
+            .str());
     return result;
   }
 
-  result.status = ResultStatus::Success;
-  result.parsedLen = pattern_.size();
+  auto result = std::make_shared<StringResult>(pattern_, ResultStatus::Success,
+                                               std::tuple<>{}, pattern_.size(), "");
   return result;
 }
-
-void String::revert(Result<> &res, ICharStream &stream) { stream << pattern_; }
 
 ptr<> String::create(std::string &pattern) {
   return std::make_shared<String>(pattern);
 }
+
+void StringResult::revert(ICharStream & stream) {
+	stream << pattern_;
+};
 
 } // namespace combinator

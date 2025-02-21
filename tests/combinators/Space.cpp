@@ -12,24 +12,24 @@ namespace  {
     cmb::Space space;
 
     auto res = space.parse(charstream);
-    EXPECT_EQ(res.status, cmb::ResultStatus::Failure);
+    EXPECT_EQ(res->status, cmb::ResultStatus::Failure);
 
     p1.parse(charstream);
 
     res = space.parse(charstream);
-    EXPECT_EQ(res.status, cmb::ResultStatus::Success);
+    EXPECT_EQ(res->status, cmb::ResultStatus::Success);
 
     p2.parse(charstream);
 
     res = space.parse(charstream);
-    EXPECT_EQ(res.status, cmb::ResultStatus::Success);
+    EXPECT_EQ(res->status, cmb::ResultStatus::Success);
 
     p3.parse(charstream);
 
     res = space.parse(charstream);
-    EXPECT_EQ(res.status, cmb::ResultStatus::Success);
+    EXPECT_EQ(res->status, cmb::ResultStatus::Success);
 
     res = space.parse(charstream);
-    EXPECT_EQ(res.status, cmb::ResultStatus::Failure);
+    EXPECT_EQ(res->status, cmb::ResultStatus::Failure);
   }
 } // namespace 

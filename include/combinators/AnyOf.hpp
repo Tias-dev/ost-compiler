@@ -4,17 +4,30 @@
 #include "CharStream.hpp"
 #include "Combinator.hpp"
 namespace combinator {
+	class AnyOfResult;
 class AnyOf : public ICombinator<char> {
   std::string letters_;
-  char lastChar = 0;
 public:
   AnyOf(std::string &letters) : letters_(letters) {}
-  Result<char> parse(ICharStream & stream) override;
-  void revert(Result<char> & res, ICharStream & stream) override;
+
+  virtual ptr_res<char> parse(ICharStream & stream) override;
 
 	static ptr<char> create(std::string & letters);
 };
 
+class AnyOfResult : public Result<char> {
+	public:
+	AnyOfResult(ResultStatus _status,
+         std::optional<std::tuple<char>> _data = std::nullopt,
+         size_t _parsedLen = 0, std::string _errorMessage = "")
+	:	Result<char>(_status, _data, _parsedLen, _errorMessage) {}
+
+	void revert(ICharStream & stream) override;
+
+	static ptr_res<char> createSuccess(char c);
+	static ptr_res<char> createFailure(std::string errorMessage);
+};
+									
 
 } // !combinator;
 #endif // !ANY_OF_COMBINATOR_HPP_

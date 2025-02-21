@@ -7,12 +7,6 @@
 },
 {
   "directory": "/home/raison/git/ost-compiler/build",
-  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -g -o CMakeFiles/src_lib.dir/src/Combinator.cpp.o -c /home/raison/git/ost-compiler/src/Combinator.cpp",
-  "file": "/home/raison/git/ost-compiler/src/Combinator.cpp",
-  "output": "CMakeFiles/src_lib.dir/src/Combinator.cpp.o"
-},
-{
-  "directory": "/home/raison/git/ost-compiler/build",
   "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -g -o CMakeFiles/src_lib.dir/src/Cursor.cpp.o -c /home/raison/git/ost-compiler/src/Cursor.cpp",
   "file": "/home/raison/git/ost-compiler/src/Cursor.cpp",
   "output": "CMakeFiles/src_lib.dir/src/Cursor.cpp.o"

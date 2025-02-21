@@ -10,11 +10,11 @@ TEST(CombinatorsTestSuite, StringSucceed) {
   cmb::String parser("some");
   cmb::String parser2(" valueble");
 
-  cmb::Result<> result = parser.parse(charstream);
-  cmb::Result<> result2 = parser2.parse(charstream);
+  auto result = parser.parse(charstream);
+  auto result2 = parser2.parse(charstream);
 
-  ASSERT_EQ(result.status, cmb::ResultStatus::Success);
-  ASSERT_EQ(result2.status, cmb::ResultStatus::Success);
+  ASSERT_EQ(result->status, cmb::ResultStatus::Success);
+  ASSERT_EQ(result2->status, cmb::ResultStatus::Success);
 }
 
 TEST(CombinatorsTestSuite, StringFailed) {
@@ -23,9 +23,9 @@ TEST(CombinatorsTestSuite, StringFailed) {
   cmb::String parser("some");
   cmb::String parser2(" valueble");
 
-  cmb::Result<> result = parser2.parse(charstream);
-  cmb::Result<> result2 = parser.parse(charstream);
+  auto result = parser2.parse(charstream);
+  auto result2 = parser.parse(charstream);
 
-  ASSERT_EQ(result.status, cmb::ResultStatus::Failure);
-  ASSERT_EQ(result2.status, cmb::ResultStatus::Success);
+  ASSERT_EQ(result->status, cmb::ResultStatus::Failure);
+  ASSERT_EQ(result2->status, cmb::ResultStatus::Success);
 }
