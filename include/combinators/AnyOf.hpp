@@ -15,12 +15,12 @@ public:
 	static ptr<char> create(std::string & letters);
 };
 
-class AnyOfResult : public Result<char> {
+class AnyOfResult : public ResultBase<char> {
 	public:
 	AnyOfResult(ResultStatus _status,
          std::optional<std::tuple<char>> _data = std::nullopt,
          size_t _parsedLen = 0, std::string _errorMessage = "")
-	:	Result<char>(_status, _data, _parsedLen, _errorMessage) {}
+	:	ResultBase<char>(_status, _data, _parsedLen, _errorMessage) {}
 
 	void revert(ICharStream & stream) override;
 

@@ -18,14 +18,14 @@ public:
 	static ptr<> create(std::string & pattern);
 };
 
-class StringResult : public Result<> {
+class StringResult : public ResultBase<> {
 	private:
 		std::string pattern_;
 	public:
 	StringResult(std::string pattern, ResultStatus _status,
          std::optional<std::tuple<>> _data = std::nullopt,
          size_t _parsedLen = 0, std::string _errorMessage = "")
-	:	Result<>(_status, _data, _parsedLen, _errorMessage), pattern_(pattern) {}
+	:	ResultBase<>(_status, _data, _parsedLen, _errorMessage), pattern_(pattern) {}
 
 	void revert(ICharStream & stream) override;
 	

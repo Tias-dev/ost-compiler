@@ -13,26 +13,26 @@ namespace combinator {
 			std::function<ptr_res<Args...>(ICharStream&)> parseF_;
 		public:
 			Lambda(std::function<ptr_res<Args...>(ICharStream&)> parseF) : parseF_(parseF) {};
-			Result<Args...> parse(ICharStream & stream) override {
+			ResultBase<Args...> parse(ICharStream & stream) override {
 				return parseF_(stream);
 			}
 		};
 
 	template <typename T, typename ...Args>
-		concept ResultT = std::is_base_of_v<Result<Args...>, T>;
+		concept ResultT = std::is_base_of_v<ResultBase<Args...>, T>;
 
 	/**
-	 * @brief Consume all parsers and return value from ParentN'th parser
-	 *
-	 * @tparam ParentN
-	 * @tparam ...ResultsT
+	 * @brief Container for multiple results
+	 * @tparam Parent -- parent result from which data tuple is stored
+	 * @tparam ...ResultsT -- Stored results which will be reverting in given order
 	 */
 	template <ResultT Parent, ResultT ...ResultsT>
 	class CombinedResult : public Parent {
 		std::tuple<ResultsT...> results_;
 		public:
-			CombinedResult(Parent parent, std::tuple<ResultsT...> results)
+			CombinedResult(Parent parent, std::tuple<std::shared_ptr<ResultsT>...> results)
 				: Parent(parent), results_(results) {}
+
 		void revert(ICharStream & stream) override {
 			if(this->status_ != ResultStatus::Success) 
 				return;
