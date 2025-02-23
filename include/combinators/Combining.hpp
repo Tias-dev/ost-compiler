@@ -4,7 +4,6 @@
 #include "CharStream.hpp"
 #include "Combinator.hpp"
 #include <functional>
-#include <type_traits>
 #include <utility>
 
 namespace combinator {
@@ -13,22 +12,19 @@ namespace combinator {
 			std::function<ptr_res<Args...>(ICharStream&)> parseF_;
 		public:
 			Lambda(std::function<ptr_res<Args...>(ICharStream&)> parseF) : parseF_(parseF) {};
-			ResultBase<Args...> parse(ICharStream & stream) override {
+			ptr_res<Args...> parse(ICharStream & stream) override {
 				return parseF_(stream);
 			}
 		};
-
-	template <typename T, typename ...Args>
-		concept ResultT = std::is_base_of_v<ResultBase<Args...>, T>;
 
 	/**
 	 * @brief Container for multiple results
 	 * @tparam Parent -- parent result from which data tuple is stored
 	 * @tparam ...ResultsT -- Stored results which will be reverting in given order
 	 */
-	template <ResultT Parent, ResultT ...ResultsT>
+	template <typename Parent, typename ...ResultsT>
 	class CombinedResult : public Parent {
-		std::tuple<ResultsT...> results_;
+		std::tuple<std::shared_ptr<ResultsT>...> results_;
 		public:
 			CombinedResult(Parent parent, std::tuple<std::shared_ptr<ResultsT>...> results)
 				: Parent(parent), results_(results) {}

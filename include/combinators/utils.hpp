@@ -3,11 +3,10 @@
 #include "CharStream.hpp"
 #include "Combinator.hpp"
 #include "combinators/Combining.hpp"
-#include "tupleUtils.hpp"
+#include "combinators/Result.hpp"
 #include <functional>
 #include <memory>
 #include <optional>
-#include <stdexcept>
 #include <variant>
 
 namespace combinator {
@@ -24,17 +23,15 @@ namespace combinator {
  */
 template <typename... Args1, typename... Args2>
 ptr<Args2...> operator>>(ptr<Args1...> p1, ptr<Args2...> p2) {
-  auto func = [p1, p2](ICharStream &stream) {
+  auto func = [p1, p2](ICharStream &stream)
+	-> ptr_res<Args2...> {
     ptr_res<Args1...> res1 = p1->parse(stream);
-    ptr_res<Args2...> res2;
-    if (res1->status == ResultStatus::Failure) {
-      res2->status = ResultStatus::Failure;
-      res2->errorMessage = res1->errorMessage;
-      return res2;
+    if (res1->status() == ResultStatus::Failure) {
+      return std::make_shared<ResultBase<Args2...>>(res1->errorMessage());
     }
 
-    res2 = p2->parse(stream);
-    if (res2->status == ResultStatus::Failure) {
+    ptr_res<Args2...> res2 = p2->parse(stream);
+    if (res2->status() == ResultStatus::Failure) {
       res1->revert(stream);
       return res2;
     }
@@ -50,26 +47,23 @@ ptr<Args2...> operator>>(ptr<Args1...> p1, ptr<Args2...> p2) {
 
 template <typename... Args1, typename... Args2>
 ptr<Args1...> operator<<(ptr<Args1...> p1, ptr<Args2...> p2) {
-  auto func = [p1, p2](ICharStream &stream) {
+  auto func = [p1, p2](ICharStream &stream)
+	-> ptr_res<Args1...> {
     ptr_res<Args1...> res1 = p1->parse(stream);
     ptr_res<Args2...> res2;
-    if (res1->status == ResultStatus::Failure) {
+    if (res1->status() == ResultStatus::Failure) {
       return res1;
     }
 
     res2 = p2->parse(stream);
-    if (res2->status == ResultStatus::Failure) {
+    if (res2->status() == ResultStatus::Failure) {
       res1->revert(stream);
-      res1->status = res2->status;
-      res1->data = std::nullopt;
-      res1->parsedLen = 0;
-      res1->errorMessage = res2->errorMessage;
-      return res1;
+      return std::make_shared<ResultBase<Args1...>>(res2->errorMessage());
     }
 
     ptr_res<Args1...> result = std::make_shared<
-        CombinedResult<ResultBase<Args1...>, decltype(*res1), decltype(*res2)>>(
-        *res1, {res1, res2});
+        CombinedResult<ResultBase<Args1...>, IResult<Args1...>, IResult<Args2...>>>(
+        ResultBase<Args1...>(res1->data().value(), res1->parsedLen()), std::tuple{res1, res2});
     return result;
   };
 
@@ -80,23 +74,23 @@ template <typename... Args1, typename... Args2>
 ptr<Args1..., Args2...> operator&&(ptr<Args1...> p1, ptr<Args2...> p2) {
   auto func = [p1, p2](ICharStream &stream) {
     ptr_res<Args1...> res1 = p1->parse(stream);
-    if (res1->status == ResultStatus::Failure) {
+    if (res1->status() == ResultStatus::Failure) {
       return std::make_shared<ResultBase<Args1..., Args2...>>(
           res1->errorMessage());
     }
 
     ptr_res<Args2...> res2 = p2->parse(stream);
-    if (res2.status == ResultStatus::Failure) {
+    if (res2->status() == ResultStatus::Failure) {
       res1->revert(stream);
       return std::make_shared<ResultBase<Args1..., Args2...>>(
           res2->errorMessage());
     }
 
     std::tuple<Args1..., Args2...> data =
-        std::tuple_cat(res1.data.value(), res2.data.value());
+        std::tuple_cat(res1->data().value(), res2->data().value());
     return std::make_shared<CombinedResult<ResultBase<Args1..., Args2...>,
                                            decltype(*res1), decltype(*res2)>>(
-        ResultBase(data, res1->parsedLen + res2->parsedLen), {res1, res2});
+        ResultBase(data, res1->parsedLen() + res2->parsedLen()), {res1, res2});
   };
 
   return std::make_shared<Lambda<Args1..., Args2...>>(func);
@@ -125,22 +119,22 @@ operator||(ptr<Args1...> p1, ptr<Args2...> p2) {
   using ret_type = std::variant<ptr_res<Args1...>, ptr_res<Args2...>>;
   auto funcParse = [p1, p2](ICharStream &stream) {
     ptr_res<Args1...> res1 = p1->parse(stream);
-    if (res1->status == ResultStatus::Success) {
+    if (res1->status() == ResultStatus::Success) {
       return std::make_shared<
           VariantResult<ptr_res<Args1...>, ptr_res<Args2...>>>({res1},
-                                                               res1->parsedLen);
+                                                               res1->parsedLen());
     }
 
     p1->revert(stream);
     ptr_res<Args2...> res2 = p2->parse(stream);
-    if (res2->status == ResultStatus::Success) {
+    if (res2->status() == ResultStatus::Success) {
       return std::make_shared<
           VariantResult<ptr_res<Args1...>, ptr_res<Args2...>>>({res2},
-                                                               res2->parsedLen);
+                                                               res2->parsedLen());
     }
     p2->revert(stream);
     return std::make_shared<ResultBase<ret_type>>(
-        res1->errorMessage + "\n---------\n" + res2->errorMessage);
+        res1->errorMessage() + "\n---------\n" + res2->errorMessage());
   };
 
   return std::make_shared<Lambda<ret_type>>(funcParse);
@@ -174,13 +168,13 @@ public:
  * @return new parser
  */
 template <typename... Args>
-ptr<std::list<ResultBase<Args...>>> many(ptr<Args...> p) {
+ptr<std::list<ptr_res<Args...>>> many(ptr<Args...> p) {
   using ret_type = std::list<ptr_res<Args...>>;
   auto funcParse = [p](ICharStream &stream) {
     ret_type values{};
     size_t parsedLen = 0;
     ptr_res<Args...> res = p->parse(stream);
-    while (res.status == ResultStatus::Success) {
+    while (res->status() == ResultStatus::Success) {
       values.push_back(res);
       parsedLen += res.parsedLen;
       res = p->parse(stream);

@@ -1,8 +1,8 @@
 #include "CharStream.hpp"
-#include "Combinator.hpp"
+#include "combinators/Combinator.hpp"
+#include "combinators/utils.hpp"
 #include "combinators/String.hpp"
 #include "combinators/Space.hpp"
-#include "combinators/utils.hpp"
 #include <gtest/gtest.h>
 #include <iterator>
 #include <src/gtest-internal-inl.h>
@@ -35,9 +35,9 @@ TEST_F(GroupingTest, redirectLeft) {
 	auto parser = charParser << charParser;
 	auto res = parser->parse(charstream);
 
-	ASSERT_EQ(res.status, ResultStatus::Success);
-	ASSERT_EQ(res.parsedLen, 2);
-	ASSERT_EQ(std::get<0>(res.data.value()), 's');
+	ASSERT_EQ(res->status(), ResultStatus::Success);
+	ASSERT_EQ(res->parsedLen(), 2);
+	ASSERT_EQ(std::get<0>(res->data().value()), 's');
 }
 
 TEST_F(GroupingTest, redirectRight) {
@@ -46,25 +46,25 @@ TEST_F(GroupingTest, redirectRight) {
 	auto parser = charParser >> charParser;
 	auto res = parser->parse(charstream);
 
-	ASSERT_EQ(res.status, ResultStatus::Success);
-	ASSERT_EQ(res.parsedLen, 2);
-	ASSERT_EQ(std::get<0>(res.data.value()), 'o');
+	ASSERT_EQ(res->status(), ResultStatus::Success);
+	ASSERT_EQ(res->parsedLen(), 2);
+	ASSERT_EQ(std::get<0>(res->data().value()), 'o');
 }
 
 TEST_F(GroupingTest, LogicalAnd) {
 	auto parser = wordsParsers[0] && space && wordsParsers[1];
 	auto res = parser->parse(charstream);
 
-	ASSERT_EQ(res.status, ResultStatus::Success);
-	ASSERT_EQ(res.parsedLen, words[0].size() + 1 + words[1].size());
+	ASSERT_EQ(res->status(), ResultStatus::Success);
+	ASSERT_EQ(res->parsedLen(), words[0].size() + 1 + words[1].size());
 }
 
 TEST_F(GroupingTest, LogicalOr) {
 	auto parser = wordsParsers[1] || wordsParsers[0];
 	auto res = parser->parse(charstream);
 
-	ASSERT_EQ(res.status, ResultStatus::Success);
-	ASSERT_EQ(res.parsedLen, words[0].size());
+	ASSERT_EQ(res->status(), ResultStatus::Success);
+	ASSERT_EQ(res->parsedLen(), words[0].size());
 }
 
 TEST_F(GroupingTest, testMany) {
@@ -73,13 +73,13 @@ TEST_F(GroupingTest, testMany) {
 	auto parser = many(charParser);
 	auto res = parser->parse(charstream);
 
-	ASSERT_EQ(res.status, ResultStatus::Success);
-	ASSERT_EQ(res.parsedLen, words[0].size());
+	ASSERT_EQ(res->status(), ResultStatus::Success);
+	ASSERT_EQ(res->parsedLen(), words[0].size());
 
 	auto iter = std::begin(words[0]);
-	for(auto elem : std::get<0>(res.data.value())) {
-		ASSERT_EQ(elem.status, ResultStatus::Success);
-		char c = std::get<0>(elem.data.value());
+	for(auto elem : std::get<0>(res->data().value())) {
+		ASSERT_EQ(elem->status(), ResultStatus::Success);
+		char c = std::get<0>(elem->data().value());
 
 		ASSERT_EQ(c, *iter);
 		++iter;

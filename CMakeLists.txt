@@ -6,13 +6,13 @@ project(
 )
 
 set(CMAKE_CXX_STANDART 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 file(GLOB_RECURSE SRC_FILES LIST_DIRECTORIES FALSE ./src/*.cpp)
 file(GLOB_RECURSE TESTS_FILES LIST_DIRECTORIES FALSE ./tests/*.cpp)
 
 include_directories("include")
-add_compile_options(-g)
+add_compile_options(-g -std=c++20)
 
 add_library(src_lib STATIC ${SRC_FILES})
 

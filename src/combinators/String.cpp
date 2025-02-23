@@ -1,5 +1,5 @@
 #include "combinators/String.hpp"
-#include "Combinator.hpp"
+#include "combinators/Combinator.hpp"
 #include <memory>
 #include <optional>
 #include <sstream>

@@ -1,35 +1,38 @@
 #include "combinators/Space.hpp"
 #include <gtest/gtest.h>
 #include "CharStream.hpp"
-#include "Combinator.hpp"
+#include "combinators/Combinator.hpp"
 #include "combinators/String.hpp"
 
 namespace  {
   TEST(SpaceTestSuite, SpaceConsume) {
     std::stringstream ss("some valueble\ttext\n");
     CharStream charstream(ss);
-    cmb::String p1("some"), p2("valueble"), p3("text");
-    cmb::Space space;
+		std::string words[] = {"some", "valueble", "text"};
+    auto p1 = cmb::String::create(words[0]);
+		auto p2 = cmb::String::create(words[1]);
+		auto p3 = cmb::String::create(words[2]);
+    auto space = cmb::Space::create();
 
-    auto res = space.parse(charstream);
-    EXPECT_EQ(res->status, cmb::ResultStatus::Failure);
+    auto res = space->parse(charstream);
+    EXPECT_EQ(res->status(), cmb::ResultStatus::Failure);
 
-    p1.parse(charstream);
+    p1->parse(charstream);
 
-    res = space.parse(charstream);
-    EXPECT_EQ(res->status, cmb::ResultStatus::Success);
+    res = space->parse(charstream);
+    EXPECT_EQ(res->status(), cmb::ResultStatus::Success);
 
-    p2.parse(charstream);
+    p2->parse(charstream);
 
-    res = space.parse(charstream);
-    EXPECT_EQ(res->status, cmb::ResultStatus::Success);
+    res = space->parse(charstream);
+    EXPECT_EQ(res->status(), cmb::ResultStatus::Success);
 
-    p3.parse(charstream);
+    p3->parse(charstream);
 
-    res = space.parse(charstream);
-    EXPECT_EQ(res->status, cmb::ResultStatus::Success);
+    res = space->parse(charstream);
+    EXPECT_EQ(res->status(), cmb::ResultStatus::Success);
 
-    res = space.parse(charstream);
-    EXPECT_EQ(res->status, cmb::ResultStatus::Failure);
+    res = space->parse(charstream);
+    EXPECT_EQ(res->status(), cmb::ResultStatus::Failure);
   }
 } // namespace 
