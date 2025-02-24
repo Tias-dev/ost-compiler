@@ -30,12 +30,12 @@ namespace combinator {
 				: Parent(parent), results_(results) {}
 
 		void revert(ICharStream & stream) override {
-			if(this->status_ != ResultStatus::Success) 
+			if(this->status() != ResultStatus::Success) 
 				return;
 		
-			[&stream]<size_t ...Idx>(std::index_sequence<Idx...>, std::tuple<ResultsT...> & results) {
-				(std::get<Idx>(results).revert(stream),...);
-			}(std::make_index_sequence<sizeof...(ResultsT)>{}, this->results);
+			[&stream]<size_t ...Idx>(std::index_sequence<Idx...>, std::tuple<std::shared_ptr<ResultsT>...> & results) {
+				(std::get<Idx>(results)->revert(stream),...);
+			}(std::make_index_sequence<sizeof...(ResultsT)>{}, this->results_);
 		}
 	};
 } // namespace combinator

@@ -1,5 +1,6 @@
 #include "combinators/String.hpp"
 #include "combinators/Combinator.hpp"
+#include "combinators/Result.hpp"
 #include <memory>
 #include <optional>
 #include <sstream>
@@ -44,6 +45,9 @@ ptr<> String::create(std::string &pattern) {
 }
 
 void StringResult::revert(ICharStream & stream) {
+	if(status() != ResultStatus::Success) 
+		return;
+
 	stream << pattern_;
 };
 
