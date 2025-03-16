@@ -6,10 +6,7 @@
 #include <list>
 #include <ostream>
 
-class LexemList : public std::list<Lexem *> {
-  public:
-    virtual ~LexemList(); // Deallocate 
-};
+using LexemList = std::list<Lexem *>;
 
 inline std::ostream & operator<<(std::ostream & os, const LexemList &lexems) {
 	for(auto& elem : lexems) {
