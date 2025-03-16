@@ -40,7 +40,7 @@ ptr_res<> String::parse(ICharStream &stream) {
   return result;
 }
 
-ptr<> String::create(std::string &pattern) {
+ptr<> String::create(const std::string &pattern) {
   return std::make_shared<String>(pattern);
 }
 

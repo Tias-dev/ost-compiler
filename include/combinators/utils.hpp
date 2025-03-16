@@ -39,7 +39,8 @@ ptr<Args2...> operator>>(ptr<Args1...> p1, ptr<Args2...> p2) {
     ptr_res<Args2...> result =
         std::make_shared<CombinedResult<ResultBase<Args2...>, IResult<Args1...>,
                                         IResult<Args2...>>>(
-            ResultBase<Args2...>(res2->data().value(), res2->parsedLen() + res1->parsedLen()),
+            ResultBase<Args2...>(res2->data().value(),
+                                 res2->parsedLen() + res1->parsedLen()),
             std::tuple{res1, res2});
     return result;
   };
@@ -65,7 +66,8 @@ ptr<Args1...> operator<<(ptr<Args1...> p1, ptr<Args2...> p2) {
     ptr_res<Args1...> result =
         std::make_shared<CombinedResult<ResultBase<Args1...>, IResult<Args1...>,
                                         IResult<Args2...>>>(
-            ResultBase<Args1...>(res1->data().value(), res1->parsedLen() + res2->parsedLen()),
+            ResultBase<Args1...>(res1->data().value(),
+                                 res1->parsedLen() + res2->parsedLen()),
             std::tuple{res1, res2});
     return result;
   };
@@ -126,8 +128,7 @@ ptr<ptr_res<Args1...>, ptr_res<Args2...>> operator||(ptr<Args1...> p1,
                                                      ptr<Args2...> p2) {
   using ret_type = VariantResult<IResult<Args1...>, IResult<Args2...>>;
 
-  auto funcParse = [p1, p2](ICharStream &stream)
-		-> std::shared_ptr<ret_type>{
+  auto funcParse = [p1, p2](ICharStream &stream) -> std::shared_ptr<ret_type> {
     ptr_res<Args1...> res1 = p1->parse(stream);
     if (res1->status() == ResultStatus::Success) {
       return std::make_shared<ret_type>(
@@ -146,7 +147,8 @@ ptr<ptr_res<Args1...>, ptr_res<Args2...>> operator||(ptr<Args1...> p1,
                                       res2->errorMessage());
   };
 
-  return std::make_shared<Lambda<ptr_res<Args1...>, ptr_res<Args2...>>>(funcParse);
+  return std::make_shared<Lambda<ptr_res<Args1...>, ptr_res<Args2...>>>(
+      funcParse);
 }
 
 template <typename... Args> class LambdaResult : public ResultBase<Args...> {
@@ -179,8 +181,7 @@ public:
 template <typename... Args>
 ptr<std::list<ptr_res<Args...>>> many(ptr<Args...> p) {
   using ret_type = std::list<ptr_res<Args...>>;
-  auto funcParse = [p](ICharStream &stream)
-		-> ptr_res<ret_type> {
+  auto funcParse = [p](ICharStream &stream) -> ptr_res<ret_type> {
     ret_type values{};
     size_t parsedLen = 0;
     ptr_res<Args...> res = p->parse(stream);
@@ -195,11 +196,52 @@ ptr<std::list<ptr_res<Args...>>> many(ptr<Args...> p) {
             result->revert(stream);
           }
         },
-				std::tuple{values}, parsedLen);
+        std::tuple{values}, parsedLen);
   };
 
   return std::make_shared<Lambda<ret_type>>(funcParse);
 }
+
+/**
+ * @brief Optional parser, if parsedLen 0 is also Succeess
+ *
+ * @tparam ...Args
+ * @param p
+ *
+ * @return optional parser
+ */
+template <typename... Args> ptr<Args...> opt(ptr<Args...> p) {
+  auto func = [p](ICharStream &stream) -> ptr_res<Args...> {
+    auto res = p->parse(stream);
+    if (res->parsedLen() > 0)
+      return res;
+    return std::make_shared<ResultBase<Args...>>(std::nullopt, 0);
+  };
+
+  return std::make_shared<Lambda<Args...>>(func);
+}
+
+inline ptr<std::string> to_string(ptr<std::list<ptr_res<char>>> p) {
+  auto func = [p](ICharStream &stream) -> ptr_res<std::string> {
+    auto res = p->parse(stream);
+    std::string s = "";
+    if (res->status() == ResultStatus::Success) {
+      for (auto &ptr_c : std::get<0>(res->data().value())) {
+        s.push_back(std::get<0>(ptr_c->data().value_or('\0')));
+      }
+
+      return std::make_shared<LambdaResult<std::string>>(
+          [](ICharStream &stream, std::tuple<std::string>& data) {
+            stream << std::get<0>(data);
+          },
+					std::tuple{s}, res->parsedLen());
+    }
+		return std::make_shared<ResultBase<std::string>>(res->errorMessage());
+  };
+
+	return std::make_shared<Lambda<std::string>>(func);
+}
+
 } // namespace combinator
 
 #endif // !UTILS_HPP_

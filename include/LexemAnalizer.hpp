@@ -4,16 +4,24 @@
 #include "CharStream.hpp"
 #include "Lexem.hpp"
 #include <list>
-#include <memory>
+#include <ostream>
 
 class LexemList : public std::list<Lexem *> {
   public:
     virtual ~LexemList(); // Deallocate 
 };
 
+inline std::ostream & operator<<(std::ostream & os, const LexemList &lexems) {
+	for(auto& elem : lexems) {
+		os << *elem << ' ';
+	}
+
+	return os;
+}
+
 class LexemAnalyzer {
 public:
-  LexemList parse(std::shared_ptr<ICharStream> stream);
+  LexemList parse(ICharStream &stream);
 };
 
 #endif //! LEXEM_ANALYZER_HPP_

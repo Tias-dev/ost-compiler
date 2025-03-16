@@ -2,10 +2,10 @@
 #define LEXEM_TYPE_HPP_
 
 enum class LexemType {
-  NONE,
-  keyword,
-  id,
-  operation
+  None,
+  Keyword,
+  Id,
+	Operator
 };
 
 #endif // !LEXEM_TYPE_HPP_

@@ -34,6 +34,7 @@ public:
         errorMessage_(_errorMessage) {}
 
 	ResultBase(std::tuple<Args...> data, size_t parsedLen) : status_(ResultStatus::Success), data_({data}), parsedLen_(parsedLen), errorMessage_("") {}
+	ResultBase(std::optional<std::tuple<Args...>> data, size_t parsedLen) : status_(ResultStatus::Success), data_(data), parsedLen_(parsedLen), errorMessage_("") {}
 	ResultBase(std::string errorMessage) : status_(ResultStatus::Failure), errorMessage_(errorMessage), data_(std::nullopt), parsedLen_(0) {}
 
 	const ResultStatus & status() const override {return status_;}

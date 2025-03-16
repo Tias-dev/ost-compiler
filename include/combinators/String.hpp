@@ -15,7 +15,7 @@ public:
   
   ptr_res<> parse(ICharStream & stream) override;
 
-	static ptr<> create(std::string & pattern);
+	static ptr<> create(const std::string & pattern);
 };
 
 class StringResult : public ResultBase<> {

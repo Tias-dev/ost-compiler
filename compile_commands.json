@@ -31,6 +31,18 @@
 },
 {
   "directory": "/home/raison/git/ost-compiler/build",
+  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -g -std=c++20 -o CMakeFiles/src_lib.dir/src/keywords.cpp.o -c /home/raison/git/ost-compiler/src/keywords.cpp",
+  "file": "/home/raison/git/ost-compiler/src/keywords.cpp",
+  "output": "CMakeFiles/src_lib.dir/src/keywords.cpp.o"
+},
+{
+  "directory": "/home/raison/git/ost-compiler/build",
+  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -g -std=c++20 -o CMakeFiles/src_lib.dir/src/operators.cpp.o -c /home/raison/git/ost-compiler/src/operators.cpp",
+  "file": "/home/raison/git/ost-compiler/src/operators.cpp",
+  "output": "CMakeFiles/src_lib.dir/src/operators.cpp.o"
+},
+{
+  "directory": "/home/raison/git/ost-compiler/build",
   "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -g -std=c++20 -o CMakeFiles/main.dir/main.cpp.o -c /home/raison/git/ost-compiler/main.cpp",
   "file": "/home/raison/git/ost-compiler/main.cpp",
   "output": "CMakeFiles/main.dir/main.cpp.o"
@@ -55,9 +67,21 @@
 },
 {
   "directory": "/home/raison/git/ost-compiler/build",
+  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -isystem /home/raison/git/ost-compiler/build/_deps/googletest-src/googletest/include -isystem /home/raison/git/ost-compiler/build/_deps/googletest-src/googletest -g -std=c++20 -o CMakeFiles/tests.dir/tests/combinators/optionalParser.cpp.o -c /home/raison/git/ost-compiler/tests/combinators/optionalParser.cpp",
+  "file": "/home/raison/git/ost-compiler/tests/combinators/optionalParser.cpp",
+  "output": "CMakeFiles/tests.dir/tests/combinators/optionalParser.cpp.o"
+},
+{
+  "directory": "/home/raison/git/ost-compiler/build",
   "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -isystem /home/raison/git/ost-compiler/build/_deps/googletest-src/googletest/include -isystem /home/raison/git/ost-compiler/build/_deps/googletest-src/googletest -g -std=c++20 -o CMakeFiles/tests.dir/tests/main.cpp.o -c /home/raison/git/ost-compiler/tests/main.cpp",
   "file": "/home/raison/git/ost-compiler/tests/main.cpp",
   "output": "CMakeFiles/tests.dir/tests/main.cpp.o"
+},
+{
+  "directory": "/home/raison/git/ost-compiler/build",
+  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -isystem /home/raison/git/ost-compiler/build/_deps/googletest-src/googletest/include -isystem /home/raison/git/ost-compiler/build/_deps/googletest-src/googletest -g -std=c++20 -o CMakeFiles/tests.dir/tests/parser.cpp.o -c /home/raison/git/ost-compiler/tests/parser.cpp",
+  "file": "/home/raison/git/ost-compiler/tests/parser.cpp",
+  "output": "CMakeFiles/tests.dir/tests/parser.cpp.o"
 },
 {
   "directory": "/home/raison/git/ost-compiler/build/_deps/googletest-build/googlemock",

@@ -1,9 +1,9 @@
 #ifndef KEYWORDS_HPP_
 #define KEYWORDS_HPP_
 
-enum class Keywords {
-  NONE,
-  TERMINATOR,
+#include <string>
+enum class KeywordType {
+  None,
   BEGIN,
   END,
   DO,
@@ -12,9 +12,11 @@ enum class Keywords {
   FI,
   MT,
   ALPHABET,
-  a,
   LIB,
-  POW
 };
+
+bool isKeyword(const std::string &);
+KeywordType getKeywordType(const std::string &);
+std::string to_string(KeywordType type);
 
 #endif // !KEYWORDS_HPP_
