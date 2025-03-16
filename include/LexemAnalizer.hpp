@@ -13,7 +13,7 @@ class LexemList : public std::list<Lexem *> {
 
 inline std::ostream & operator<<(std::ostream & os, const LexemList &lexems) {
 	for(auto& elem : lexems) {
-		os << *elem << ' ';
+		os << *elem << '\n';
 	}
 
 	return os;
