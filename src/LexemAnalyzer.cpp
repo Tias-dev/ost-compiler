@@ -1,4 +1,5 @@
 #include "CharStream.hpp"
+#include "Lexem.hpp"
 #include "LexemAnalizer.hpp"
 #include "keywords.hpp"
 #include "operators.hpp"
@@ -12,23 +13,38 @@ LexemList::~LexemList() {
 
 static size_t currentId = 0;
 
-Lexem *parseBuffer(const std::string &buffer) {
+std::list<Lexem *> parseBuffer(const std::string &buffer) {
 	auto kw = getKeywordType(buffer);
 	if(kw != KeywordType::None) 
-		return new Lexem(kw);
+		return {new Lexem(kw)};
 
 	auto op = getOperatorType(buffer);
 	if(op != OperatorType::None)
-		return new Lexem(op);
+		return {new Lexem(op)};
 
-	return new Lexem(currentId++, buffer);
+	std::list<Lexem *> result;
+	for(size_t i = 0; i < buffer.size(); ++i) {
+		std::string substr = buffer.substr(i, std::string::npos);
+		if(isOperator(substr)) {
+			auto beginSubStr = buffer.substr(0, i);
+			auto parsedBegin = parseBuffer(beginSubStr);
+			for(auto& lexem : parsedBegin) 
+				result.push_back(lexem);
+			
+			result.push_back(new Lexem{getOperatorType(substr)});
+			return result;
+		}
+	}
+	return {new Lexem(currentId++, buffer)};
 }
 
 void processLetter(const char &c, std::string & buffer, LexemList & lexems) {
 		if(isspace(c) || c == EOF) {
 			if(buffer.empty())
 				return;
-			lexems.push_back(parseBuffer(buffer));
+			auto parsedBuffer = parseBuffer(buffer);
+			for(auto& lexem : parsedBuffer) 
+				lexems.push_back(lexem);
 			buffer = "";
 			return;
 		}
@@ -41,11 +57,6 @@ LexemList LexemAnalyzer::parse(ICharStream& stream) {
 	char c;
 	std::string buffer = "";
 	while(stream >> c, c != EOF) {
-		if(isOperator(buffer)) {
-			lexems.push_back(parseBuffer(buffer));
-			buffer = "";
-			continue;
-		}
 		processLetter(c, buffer, lexems);
 	}
 	processLetter(c, buffer, lexems);
