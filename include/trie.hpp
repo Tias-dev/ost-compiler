@@ -1,133 +1,135 @@
 #ifndef TRIE_HPP_
 #define TRIE_HPP_
 
+#include <iterator>
 #include <map>
+#include <memory>
 #include <optional>
-#include <string>
-#include <vector>
-
-#define in(container, item) (container.find(item) != container.end())
-
-template <typename T> class Trie {
-public:
-  Trie();
-  Trie(const std::vector<std::pair<const std::string, T>> &data);
-
-  void insert(const std::string &, T);
-  void remove(std::string &);
-
-  bool find(const std::string &);
-  std::optional<T> operator[](const std::string &);
-  const std::optional<T> operator[](const std::string &) const;
-
-private:
-  char terminator = '$';
-  struct Node {
-    std::map<char, Node *> translations;
-    std::optional<T> data;
-  };
-
-  Node *root;
-  // void impl_remove(std::string &, size_t curIndex, Node *currentNode);
+#include <stdexcept>
+namespace impl {
+template <typename TData> class IActivePoint {
+  virtual bool isTerm() = 0;
+  virtual bool canGoTo(char c) = 0;
+  virtual bool isLeaf() = 0;
+  virtual IActivePoint &goTo(char c) = 0;
+  virtual TData get() = 0;
 };
 
-template <typename T>
-std::optional<T> Trie<T>::operator[](const std::string &s) {
-  Node *currentNode = root;
-  for (auto &c : s) {
-    if (!in(currentNode->translations, c)) {
-      return std::nullopt;
+template <typename TData> class Trie {
+  class NodeIterator;
+  struct Node {
+    std::optional<TData> data_ = std::nullopt;
+    std::map<char, Node *> tr_ = {};
+		Node * parent_ = nullptr;
+
+    friend NodeIterator;
+
+    Node() = default;
+    Node(TData data) : data_(data) {}
+		Node(Node * parent) : parent_(parent) {}
+		Node(TData data, Node * parent) : data_(data), parent_(parent) {}
+
+    bool isTerm() const;
+    bool isLeaf() const;
+    const TData &data() const;
+		std::optional<const TData &> data_opt() const;
+  };
+
+  class NodeIterator : public IActivePoint<TData> {
+    Node *node_;
+
+  public:
+    NodeIterator(Node *node) : node_(node) {
+      if (!node) {
+        throw std::invalid_argument("Node iterator must point on real node");
+      }
     }
-    currentNode = currentNode->translations[c];
-  }
-  return currentNode->data;
-}
 
-template <typename T>
-const std::optional<T> Trie<T>::operator[](const std::string &s) const {
-  Node *currentNode = root;
-  for (auto &c : s) {
-    if (!in(currentNode->translations, c)) {
-      return std::nullopt;
+    bool isTerm() override { return node_->isTerm(); }
+    bool isLeaf() override { return node_->isLeaf(); }
+    bool canGoTo(char c) override {
+      return node_->tr_.find(c) != std::end(node_->tr_);
     }
-    currentNode = currentNode->translations[c];
-  }
-  return currentNode->data;
-}
+    IActivePoint<TData> goTo(char c) override {
+      if (!canGoTo(c))
+        throw std::logic_error(
+            "Trying to go to next node but given translation doesn't exists");
 
-template <typename T> inline Trie<T>::Trie() {
-  root = new Node{std::map<char, Node *>{{terminator, nullptr}}};
-}
-
-template <typename T>
-inline Trie<T>::Trie(const std::vector<std::pair<const std::string, T>> &data)
-    : Trie() {
-  for (auto &[s, value] : data) {
-    insert(s, value);
-  }
-}
-
-template <typename T>
-inline void Trie<T>::insert(const std::string &s, T value) {
-  if (find(s)) {
-    return;
-  }
-
-  Node *currentNode = root;
-  for (auto &c : s) {
-    if (!in(currentNode->translations, c)) {
-      currentNode->translations[c] = new Node;
+      node_ = node_->tr_[c];
+      return *this;
     }
-    currentNode = currentNode->translations[c];
+
+		void addTranslation(char c) {
+			if(canGoTo(c)) 
+				throw std::invalid_argument("Given translation already exists");
+			
+			node_->tr_[c] = new Node(node_);
+		}
+		void setData(TData data) {
+			node_->data_ = data;
+		}
+  };
+  Node *root_ = new Node;
+	using point_type_ = std::shared_ptr<NodeIterator>;
+  point_type_ begin_() {
+    return std::make_shared(NodeIterator(root_));
   }
-  currentNode->translations[terminator] = nullptr;
-  currentNode->data = {value};
+
+public:
+  Trie() {};
+
+  void add(const std::string &s, TData data);
+  std::optional<const TData &> find(const std::string &s);
+
+	using point_type = std::shared_ptr<IActivePoint<TData>>;
+  point_type begin() {
+    return begin_();
+  }
+};
+
+template <typename TData> bool Trie<TData>::Node::isTerm() const {
+  return data_.has_value();
 }
 
-template <typename T> inline bool Trie<T>::find(const std::string &s) {
-  Node *currentNode = root;
-  for (auto &c : s) {
-    if (!in(currentNode->translations, c)) {
-      return false;
-    }
-    currentNode = currentNode->translations[c];
-  }
-
-  return in(currentNode->translations, terminator);
+template <typename TData> bool Trie<TData>::Node::isLeaf() const {
+  return tr_.size() == 0;
 }
 
-template <typename T> inline void Trie<T>::remove(std::string &s) {
-  if (!find(s)) {
-    return;
-  }
-
-  size_t curIndex = 0;
-  Node *currentNode = root;
-
-  std::vector<Node *> path;
-  path.reserve(s.size());
-
-  while (curIndex < s.size()) {
-    path.emplace_back(currentNode);
-    currentNode = currentNode->translations[s[curIndex]];
-    ++curIndex;
-  }
-
-  currentNode->translations.erase(terminator);
-
-  --curIndex;
-  currentNode = path.back();
-  path.pop_back();
-
-  while (curIndex >= 0 && curIndex < s.size() &&
-         currentNode->translations[s[curIndex]]->translations.size() == 0) {
-    currentNode->translations.erase(s[curIndex]);
-    currentNode = path.back();
-    path.pop_back();
-    --curIndex;
-  }
+template <typename TData> 
+std::optional<const TData &> Trie<TData>::Node::data_opt() const {
+	return data_;
 }
 
-#undef in
+template <typename TData> const TData &Trie<TData>::Node::data() const {
+  if (isTerm())
+    return data_.value();
+  throw std::runtime_error("Trying access to data of non term trie node");
+}
 
-#endif // TRIE_HPP_
+template <typename TData>
+void Trie<TData>::add(const std::string &s, TData data) {
+	point_type_ activePoint = begin_();
+	for(auto& c : s) {
+		if(!activePoint->canGoTo(c)) 
+			activePoint->addTranslation(c);
+		activePoint->goTo(c);
+	}
+	activePoint->setData(data);
+}
+
+template <typename TData>
+std::optional<const TData &> Trie<TData>::find(const std::string &s) {
+	point_type_ activePoint = begin_();
+	for(auto& c : s) {
+		if(!activePoint->canGoTo(c)) 
+			return std::nullopt;
+		activePoint->goTo(c);
+	}
+	if(!activePoint->isTerm()) 
+		return std::nullopt;
+
+	return activePoint->node_->data_opt();
+}
+} // namespace impl
+
+#endif // !TRIE_HPP_
