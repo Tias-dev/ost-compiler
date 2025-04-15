@@ -31,14 +31,6 @@ namespace log {
 		public:
 			error(std::ostream & os = std::cout) : LogBase(os, "ERROR") {}
 	};
-
-	template <typename T>
-	class exception : public std::stringstream {
-		public:
-		~exception() {
-			throw T(str());
-		}
-	};
 } // namespace log
 
 #endif // !UTILS_HPP_

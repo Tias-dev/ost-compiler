@@ -1,8 +1,9 @@
 #include "CharStream.hpp"
-#include "LexemAnalizer.hpp"
+#include "Tokenizer.hpp"
 #include <cctype>
 #include <fstream>
 #include <iostream>
+#include <variant>
  
 int main(int argc, char * argw[]) {
 	std::fstream file("./testProgram.ost");
@@ -12,9 +13,12 @@ int main(int argc, char * argw[]) {
 	}
 	CharStream stream(file);
 
-	LexemAnalyzer analyser;
-	LexemList lexems = analyser.parse(stream);
+	auto tokenizer = token::Tokenizer{};
+	auto tokens = tokenizer.parse(stream);
 
-	std::cout << lexems << std::endl;
+	for(auto& token : tokens) 
+		std::cout << std::visit([](const auto & t) {return t.toString();}, token) << std::endl;
+	
+
   return 0;
 }

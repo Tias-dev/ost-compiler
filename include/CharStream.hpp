@@ -2,8 +2,8 @@
 #define CHAR_STREAM_HPP_
 
 #include <cstddef>
-#include <istream>
-#include <queue>
+#include <iostream>
+#include <stack>
 
 class ICharStream {
 	public:
@@ -14,7 +14,7 @@ class ICharStream {
 };
 
 class CharStream : public ICharStream {
-	std::queue<char> buffer_ = {};
+	std::stack<char> buffer_ = {};
 	size_t position_ = 0;
 	std::istream & is_;
 	public:
@@ -24,10 +24,10 @@ class CharStream : public ICharStream {
 	ICharStream & operator>>(char &c) override {
 		++position_;
 		if(!buffer_.empty()) {
-			c = buffer_.front();
+			c = buffer_.top();
 			buffer_.pop();
 		} else {
-			is_ >> c;
+			c = is_.get();
 		}
 		return *this;
 	}

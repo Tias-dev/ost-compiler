@@ -1,9 +1,10 @@
 #ifndef TOKEN_HPP_
 #define TOKEN_HPP_
 
-#include "utils.hpp"
+#include "exception.hpp"
+#include "trie.hpp"
 #include <cstddef>
-#include <stdexcept>
+#include <string>
 
 namespace token {
 enum class Type { NAME, KEYWORD, OPERATOR };
@@ -19,10 +20,10 @@ protected:
   Token(size_t begin, size_t end, Type type)
       : id_(currentId++), begin_(begin), end_(end), type_(type) {
     if (begin >= end)
-      log::exception<std::invalid_argument>()
-          << "begin(" << begin << ") of token must be less then end(" << end
-          << ")" << std::endl;
+			throw error::BordersError(begin, end);
   }
+
+	virtual std::string toString() const = 0;
 };
 
 inline size_t Token::currentId = 0;
@@ -33,6 +34,10 @@ class Name : public Token {
 public:
   Name(std::string name, size_t begin, size_t end)
       : Token(begin, end, Type::NAME), name_(name) {}
+
+	std::string toString() const override {
+		return name_;
+	}
 };
 
 enum class KwType { MT, BEGIN, END, ALPHABET, IF, FI, DO, OD };
@@ -43,6 +48,8 @@ class Keyword : public Token {
 public:
   Keyword(KwType type, size_t begin, size_t end)
       : Token(begin, end, Type::NAME), kwtype_(type) {}
+
+	std::string toString() const override; 
 };
 
 enum class OpType {
@@ -64,7 +71,16 @@ class Operation : public Token {
 public:
   Operation(OpType type, size_t begin, size_t end)
       : Token(begin, end, Type::NAME), optype_(type) {}
+
+	std::string toString() const override; 
 };
+
 } // namespace token
+
+namespace impl {
+using OpTrie = impl::Trie<token::OpType>;
+using KwTrie = impl::Trie<token::KwType>;
+std::pair<OpTrie, KwTrie> initTries();
+} // namespace impl
 
 #endif // !TOKEN_HPP_
