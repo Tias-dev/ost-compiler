@@ -8,12 +8,13 @@
 class ICharStream {
 	public:
 		virtual size_t position() = 0;
-		virtual ICharStream & operator>>(char &);
-		virtual ICharStream & operator<<(char);
+		virtual ICharStream & operator>>(char &) = 0;
+		virtual ICharStream & operator<<(char) = 0;
+		virtual bool eof() = 0;
 };
 
 class CharStream : public ICharStream {
-	std::queue<char> buffer = {};
+	std::queue<char> buffer_ = {};
 	size_t position_ = 0;
 	std::istream & is_;
 	public:
@@ -22,9 +23,9 @@ class CharStream : public ICharStream {
 	size_t position() override {return position_;}
 	ICharStream & operator>>(char &c) override {
 		++position_;
-		if(!buffer.empty()) {
-			c = buffer.front();
-			buffer.pop();
+		if(!buffer_.empty()) {
+			c = buffer_.front();
+			buffer_.pop();
 		} else {
 			is_ >> c;
 		}
@@ -34,8 +35,12 @@ class CharStream : public ICharStream {
 	ICharStream & operator<<(char c) override {
 		if(position_) 
 			--position_;
-		buffer.push(c);
+		buffer_.push(c);
 		return *this;
+	}
+
+	bool eof() override {
+		return buffer_.empty() && is_.eof();
 	}
 };
 

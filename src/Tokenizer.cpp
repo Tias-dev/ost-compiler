@@ -2,6 +2,7 @@
 #include "CharStream.hpp"
 #include "Token.hpp"
 #include "trie.hpp"
+#include <cctype>
 #include <utility>
 
 
@@ -34,7 +35,46 @@ std::pair<OpTrie, KwTrie> initTries() {
 	return {op, kw};
 }
 
+token::token_union read_token(ICharStream & stream) {
+	static auto [op, kw] = initTries();
+	auto opPoint = op.begin();
+	auto kwPoint = kw.begin();
+	
+	char c;
+	stream >> c;
+	while(isspace(c)) 
+		stream >> c;
+	
+	size_t begin = stream.position();
+	if(opPoint->canGoTo(c)) {
+		while(!opPoint->isTerm()) {
+			opPoint->goTo(c);
+			if(stream.eof()) 
+				break;
+			stream >> c;
+		}
+		if(!opPoint->isTerm()) 
+	
+		stream << c;
+		return {token::Operation(opType, begin, stream.position())};
+	}
+
+	opPoint = op.begin();
+	bool isKeyword = kwPoint->canGoTo(c);
+	std::string buffer = "";
+	while(!stream.eof() && !isspace(c) && !opPoint->canGoTo(c)) {
+		if(isKeyword) {
+			if(kwPoint->canGoTo(c)) 
+				kwPoint->goTo(c);
+			else
+				isKeyword = false;
+		}
+		buffer.push_back(c);
+		stream >> c;
+	}
+	stream << c;
+}
+
 token::Tokenizer::return_type
 parse(ICharStream & stream) {
-	auto [kw, op] = initTries();
 }

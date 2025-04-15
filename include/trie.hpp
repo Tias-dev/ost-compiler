@@ -8,9 +8,10 @@
 #include <stdexcept>
 namespace impl {
 template <typename TData> class IActivePoint {
-  virtual bool isTerm() = 0;
-  virtual bool canGoTo(char c) = 0;
-  virtual bool isLeaf() = 0;
+	public:
+  virtual bool isTerm() const = 0;
+  virtual bool canGoTo(char c) const = 0;
+  virtual bool isLeaf() const = 0;
   virtual IActivePoint &goTo(char c) = 0;
   virtual TData get() = 0;
 };
@@ -38,19 +39,19 @@ template <typename TData> class Trie {
   class NodeIterator : public IActivePoint<TData> {
     Node *node_;
 
-  public:
+	public:
     NodeIterator(Node *node) : node_(node) {
       if (!node) {
         throw std::invalid_argument("Node iterator must point on real node");
       }
     }
 
-    bool isTerm() override { return node_->isTerm(); }
-    bool isLeaf() override { return node_->isLeaf(); }
-    bool canGoTo(char c) override {
+    bool isTerm() const override { return node_->isTerm(); }
+    bool isLeaf() const override { return node_->isLeaf(); }
+    bool canGoTo(char c) const override {
       return node_->tr_.find(c) != std::end(node_->tr_);
     }
-    IActivePoint<TData> goTo(char c) override {
+    IActivePoint<TData>& goTo(char c) override {
       if (!canGoTo(c))
         throw std::logic_error(
             "Trying to go to next node but given translation doesn't exists");
@@ -79,7 +80,7 @@ public:
   Trie() {};
 
   void add(const std::string &s, TData data);
-  std::optional<const TData &> find(const std::string &s);
+  std::optional<const TData &> find(const std::string &s) const;
 
 	using point_type = std::shared_ptr<IActivePoint<TData>>;
   point_type begin() {
@@ -118,7 +119,7 @@ void Trie<TData>::add(const std::string &s, TData data) {
 }
 
 template <typename TData>
-std::optional<const TData &> Trie<TData>::find(const std::string &s) {
+std::optional<const TData &> Trie<TData>::find(const std::string &s) const {
 	point_type_ activePoint = begin_();
 	for(auto& c : s) {
 		if(!activePoint->canGoTo(c)) 
