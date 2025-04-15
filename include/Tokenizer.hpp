@@ -7,16 +7,16 @@
 #include <variant>
 namespace token {
 using token_union = std::variant<token::Name, token::Keyword, token::Operation>;
+using tokens_list = std::list<token_union>;
 
 class ITokenizer {
 public:
-	using return_type = std::list<token_union>;
-	virtual return_type parse(ICharStream & stream) = 0;
+	virtual tokens_list parse(ICharStream & stream) = 0;
 };
 
 class Tokenizer : public ITokenizer {
 	public:
-		return_type parse(ICharStream & stream) override;
+		tokens_list parse(ICharStream & stream) override;
 };
 } // namespace token
 
