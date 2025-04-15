@@ -2,6 +2,7 @@
 #define UTILS_HPP_
 
 #include <iostream>
+#include <map>
 #include <ostream>
 #include <sstream>
 namespace log {
@@ -32,5 +33,31 @@ namespace log {
 			error(std::ostream & os = std::cout) : LogBase(os, "ERROR") {}
 	};
 } // namespace log
+
+template <typename A, typename B>
+class bimap {
+	std::map<A, B> forward_;
+	std::map<B, A> backward_;
+public:
+	B & operator[](const A &a) {
+		return forward_[a];
+	}
+
+	A& operator[](const B & b) {
+		return backward_[b];
+	}
+
+	void add(const A& a, const B & b) {
+		forward_[a] = b;
+		forward_[b] = a;
+	}
+
+	bool contains(const A &a) {
+		return forward_.contains(a);
+	}
+	bool contains(const B &b) {
+		return backward_.contains(b);
+	}
+};
 
 #endif // !UTILS_HPP_
