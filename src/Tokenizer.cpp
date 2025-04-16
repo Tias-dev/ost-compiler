@@ -5,6 +5,10 @@
 #include <cctype>
 #include <utility>
 
+bool isSpace(int c) {
+	return isspace(c) || (c == '"');
+}
+
 /**
  * @brief Read token from stream. Assuming that no spaces before i.e. token
  * begin at current position
@@ -39,7 +43,7 @@ token::token_union read_token(ICharStream &stream) {
   auto kwPointBegin = kw.begin();
   std::string buffer = "";
 
-  while (!stream.eof() && !isspace(c) && !opPoint->canGoTo(c)) {
+  while (!stream.eof() && !isSpace(c) && !opPoint->canGoTo(c)) {
     if (*kwPoint != *kwPointBegin && kwPoint->canGoTo(c))
       kwPoint->goTo(c);
     buffer.push_back(c);
@@ -59,8 +63,20 @@ token::tokens_list token::Tokenizer::parse(ICharStream &stream) {
   token::tokens_list result;
   while (!stream.eof()) {
     stream >> c;
+
+		if(c == '"') {
+			size_t commentBegin = stream.position();
+			do {
+				stream >> c;
+			} while(!stream.eof() && (c != '"'));
+			if(c != '"' || stream.eof()) 
+				throw error::CommentNotClosedError(commentBegin);
+			continue;
+		}
+
     if (isspace(c))
       continue;
+
     stream << c;
     result.push_back(read_token(stream));
   }

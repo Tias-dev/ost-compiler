@@ -47,9 +47,17 @@ public:
 		return backward_[b];
 	}
 
+	const B & operator[](const A &a) const {
+		return forward_[a];
+	}
+
+	const A& operator[](const B & b) const {
+		return backward_[b];
+	}
+
 	void add(const A& a, const B & b) {
 		forward_[a] = b;
-		forward_[b] = a;
+		backward_[b] = a;
 	}
 
 	bool contains(const A &a) {
