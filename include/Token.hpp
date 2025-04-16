@@ -38,8 +38,10 @@ public:
   Name(std::string name, size_t begin, size_t end)
       : Token(begin, end, Type::NAME), name_(name) {}
 
-  std::string toString() const override { return typeToString() + ": " + name_; }
-	static std::string typeToString() { return "Name"; }
+  std::string toString() const override {
+    return typeToString() + ": " + name_;
+  }
+  static std::string typeToString() { return "Name"; }
 };
 
 enum class KwType { MT, BEGIN, END, ALPHABET, IF, FI, DO, OD };
@@ -52,7 +54,8 @@ public:
       : Token(begin, end, Type::NAME), kwtype_(type) {}
 
   std::string toString() const override;
-	static std::string typeToString() { return "Keyword"; }
+  static std::string typeToString() { return "Keyword"; }
+  KwType type() const { return kwtype_; }
 };
 
 enum class OpType {
@@ -76,7 +79,9 @@ public:
       : Token(begin, end, Type::NAME), optype_(type) {}
 
   std::string toString() const override;
-	static std::string typeToString(){ return "Operation"; }
+  OpType type() const { return optype_; }
+
+  static std::string typeToString() { return "Operation"; }
 };
 
 } // namespace token
@@ -85,6 +90,7 @@ namespace impl {
 using OpTrie = impl::Trie<token::OpType>;
 using KwTrie = impl::Trie<token::KwType>;
 std::pair<OpTrie, KwTrie> initTries();
+const std::pair<OpTrie::bimap_type, KwTrie::bimap_type> &getBimaps();
 } // namespace impl
 
 #endif // !TOKEN_HPP_

@@ -13,12 +13,18 @@ class tokens_list : public std::list<token_union> {
 	class ctx {
 		std::queue<token_union> cache_;
 		tokens_list * root_;
-
 	public:
+		ctx(tokens_list *root) : root_(root) {}
 		void commit() {
 			while (!cache_.empty()) 
 				cache_.pop();
 		};
+
+		void popFront() {
+			cache_.push(*std::begin(*root_));
+			root_->pop_front();
+		}
+
 		~ctx() {
 			while (!cache_.empty()) {
 				root_->push_front(cache_.front());
@@ -27,7 +33,7 @@ class tokens_list : public std::list<token_union> {
 		}
 	};
 public:
-	void popFront();
+	ctx session() {return ctx{this};}
 };
 
 class ITokenizer {

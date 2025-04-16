@@ -9,7 +9,8 @@
 
 using namespace ast;
 
-ast::Name::Name(token::tokens_list &tokens, std::string name) : NodeBase(ExprType::NAME), name_(name) {
+ast::Name::Name(token::tokens_list &tokens, std::string name)
+    : NodeBase(ExprType::NAME), name_(name) {
   if (namesTable_.contains(name))
     id_ = namesTable_[name];
   else {
@@ -17,7 +18,7 @@ ast::Name::Name(token::tokens_list &tokens, std::string name) : NodeBase(ExprTyp
     namesTable_.add(name_, id_);
   }
 
-	init(tokens);
+  init(tokens);
 }
 
 std::optional<size_t> ast::Name::getNameId(const std::string &name) {
@@ -41,40 +42,103 @@ Paired::Paired(token::tokens_list &tokens, token::KwType first,
   init(tokens);
 };
 
-Alphabet::Alphabet(token::tokens_list & tokens)
-	: NodeBase(ExprType::ALPHABET){
-	init(tokens);
+Alphabet::Alphabet(token::tokens_list &tokens) : NodeBase(ExprType::ALPHABET) {
+  init(tokens);
 }
 
 // -----------------------
 // | init overloads next |
 // -----------------------
 
-template<class... Ts>
-struct overloads : Ts... { using Ts::operator()...; };
+template <class... Ts> struct overloads : Ts... {
+  using Ts::operator()...;
+};
 
-template <class T>
-void throwMismatch(const std::string &expected, const T& given) {
-	throw error::ExpectedMismatchError(given.begin(), expected, given.toString());
+void throwMismatch(const std::string &expected, token::token_union &given) {
+  std::visit(
+      [&expected](const auto &token) {
+        throw error::ExpectedMismatchError(token.begin(), expected,
+                                           token.toString());
+      },
+      given);
 }
 
-void Name::init(token::tokens_list & tokens) {
-	std::string value;
-	auto visitor = overloads {
-		[&value](token::Name & token) {
-			value = token.toString();
-		},
-		[](token::Keyword & token) { throwMismatch(token::Name::typeToString(), token); },
-		[](token::Operation & token) { throwMismatch(token::Name::typeToString(), token); }
-	};
-
-	std::visit(visitor, *std::begin(tokens));
-	tokens.pop_front();
-	name_ = value;
+bool isName(token::token_union & token) {
+	return std::visit(overloads {
+			[](const token::Name&) {return true;},
+			[](const auto & token) {return false;}
+			}, token);
 }
 
-void Alphabet::init(token::tokens_list & tokens) {
-	auto first = std::begin(tokens);
+std::string getName(token::token_union & token) {
+	return std::visit(overloads {
+			[](const token::Name& token) {return token.toString();},
+			[&token](const auto & token_) {throwMismatch("Name", token); return std::string();}
+			}, token);
+}
 
+const auto &[opBimap, kwBimap] = impl::getBimaps();
 
+void Name::init(token::tokens_list &tokens) {
+	auto session = tokens.session();
+  std::string value = getName(*std::begin(tokens));
+  session.popFront();
+  name_ = value;
+	session.commit();
+}
+
+static const auto isKwVisitor = [](token::KwType type) {
+  return overloads{
+      [](token::Name &token) { return false; },
+      [type](token::Keyword &token) { return token.type() == type; },
+      [](token::Operation &token) { return false; }};
+};
+static const auto isOpVisitor = [](token::OpType type) {
+  return overloads{
+      [](token::Name &token) { return false; },
+      [](token::Keyword &token) { return false; },
+      [type](token::Operation &token) { return token.type() == type; }};
+};
+
+bool operator==(token::KwType type, token::token_union &token) {
+  return std::visit(isKwVisitor(type), token);
+}
+bool operator!=(token::KwType type, token::token_union &token) {
+  return !(type == token);
+}
+
+bool operator==(token::OpType type, token::token_union &token) {
+  return std::visit(isOpVisitor(type), token);
+}
+bool operator!=(token::OpType type, token::token_union &token) {
+  return !(type == token);
+}
+
+void Alphabet::init(token::tokens_list &tokens) {
+  auto session = tokens.session();
+  auto first = std::begin(tokens);
+
+  if (token::KwType::ALPHABET != *first)
+    std::visit(
+        [](const auto &token) {
+          throwMismatch(kwBimap.toString(token::KwType::ALPHABET), token);
+        },
+        *first);
+  session.popFront();
+  first = std::begin(tokens);
+  if (!std::visit(isOpVisitor(token::OpType::SEMICOLON), *first))
+    std::visit(
+        [](const auto &token) {
+          throwMismatch(opBimap.toString(token::OpType::SEMICOLON), token);
+        },
+        *first);
+  session.popFront();
+
+  first = std::begin(tokens);
+  bool wasComa = false;
+  while (!tokens.empty() &&
+         !std::visit(isOpVisitor(token::OpType::TERMINATOR), *first)) {
+  }
+
+  session.commit();
 }
