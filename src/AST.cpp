@@ -1,6 +1,9 @@
 #include "AST.hpp"
+#include "Token.hpp"
 #include "Tokenizer.hpp"
+#include <functional>
 #include <optional>
+#include <variant>
 
 using namespace ast;
 
@@ -36,6 +39,24 @@ Paired::Paired(token::tokens_list &tokens, token::KwType first,
   init(tokens);
 };
 
+Alphabet::Alphabet(token::tokens_list & tokens)
+	: NodeBase(ExprType::ALPHABET){
+	init(tokens);
+}
+
 // -----------------------
 // | init overloads next |
 // -----------------------
+
+template<class... Ts>
+struct overloads : Ts... { using Ts::operator()...; };
+
+void Name::init(token::tokens_list & tokens) {
+	auto visitor = overloads {
+		[](token::Name & token) {},
+		[](token::Keyword & token) {},
+		[](token::Operation & token) {}
+	};
+
+	std::visit(visitor, *std::begin(tokens));
+}

@@ -9,7 +9,7 @@
 #include <string>
 
 namespace ast {
-enum class ExprType { NAME, CONSTANT, ALPHABET, PAIRED, MT };
+enum class ExprType { NAME, ALPHABET, PAIRED, MT };
 
 class NodeBase {
 protected:
@@ -21,6 +21,7 @@ public:
   NodeBase(ExprType type) : type_(type) {}
 };
 
+
 class Name : public NodeBase {
   std::string name_;
   size_t id_;
@@ -28,7 +29,6 @@ class Name : public NodeBase {
   static size_t counterId;
   static bimap<std::string, size_t> namesTable_;
   void init(token::tokens_list &tokens) override;
-
 public:
   Name(token::tokens_list &tokens, std::string name);
   const std::string &name() { return name_; }
@@ -36,6 +36,14 @@ public:
 
   static std::optional<size_t> getNameId(const std::string &name);
   static std::optional<std::string> getNameById(const size_t id);
+};
+
+class Alphabet : public NodeBase {
+	std::list<char> alphabet_;
+
+	void init(token::tokens_list & tokens) override;
+public:
+		Alphabet(token::tokens_list & tokens);
 };
 
 class Paired : public NodeBase {
@@ -47,8 +55,6 @@ class Paired : public NodeBase {
 protected:
   Paired(token::tokens_list &tokens, token::KwType first, token::KwType second,
          bool forceTerminator = true);
-
-public:
 };
 
 class BeginEnd : public Paired {
