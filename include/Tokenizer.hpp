@@ -4,10 +4,31 @@
 #include "CharStream.hpp"
 #include "Token.hpp"
 #include <list>
+#include <queue>
 #include <variant>
 namespace token {
 using token_union = std::variant<token::Name, token::Keyword, token::Operation>;
-using tokens_list = std::list<token_union>;
+class tokens_list : public std::list<token_union> {
+	bool transactionBegan_ = false;
+	class ctx {
+		std::queue<token_union> cache_;
+		tokens_list * root_;
+
+	public:
+		void commit() {
+			while (!cache_.empty()) 
+				cache_.pop();
+		};
+		~ctx() {
+			while (!cache_.empty()) {
+				root_->push_front(cache_.front());
+				cache_.pop();
+			}
+		}
+	};
+public:
+	void popFront();
+};
 
 class ITokenizer {
 public:

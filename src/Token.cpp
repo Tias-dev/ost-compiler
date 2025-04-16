@@ -44,9 +44,9 @@ static const auto& [opBimap, kwBimap] = getBimaps();
 } // namespace impl
 
 std::string token::Keyword::toString() const {
-	return impl::kwBimap.toString(kwtype_);
+	return typeToString() + ": " +impl::kwBimap.toString(kwtype_);
 }
 
 std::string token::Operation::toString() const {
-	return impl::opBimap.toString(optype_);
+	return typeToString() + ": " + impl::opBimap.toString(optype_);
 }

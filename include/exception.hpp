@@ -5,49 +5,70 @@
 #include <sstream>
 #include <string>
 namespace error {
+class IPositionError : public std::exception {
+public:
+  virtual size_t position() const = 0;
+};
 
-	class IParseError : public std::exception {
-		public:
-		virtual size_t position() const = 0;
-	};
-	
-	class ParseErrorBase : public IParseError {
-		size_t position_;
-	public:
-		ParseErrorBase(size_t position) : position_(position) {}
-		size_t position() const override {return position_;}
-	};
+class PositionErrorBase : public IPositionError {
+  size_t position_;
 
-	class UndefinedOperatorError : public ParseErrorBase {
-		size_t position_;
-		std::string message_;
-		public:
-		UndefinedOperatorError(size_t position) : ParseErrorBase(position) {}
-		const char * what() const noexcept override {
-			return "Undefined operator, names with operators at begin not allowed";
-		}
-	};
+public:
+  PositionErrorBase(size_t position) : position_(position) {}
+  size_t position() const override { return position_; }
+};
 
-	class CommentNotClosedError : public ParseErrorBase {
-	public:
-		CommentNotClosedError(size_t position) : ParseErrorBase(position) {}
-		const char * what() const noexcept override {
-			return "Comment not closed";
-		}
-	};
+class UndefinedOperatorError : public PositionErrorBase {
+  size_t position_;
+  std::string message_;
 
-	class BordersError : public std::exception {
-		size_t begin_, end_;
-	public:
-		BordersError(size_t begin, size_t end)
-			: begin_(begin), end_(end) {}
+public:
+  UndefinedOperatorError(size_t position) : PositionErrorBase(position) {}
+  const char *what() const noexcept override {
+    return "Undefined operator, names with operators at begin not allowed";
+  }
+};
 
-		const char * what() const noexcept override {
-			static std::string message;
-			message = (std::stringstream() << "begin(" << begin_ << ") of token must be less then end(" << end_ << ")\n").str();
-			return message.c_str();
-		}
-	};
+class CommentNotClosedError : public PositionErrorBase {
+public:
+  CommentNotClosedError(size_t position) : PositionErrorBase(position) {}
+  const char *what() const noexcept override { return "Comment not closed"; }
+};
+
+class BordersError : public std::exception {
+  size_t begin_, end_;
+
+public:
+  BordersError(size_t begin, size_t end) : begin_(begin), end_(end) {}
+
+  const char *what() const noexcept override {
+    static std::string message =
+        (std::stringstream()
+         << "begin(" << begin_ << ") of token must be less then end(" << end_
+         << ")\n")
+            .str();
+    return message.c_str();
+  }
+};
+
+class ExpectedMismatchError : public PositionErrorBase {
+  size_t position_;
+  std::string expected_, given_;
+
+public:
+  ExpectedMismatchError(size_t position, std::string expected,
+                        std::string given)
+      : PositionErrorBase(position), expected_(expected), given_(given) {}
+
+  const char *what() const noexcept override {
+    static std::string message =
+        (std::stringstream() << "Semantic error: expected [" << expected_
+                             << "], but given: [" << given_ << "]")
+            .str();
+
+    return message.c_str();
+  }
+};
 } // namespace error
 
 #endif // !EXCEPTIONS_HPP_

@@ -68,4 +68,11 @@ public:
 	}
 };
 
+struct strfast : public std::stringstream {
+public:
+	std::string bump() {
+		return str();
+	}
+};
+
 #endif // !UTILS_HPP_

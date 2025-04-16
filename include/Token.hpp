@@ -20,10 +20,13 @@ protected:
   Token(size_t begin, size_t end, Type type)
       : id_(currentId++), begin_(begin), end_(end), type_(type) {
     if (begin >= end)
-			throw error::BordersError(begin, end);
+      throw error::BordersError(begin, end);
   }
 
-	virtual std::string toString() const = 0;
+public:
+  virtual std::string toString() const = 0;
+  virtual size_t begin() const { return begin_; }
+  virtual size_t end() const { return end_; }
 };
 
 inline size_t Token::currentId = 0;
@@ -35,9 +38,8 @@ public:
   Name(std::string name, size_t begin, size_t end)
       : Token(begin, end, Type::NAME), name_(name) {}
 
-	std::string toString() const override {
-		return name_;
-	}
+  std::string toString() const override { return typeToString() + ": " + name_; }
+	static std::string typeToString() { return "Name"; }
 };
 
 enum class KwType { MT, BEGIN, END, ALPHABET, IF, FI, DO, OD };
@@ -49,7 +51,8 @@ public:
   Keyword(KwType type, size_t begin, size_t end)
       : Token(begin, end, Type::NAME), kwtype_(type) {}
 
-	std::string toString() const override; 
+  std::string toString() const override;
+	static std::string typeToString() { return "Keyword"; }
 };
 
 enum class OpType {
@@ -72,7 +75,8 @@ public:
   Operation(OpType type, size_t begin, size_t end)
       : Token(begin, end, Type::NAME), optype_(type) {}
 
-	std::string toString() const override; 
+  std::string toString() const override;
+	static std::string typeToString(){ return "Operation"; }
 };
 
 } // namespace token

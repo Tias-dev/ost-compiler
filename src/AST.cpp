@@ -1,7 +1,9 @@
 #include "AST.hpp"
 #include "Token.hpp"
 #include "Tokenizer.hpp"
-#include <functional>
+#include "exception.hpp"
+#include "utils.hpp"
+#include <iterator>
 #include <optional>
 #include <variant>
 
@@ -51,12 +53,28 @@ Alphabet::Alphabet(token::tokens_list & tokens)
 template<class... Ts>
 struct overloads : Ts... { using Ts::operator()...; };
 
+template <class T>
+void throwMismatch(const std::string &expected, const T& given) {
+	throw error::ExpectedMismatchError(given.begin(), expected, given.toString());
+}
+
 void Name::init(token::tokens_list & tokens) {
+	std::string value;
 	auto visitor = overloads {
-		[](token::Name & token) {},
-		[](token::Keyword & token) {},
-		[](token::Operation & token) {}
+		[&value](token::Name & token) {
+			value = token.toString();
+		},
+		[](token::Keyword & token) { throwMismatch(token::Name::typeToString(), token); },
+		[](token::Operation & token) { throwMismatch(token::Name::typeToString(), token); }
 	};
 
 	std::visit(visitor, *std::begin(tokens));
+	tokens.pop_front();
+	name_ = value;
+}
+
+void Alphabet::init(token::tokens_list & tokens) {
+	auto first = std::begin(tokens);
+
+
 }
