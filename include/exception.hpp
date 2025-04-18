@@ -4,8 +4,8 @@
 #include "Tokenizer.hpp"
 #include "utils.hpp"
 #include <exception>
-#include <sstream>
 #include <string>
+
 namespace error {
 class IPositionError : public std::exception {
 public:
@@ -44,11 +44,11 @@ public:
   BordersError(size_t begin, size_t end) : begin_(begin), end_(end) {}
 
   const char *what() const noexcept override {
-    static std::string message =
-        (std::stringstream()
-         << "begin(" << begin_ << ") of token must be less then end(" << end_
-         << ")\n")
-            .str();
+    static std::string message;
+    message =
+        (strfast() << "begin(" << begin_ << ") of token must be less then end("
+                   << end_ << ")")
+            .bump();
     return message.c_str();
   }
 };
@@ -63,33 +63,84 @@ public:
       : PositionErrorBase(position), expected_(expected), given_(given) {}
 
   const char *what() const noexcept override {
-    static std::string message =
-        (std::stringstream() << "Semantic error: expected [" << expected_
-                             << "], but given: [" << given_ << "]")
-            .str();
+    static std::string message;
+    message = (strfast() << "Semantic error: expected [" << expected_
+                         << "], but given: [" << given_ << "]")
+                  .bump();
 
     return message.c_str();
   }
 };
 
 class SemanticError : public PositionErrorBase {
-	std::string what_;
+  std::string what_;
+
 public:
-	SemanticError(size_t position, std::string what) : PositionErrorBase(position), what_(what) {}
-	const char * what() const noexcept override {
-		return what_.c_str();
-	}
+  SemanticError(size_t position, std::string what)
+      : PositionErrorBase(position), what_(what) {}
+  const char *what() const noexcept override { return what_.c_str(); }
 };
 
 class RedefinitionError : public PositionErrorBase {
-	std::string name_;
-public:
-	RedefinitionError(token::token_union& token) : PositionErrorBase(token.begin()), name_(token.getName()) {}
-	const char * what() const noexcept override {
-		static std::string message = (strfast() << "Redefinition of mt: [" << name_ << "]").bump();
+  std::string name_;
 
+public:
+  RedefinitionError(token::token_union &token)
+      : PositionErrorBase(token.begin()), name_(token.getName()) {}
+  const char *what() const noexcept override {
+    static std::string message;
+    message = (strfast() << "Redefinition of mt: [" << name_ << "]").bump();
+
+    return message.c_str();
+  }
+};
+
+class ClosingTokenBeforeOpenTokenError : public PositionErrorBase {
+  std::string tokenName_;
+
+public:
+  ClosingTokenBeforeOpenTokenError(token::token_union &token)
+      : PositionErrorBase(token.begin()), tokenName_(token.toString()) {}
+
+  const char *what() const noexcept override {
+    static std::string message;
+    message =
+        (strfast() << "Closing [" << tokenName_ << "] occured before open ones")
+            .bump();
+
+    return message.c_str();
+  }
+};
+
+class ClosingTokenNotFound : public PositionErrorBase {
+  std::string tokenName_;
+
+public:
+  ClosingTokenNotFound(token::token_union &token)
+      : PositionErrorBase(token.end()), tokenName_(token.toString()) {}
+
+  const char *what() const noexcept override {
+		static std::string message;
+		message = (strfast() << "Closing token for [" << tokenName_ << "]").bump();
+	
 		return message.c_str();
 	}
+};
+
+class UnexpectedTokenError : public PositionErrorBase {
+  std::string tokenName_;
+
+public:
+  UnexpectedTokenError(token::token_union &token)
+      : PositionErrorBase(token.begin()), tokenName_(token.toString()) {}
+
+  const char *what() const noexcept override {
+    static std::string message =
+        (strfast() << "Token [" << tokenName_ << "] unexpected in this context")
+            .bump();
+
+    return message.c_str();
+  }
 };
 
 } // namespace error

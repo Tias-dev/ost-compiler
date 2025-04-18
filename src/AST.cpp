@@ -3,7 +3,6 @@
 #include "Tokenizer.hpp"
 #include "exception.hpp"
 #include "utils.hpp"
-#include <compare>
 #include <iterator>
 #include <optional>
 #include <stdexcept>
@@ -36,22 +35,27 @@ std::optional<std::string> ast::Name::getNameById(const size_t id) {
 
 MT::MT(token::tokens_list &tokens) : NodeBase(ExprType::MT) { init(tokens); }
 
-Paired::Paired(token::tokens_list &tokens, token::KwType first,
-               token::KwType second, bool forceTerminator)
-    : NodeBase(ExprType::PAIRED), first_(first), second_(second),
-      forceTerminator_(forceTerminator) {
+BeginEnd::BeginEnd(token::tokens_list &tokens) : NodeBase(ExprType::PAIRED) {
   init(tokens);
-};
+}
+
+DoOd::DoOd(token::tokens_list &tokens) : NodeBase(ExprType::PAIRED) {
+  init(tokens);
+}
+
+IfFi::IfFi(token::tokens_list &tokens) : NodeBase(ExprType::PAIRED) {
+  init(tokens);
+}
 
 Alphabet::Alphabet(token::tokens_list &tokens) : NodeBase(ExprType::ALPHABET) {
   init(tokens);
 }
 
-MT::Call::Call(token::tokens_list &tokens)
-    : NodeBase(ExprType::MT), id_(-1) {
+MT::Call::Call(token::tokens_list &tokens) : NodeBase(ExprType::MT), id_(-1) {
   init(tokens);
-	if(id_ == -1) 
-		throw std::logic_error("After init MT::Call don't change it's id to actual");
+  if (id_ == -1)
+    throw std::logic_error(
+        "After init MT::Call don't change it's id to actual");
 }
 
 MT::Lib::Lib(token::tokens_list &tokens)
@@ -59,10 +63,14 @@ MT::Lib::Lib(token::tokens_list &tokens)
   init(tokens);
 }
 
-
 MT::Definition::Definition(token::tokens_list &tokens)
     : NodeBase(ExprType::MT), id_(currentId_++) {
   init(tokens);
+}
+
+SetLetter::SetLetter(token::tokens_list & tokens)
+	: NodeBase(ExprType::SET_LETTER) {
+	init(tokens);
 }
 
 // --------------------------
@@ -135,7 +143,7 @@ void MT::init(token::tokens_list &tokens) {
 
   if (token != token::KwType::MT) {
     if (token.isName() && MT::isMTName(token.getName())) {
-			session.rollback();
+      session.rollback();
       usage_ = Usage::CALL;
       childs_.push_back(new Call{tokens});
       return;
@@ -170,51 +178,195 @@ void MT::init(token::tokens_list &tokens) {
   }
 }
 
-void MT::Call::init(token::tokens_list & tokens) {
-	auto session = tokens.session();
-	auto token = session.popFrontAndReturn();
+std::optional<size_t> toNumber(const std::string & s) {
+	size_t buffer = 0;
+	for(auto& c : s) {
+		if(c < '0' || c > '9') 
+			return std::nullopt;	
+		buffer = buffer * 10 + c - '0';
+	}
+	
+	return {buffer};
+}
 
-	if(!token.isName() || !namesTable_.contains(token.getName())) 
+void MT::Call::init(token::tokens_list &tokens) {
+  auto session = tokens.session();
+  auto token = session.popFrontAndReturn();
+
+  if (!token.isName() || !namesTable_.contains(token.getName()))
     throwSemantic("Expected already defined mt name", token.begin());
-	
-	id_ = namesTable_[token.getName()];
 
-	token = session.popFrontAndReturn();
-	if(token != token::OpType::TERMINATOR) 
-		throwMismatch(";", token);
+  id_ = namesTable_[token.getName()];
+
+  token = *std::begin(tokens);
+	if(token == token::OpType::POW) {
+		session.popFront();
+		session.popFrontAndReturn();
+		if(!token.isName()) 
+			throwMismatch("positive pow number", token);
+
+		auto pow = toNumber(token.getName());
+		if(!pow.has_value()) 
+			throwMismatch("positive pow number", token);
+
+		pow_ = *pow;
+		token = *std::begin(tokens);
+	}
+
+  if (token == token::OpType::TERMINATOR)
+		session.popFront();
 
 	session.commit();
 }
 
-void MT::Lib::init(token::tokens_list & tokens) {
-	auto session = tokens.session();
-	auto token = session.popFrontAndReturn();
+void MT::Lib::init(token::tokens_list &tokens) {
+  auto session = tokens.session();
+  auto token = session.popFrontAndReturn();
 
-	if(token != token::KwType::MT) 
-		throwMismatch("MT", token);
+  if (token != token::KwType::MT)
+    throwMismatch("MT", token);
 
-	token = session.popFrontAndReturn();
-	if(!token.isName()) 
+  token = session.popFrontAndReturn();
+  if (!token.isName())
     throwSemantic("valid mt name", token.begin());
-	
-	std::string name = token.getName();
-	if(namesTable_.contains(name)) 
-		throw error::RedefinitionError(token);
-		
-	namesTable_[name] = currentId_;
+
+  std::string name = token.getName();
+  if (namesTable_.contains(name))
+    throw error::RedefinitionError(token);
+
+  namesTable_[name] = currentId_;
+
+  token = session.popFrontAndReturn();
+  if (token != token::OpType::TERMINATOR)
+    throwMismatch(";", token);
+
+  token = session.popFrontAndReturn();
+  if (token != token::KwType::LIB)
+    throwMismatch("LIB", token);
+
+  token = session.popFrontAndReturn();
+  if (token != token::OpType::TERMINATOR)
+    throwMismatch(";", token);
+
+  session.commit();
+}
+
+void MT::Definition::init(token::tokens_list &tokens) {
+  auto session = tokens.session();
+
+  auto token = session.popFrontAndReturn();
+  if (token != token::KwType::MT)
+    throwMismatch("MT", token);
+
+  token = session.popFrontAndReturn();
+  if (!token.isName())
+    throwMismatch("valid mt name", token);
+  else if (namesTable_.contains(token.getName()))
+    throw error::RedefinitionError(token);
+
+  std::string name = token.getName();
+  namesTable_[name] = id_;
+
+  token = session.popFrontAndReturn();
+  if (token != token::OpType::TERMINATOR)
+    throwMismatch(";", token);
+
+  session.commit();
+
+  token = session.popFrontAndReturn();
+  if (token != token::KwType::BEGIN)
+    throwMismatch("BEGIN", token);
+
+  session.rollback();
+  childs_.push_back(new BeginEnd{tokens});
+  session.commit();
+}
+
+void SetLetter::init(token::tokens_list & tokens) {
+	auto session = tokens.session();
+
+	auto token = session.popFrontAndReturn();
+	if(token != token::OpType::SET_LETTER) 
+		throwMismatch("a", token);
 
 	token = session.popFrontAndReturn();
-	if(token != token::OpType::TERMINATOR)
-		throwMismatch(";", token);
+	if(token != token::OpType::LEFT_BRACKET) 
+		throwMismatch("(", token);
 	
 	token = session.popFrontAndReturn();
-	if(token != token::KwType::LIB)
-		throwMismatch("LIB", token);
+	if(!(token == token::OpType::LAMBDA || token.isName())) 
+		throwMismatch("_ or letter", token);
+
+	if(token == token::OpType::LAMBDA) 
+		letter_ = '_';
+	else {
+		std::string name = token.getName();
+		if(name.size() > 1) 
+			throwMismatch("one letter", token);
+		letter_ = name[0];
+	}
 
 	token = session.popFrontAndReturn();
-	if(token != token::OpType::TERMINATOR)
-		throwMismatch(";", token);
-		
+	if(token != token::OpType::RIGHT_BRACKET) 
+		throwMismatch(")", token);
+
+	session.commit();
+
+	token = *std::begin(tokens);
+	if(token == token::OpType::TERMINATOR) 
+		session.popFront();
+
 	session.commit();
 }
 
+void BeginEnd::init(token::tokens_list & tokens) {
+	auto session = tokens.session();
+
+	auto token = session.popFrontAndReturn();
+	if(token != token::KwType::BEGIN) 
+		throwMismatch("BEGIN", token);
+	auto beginToken = token;
+	session.commit();
+	while(!tokens.empty() && token != token::KwType::END) {
+		token = *std::begin(tokens);
+		// --------------------------
+		// |  keywords check first  |
+		// --------------------------
+		if(token == token::KwType::END) 
+			break;
+		else if(token == token::KwType::BEGIN) 
+			childs_.push_back(new BeginEnd{tokens});
+		else if (token == token::KwType::MT) 
+			childs_.push_back(new MT{tokens});
+		else if (token == token::KwType::DO) 
+			childs_.push_back(new DoOd{tokens});
+		else if(token == token::KwType::IF)
+			childs_.push_back(new IfFi{tokens});
+		else if (
+				token == token::KwType::FI ||
+				token == token::KwType::OD)
+		 throw error::ClosingTokenBeforeOpenTokenError(token);
+		// --------------------
+		// |  mt calls check  |
+		// --------------------
+		else if (token.isName())
+		 childs_.push_back(new MT{tokens });
+		// -----------------------------
+		// |  operations check laslty  |
+		// -----------------------------
+		else if (token == token::OpType::TERMINATOR)
+		 session.popFront();
+		else if (token == token::OpType::SET_LETTER)
+		 childs_.push_back(new SetLetter{tokens});
+		// ----------------------------------------------
+		// |  all unchecked cases -- unexpected tokens  |
+		// ----------------------------------------------
+		else
+			throw error::UnexpectedTokenError(token);
+	}
+
+	if(tokens.empty()) 
+		throw error::ClosingTokenNotFound(beginToken);
+
+	session.commit();
+}

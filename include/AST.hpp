@@ -1,7 +1,6 @@
 #ifndef AST_HPP_
 #define AST_HPP_
 
-#include "Token.hpp"
 #include "Tokenizer.hpp"
 #include "utils.hpp"
 #include <list>
@@ -10,7 +9,7 @@
 #include <string>
 
 namespace ast {
-enum class ExprType { NAME, ALPHABET, PAIRED, MT };
+enum class ExprType { NAME, ALPHABET, PAIRED, MT, SET_LETTER };
 
 class NodeBase {
 protected:
@@ -48,33 +47,28 @@ public:
   Alphabet(token::tokens_list &tokens);
 };
 
-class Paired : public NodeBase {
-  token::KwType first_;
-  token::KwType second_;
-  bool forceTerminator_ = true;
-  void init(token::tokens_list &tokens) override;
-
-protected:
-  Paired(token::tokens_list &tokens, token::KwType first, token::KwType second,
-         bool forceTerminator = true);
+class BeginEnd : public NodeBase{
+	void init(token::tokens_list &tokens) override;
+public:
+  BeginEnd(token::tokens_list &tokens);
 };
 
-class BeginEnd : public Paired {
+class IfFi : public NodeBase {
+	void init(token::tokens_list &tokens) override;
 public:
-  BeginEnd(token::tokens_list &tokens)
-      : Paired(tokens, token::KwType::BEGIN, token::KwType::END, false) {}
+  IfFi(token::tokens_list &tokens);
 };
 
-class If : public Paired {
+class DoOd : public NodeBase {
+	void init(token::tokens_list &tokens) override;
+	class Branch : public NodeBase {
+		char checkedLetter_ = 0;
+		void init(token::tokens_list &tokens) override;
+	public:
+		Branch(token::tokens_list & tokens);
+	};
 public:
-  If(token::tokens_list &tokens)
-      : Paired(tokens, token::KwType::IF, token::KwType::FI, false) {}
-};
-
-class Do : public Paired {
-public:
-  Do(token::tokens_list &tokens)
-      : Paired(tokens, token::KwType::DO, token::KwType::OD, true) {}
+  DoOd(token::tokens_list &tokens);
 };
 
 class MT : public NodeBase {
@@ -82,6 +76,7 @@ class MT : public NodeBase {
 
   class Call : public NodeBase {
     size_t id_;
+		size_t pow_ = 1;
 		void init(token::tokens_list &tokens) override;
   public:
     Call(token::tokens_list &tokens);
@@ -117,9 +112,15 @@ public:
   }
 };
 
+class SetLetter : public NodeBase {
+	void init(token::tokens_list &tokens) override;
+	char letter_ = 0;
+public:
+	SetLetter(token::tokens_list & tokens);
+};
+
 class Tree {
   NodeBase *root = nullptr;
-
 public:
   Tree(token::tokens_list &tokens);
 };
