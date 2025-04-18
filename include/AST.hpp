@@ -22,7 +22,6 @@ public:
   NodeBase(ExprType type) : type_(type) {}
 };
 
-
 class Name : public NodeBase {
   std::string name_;
   size_t id_;
@@ -30,6 +29,7 @@ class Name : public NodeBase {
   static size_t counterId;
   static bimap<std::string, size_t> namesTable_;
   void init(token::tokens_list &tokens) override;
+
 public:
   Name(token::tokens_list &tokens, std::string name);
   const std::string &name() { return name_; }
@@ -40,11 +40,12 @@ public:
 };
 
 class Alphabet : public NodeBase {
-	std::set<char> alphabet_;
+  std::set<char> alphabet_;
 
-	void init(token::tokens_list & tokens) override;
+  void init(token::tokens_list &tokens) override;
+
 public:
-		Alphabet(token::tokens_list & tokens);
+  Alphabet(token::tokens_list &tokens);
 };
 
 class Paired : public NodeBase {
@@ -77,10 +78,36 @@ public:
 };
 
 class MT : public NodeBase {
-  bool isLib = false;
-  void init(token::tokens_list &tokens) override;
+  enum class Usage { DEFINITION, LIB, CALL };
 
+  class Call : public NodeBase {
+    size_t id_;
+		void init(token::tokens_list &tokens) override;
+  public:
+    Call(token::tokens_list &tokens);
+    size_t id() { return id_; }
+  };
+
+	class Lib : public NodeBase {
+    size_t id_;
+		void init(token::tokens_list &tokens) override;
+  public:
+    Lib(token::tokens_list &tokens);
+    size_t id() { return id_; }
+	};
+
+	class Definition : public NodeBase {
+    size_t id_;
+		void init(token::tokens_list &tokens) override;
+  public:
+    Definition(token::tokens_list &tokens);
+    size_t id() { return id_; }
+	};
+
+  Usage usage_;
+  void init(token::tokens_list &tokens) override;
   static bimap<std::string, size_t> namesTable_;
+	static size_t currentId_;
 
 public:
   MT(token::tokens_list &tokens);

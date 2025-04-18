@@ -1,7 +1,6 @@
 #ifndef TOKEN_HPP_
 #define TOKEN_HPP_
 
-#include "exception.hpp"
 #include "trie.hpp"
 #include <cstddef>
 #include <string>
@@ -17,12 +16,7 @@ class Token {
   Type type_;
 
 protected:
-  Token(size_t begin, size_t end, Type type)
-      : id_(currentId++), begin_(begin), end_(end), type_(type) {
-    if (begin >= end)
-      throw error::BordersError(begin, end);
-  }
-
+  Token(size_t begin, size_t end, Type type);
 public:
   virtual std::string toString() const = 0;
   virtual size_t begin() const { return begin_; }
@@ -46,7 +40,7 @@ public:
 	const std::string & name() const {return name_;}
 };
 
-enum class KwType { MT, BEGIN, END, ALPHABET, IF, FI, DO, OD };
+enum class KwType { MT, BEGIN, END, ALPHABET, IF, FI, DO, OD, LIB };
 
 class Keyword : public Token {
   KwType kwtype_;

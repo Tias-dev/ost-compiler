@@ -1,6 +1,8 @@
 #ifndef EXCEPTIONS_HPP_
 #define EXCEPTIONS_HPP_
 
+#include "Tokenizer.hpp"
+#include "utils.hpp"
 #include <exception>
 #include <sstream>
 #include <string>
@@ -76,6 +78,17 @@ public:
 	SemanticError(size_t position, std::string what) : PositionErrorBase(position), what_(what) {}
 	const char * what() const noexcept override {
 		return what_.c_str();
+	}
+};
+
+class RedefinitionError : public PositionErrorBase {
+	std::string name_;
+public:
+	RedefinitionError(token::token_union& token) : PositionErrorBase(token.begin()), name_(token.getName()) {}
+	const char * what() const noexcept override {
+		static std::string message = (strfast() << "Redefinition of mt: [" << name_ << "]").bump();
+
+		return message.c_str();
 	}
 };
 

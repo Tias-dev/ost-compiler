@@ -133,12 +133,12 @@ std::string token_union::getName() const {
   return std::visit(
       overloads{[](const Name &token) { return token.name(); },
                 [](const Keyword &token) {
-                  throw error::ExpectedMismatchError(token.begin(), "Some name",
+                  throw error::ExpectedMismatchError(token.begin(), "valid mt name",
                                                      token.toString());
                   return std::string();
                 },
                 [](const Operation &token) {
-                  throw error::ExpectedMismatchError(token.begin(), "Some name",
+                  throw error::ExpectedMismatchError(token.begin(), "valid mt name",
                                                      token.toString());
                   return std::string();
                 }},
@@ -169,4 +169,30 @@ bool operator!=(const OpType type, const token_union &token) {
   return token != type;
 }
 
+void tokens_list::Session::commit() {
+  while (!cache_.empty())
+    cache_.pop();
+}
+void tokens_list::Session::rollback() {
+  while (!cache_.empty()) {
+    root_->push_front(cache_.top());
+    cache_.pop();
+  }
+}
+
+void tokens_list::Session::popFront() {
+  cache_.push(*std::begin(*root_));
+  root_->pop_front();
+}
+
+token_union tokens_list::Session::popFrontAndReturn() {
+  cache_.push(*std::begin(*root_));
+  token_union token = *std::begin(*root_);
+  root_->pop_front();
+  return token;
+}
+
+tokens_list::Session::~Session() {
+	rollback();
+}
 } // namespace token
