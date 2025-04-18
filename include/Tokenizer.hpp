@@ -53,6 +53,7 @@ public:
 	using parent::begin; 
 	using parent::end; 
 	using parent::push_back;
+	using parent::size;
 
 	Session session() {return Session{this};}
 };

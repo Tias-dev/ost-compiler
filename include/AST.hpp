@@ -62,7 +62,8 @@ public:
 class DoOd : public NodeBase {
 	void init(token::tokens_list &tokens) override;
 	class Branch : public NodeBase {
-		char checkedLetter_ = 0;
+		char letterToCheck_ = 0;
+		bool isAnyChar_ = false;
 		void init(token::tokens_list &tokens) override;
 	public:
 		Branch(token::tokens_list & tokens);
