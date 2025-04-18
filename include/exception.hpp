@@ -69,6 +69,16 @@ public:
     return message.c_str();
   }
 };
+
+class SemanticError : public PositionErrorBase {
+	std::string what_;
+public:
+	SemanticError(size_t position, std::string what) : PositionErrorBase(position), what_(what) {}
+	const char * what() const noexcept override {
+		return what_.c_str();
+	}
+};
+
 } // namespace error
 
 #endif // !EXCEPTIONS_HPP_

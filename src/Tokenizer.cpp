@@ -4,10 +4,9 @@
 #include "exception.hpp"
 #include <cctype>
 #include <utility>
+#include <variant>
 
-bool isSpace(int c) {
-	return isspace(c) || (c == '"');
-}
+bool isSpace(int c) { return isspace(c) || (c == '"'); }
 
 /**
  * @brief Read token from stream. Assuming that no spaces before i.e. token
@@ -64,15 +63,15 @@ token::tokens_list token::Tokenizer::parse(ICharStream &stream) {
   while (!stream.eof()) {
     stream >> c;
 
-		if(c == '"') {
-			size_t commentBegin = stream.position();
-			do {
-				stream >> c;
-			} while(!stream.eof() && (c != '"'));
-			if(c != '"' || stream.eof()) 
-				throw error::CommentNotClosedError(commentBegin);
-			continue;
-		}
+    if (c == '"') {
+      size_t commentBegin = stream.position();
+      do {
+        stream >> c;
+      } while (!stream.eof() && (c != '"'));
+      if (c != '"' || stream.eof())
+        throw error::CommentNotClosedError(commentBegin);
+      continue;
+    }
 
     if (isspace(c))
       continue;
@@ -83,3 +82,91 @@ token::tokens_list token::Tokenizer::parse(ICharStream &stream) {
 
   return result;
 }
+
+template <class... Ts> struct overloads : Ts... {
+  using Ts::operator()...;
+};
+
+namespace token {
+bool token_union::operator==(const KwType type) const {
+  return std::visit(
+      overloads{[](const Name &) { return false; },
+                [type](const Keyword &token) { return type == token.type(); },
+                [](const Operation &) { return false; }},
+      data_);
+}
+
+bool token_union::operator==(const OpType type) const {
+  return std::visit(overloads{[](const Name &token) { return false; },
+                              [](const Keyword &token) { return false; },
+                              [type](const Operation &token) {
+                                return type == token.type();
+                              }},
+                    data_);
+}
+
+bool token_union::operator!=(const KwType type) const {
+  return !(*this == type);
+}
+
+bool token_union::operator!=(const OpType type) const {
+  return !(*this == type);
+}
+
+std::string token_union::toString() {
+  return std::visit([](const auto &token) { return token.toString(); }, data_);
+}
+
+std::string token_union::typeToString() {
+  return std::visit([](const auto &token) { return token.typeToString(); },
+                    data_);
+}
+
+bool token_union::isName() const {
+  return std::visit(overloads{[](const Name &) { return true; },
+                              [](const Keyword &) { return false; },
+                              [](const Operation &) { return false; }},
+                    data_);
+}
+
+std::string token_union::getName() const {
+  return std::visit(
+      overloads{[](const Name &token) { return token.name(); },
+                [](const Keyword &token) {
+                  throw error::ExpectedMismatchError(token.begin(), "Some name",
+                                                     token.toString());
+                  return std::string();
+                },
+                [](const Operation &token) {
+                  throw error::ExpectedMismatchError(token.begin(), "Some name",
+                                                     token.toString());
+                  return std::string();
+                }},
+      data_);
+}
+
+size_t token_union::begin() const {
+  return std::visit([](const auto &token) { return token.begin(); }, data_);
+}
+
+size_t token_union::end() const {
+  return std::visit([](const auto &token) { return token.end(); }, data_);
+}
+
+bool operator==(const KwType type, const token_union &token) {
+  return token == type;
+}
+
+bool operator==(const OpType type, const token_union &token) {
+  return token == type;
+}
+
+bool operator!=(const KwType type, const token_union &token) {
+  return token != type;
+}
+
+bool operator!=(const OpType type, const token_union &token) {
+  return token != type;
+}
+
+} // namespace token

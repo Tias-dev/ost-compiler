@@ -7,7 +7,7 @@
 #include <queue>
 #include <variant>
 namespace token {
-using token_union = std::variant<token::Name, token::Keyword, token::Operation>;
+class token_union;
 class tokens_list : public std::list<token_union> {
 	bool transactionBegan_ = false;
 	class ctx {
@@ -45,6 +45,32 @@ class Tokenizer : public ITokenizer {
 	public:
 		tokens_list parse(ICharStream & stream) override;
 };
-} // namespace token
 
+class token_union {
+	using data_type = std::variant<token::Name, token::Keyword, token::Operation>;
+	data_type data_;
+public:
+	token_union(data_type data) : data_(data) {}
+
+	bool operator==(const KwType) const;
+	bool operator==(const OpType) const;
+	bool operator!=(const KwType) const;
+	bool operator!=(const OpType) const;
+
+	bool isName() const;
+	std::string getName() const;
+	
+	size_t begin() const;
+	size_t end() const;
+
+	std::string toString();
+	std::string typeToString();
+};
+
+bool operator==(const KwType, const token_union &);
+bool operator==(const OpType, const token_union &);
+bool operator!=(const KwType, const token_union &);
+bool operator!=(const OpType, const token_union &);
+
+} // namespace token
 #endif // !TOKENIZER_HPP_

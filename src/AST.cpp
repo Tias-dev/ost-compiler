@@ -46,99 +46,66 @@ Alphabet::Alphabet(token::tokens_list &tokens) : NodeBase(ExprType::ALPHABET) {
   init(tokens);
 }
 
-// -----------------------
-// | init overloads next |
-// -----------------------
+// -------------------------------
+// | token union operations next |
+// -------------------------------
 
-template <class... Ts> struct overloads : Ts... {
-  using Ts::operator()...;
-};
 
 void throwMismatch(const std::string &expected, token::token_union &given) {
-  std::visit(
-      [&expected](const auto &token) {
-        throw error::ExpectedMismatchError(token.begin(), expected,
-                                           token.toString());
-      },
-      given);
+			throw error::ExpectedMismatchError(given.begin(), expected,
+																				 given.toString());
 }
 
-bool isName(token::token_union & token) {
-	return std::visit(overloads {
-			[](const token::Name&) {return true;},
-			[](const auto & token) {return false;}
-			}, token);
+void throwSemantic(const std::string &what, size_t position) {
+  throw error::SemanticError(position, what);
 }
 
-std::string getName(token::token_union & token) {
-	return std::visit(overloads {
-			[](const token::Name& token) {return token.toString();},
-			[&token](const auto & token_) {throwMismatch("Name", token); return std::string();}
-			}, token);
-}
-
-const auto &[opBimap, kwBimap] = impl::getBimaps();
+// -------------------------
+// |  ast nodes init next  |
+// -------------------------
 
 void Name::init(token::tokens_list &tokens) {
-	auto session = tokens.session();
-  std::string value = getName(*std::begin(tokens));
+  auto session = tokens.session();
+
+  name_ = std::begin(tokens)->getName();
   session.popFront();
-  name_ = value;
-	session.commit();
-}
 
-static const auto isKwVisitor = [](token::KwType type) {
-  return overloads{
-      [](token::Name &token) { return false; },
-      [type](token::Keyword &token) { return token.type() == type; },
-      [](token::Operation &token) { return false; }};
-};
-static const auto isOpVisitor = [](token::OpType type) {
-  return overloads{
-      [](token::Name &token) { return false; },
-      [](token::Keyword &token) { return false; },
-      [type](token::Operation &token) { return token.type() == type; }};
-};
-
-bool operator==(token::KwType type, token::token_union &token) {
-  return std::visit(isKwVisitor(type), token);
-}
-bool operator!=(token::KwType type, token::token_union &token) {
-  return !(type == token);
-}
-
-bool operator==(token::OpType type, token::token_union &token) {
-  return std::visit(isOpVisitor(type), token);
-}
-bool operator!=(token::OpType type, token::token_union &token) {
-  return !(type == token);
+  session.commit();
 }
 
 void Alphabet::init(token::tokens_list &tokens) {
   auto session = tokens.session();
-  auto first = std::begin(tokens);
+  auto token = *std::begin(tokens);
 
-  if (token::KwType::ALPHABET != *first)
-    std::visit(
-        [](const auto &token) {
-          throwMismatch(kwBimap.toString(token::KwType::ALPHABET), token);
-        },
-        *first);
-  session.popFront();
-  first = std::begin(tokens);
-  if (!std::visit(isOpVisitor(token::OpType::SEMICOLON), *first))
-    std::visit(
-        [](const auto &token) {
-          throwMismatch(opBimap.toString(token::OpType::SEMICOLON), token);
-        },
-        *first);
+  if (token::KwType::ALPHABET != token)
+    throwMismatch("ALPHABET", token);
   session.popFront();
 
-  first = std::begin(tokens);
+  token = *std::begin(tokens);
+  if (token::OpType::SEMICOLON != token)
+    throwMismatch(":", token);
+  session.popFront();
+
   bool wasComa = false;
-  while (!tokens.empty() &&
-         !std::visit(isOpVisitor(token::OpType::TERMINATOR), *first)) {
+  while (!tokens.empty() && token::OpType::TERMINATOR != token) {
+		token = *std::begin(tokens);
+    if (token::OpType::COMA == token) {
+			if (wasComa) 
+        throwSemantic( "Multiple comas in alphabet definition", token.begin());
+			else 
+				wasComa = true;
+    } else {
+			std::string name = token.getName();
+			if(name.size() > 1) throwSemantic("Alphabet items must be letters not words", token.begin());
+			alphabet_.insert(name[0]);	
+			wasComa = false;
+		}
+		session.popFront();
   }
 
-  session.commit();
+	if(tokens.empty() || (*std::begin(tokens) != token::OpType::TERMINATOR)) 
+		throwSemantic("Alphabet definition must be finished by ;", token.end());	
+	
+	session.popFront();
+	session.commit();
 }

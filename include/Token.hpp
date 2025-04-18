@@ -42,6 +42,8 @@ public:
     return typeToString() + ": " + name_;
   }
   static std::string typeToString() { return "Name"; }
+
+	const std::string & name() const {return name_;}
 };
 
 enum class KwType { MT, BEGIN, END, ALPHABET, IF, FI, DO, OD };

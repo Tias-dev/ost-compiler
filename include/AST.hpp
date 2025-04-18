@@ -6,6 +6,7 @@
 #include "utils.hpp"
 #include <list>
 #include <optional>
+#include <set>
 #include <string>
 
 namespace ast {
@@ -39,7 +40,7 @@ public:
 };
 
 class Alphabet : public NodeBase {
-	std::list<char> alphabet_;
+	std::set<char> alphabet_;
 
 	void init(token::tokens_list & tokens) override;
 public:
