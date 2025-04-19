@@ -1,8 +1,8 @@
 #ifndef AST_HPP_
 #define AST_HPP_
 
+#include "Compiler.hpp"
 #include "Tokenizer.hpp"
-#include "Tu4Command.hpp"
 #include "utils.hpp"
 #include <iostream>
 #include <list>
@@ -13,6 +13,7 @@
 
 namespace ast {
 enum class ExprType { ALPHABET, PAIRED, MT, SET_LETTER };
+using compiler::commands_type;
 
 class NodeBase {
 protected:
@@ -25,11 +26,11 @@ public:
 
   virtual std::string toString() = 0;
   void print(std::ostream &os, size_t depth = 0);
-  virtual std::list<tu4::tu4_union<size_t>> to4(const std::set<char> & alphabet, size_t & q0) = 0;
+  virtual commands_type to4(const compiler::Alphabet<char> &alphabet) = 0;
 };
 
 class Alphabet : public NodeBase {
-  std::set<char> alphabet_ = {'_', 'T', 'F'};
+  compiler::Alphabet<char> alphabet_{{'_', 'T', 'F'}};
 
   void init(token::tokens_list &tokens) override;
 
@@ -37,8 +38,10 @@ public:
   Alphabet(token::tokens_list &tokens);
 
   std::string toString() override;
-	const std::set<char>& alphabet() {return alphabet_;}
-	std::list<tu4::tu4_union<size_t>> to4(const std::set<char> &alphabet, size_t &q0) override {return {};}
+  const compiler::Alphabet<char> &alphabet() { return alphabet_; }
+  commands_type to4(const compiler::Alphabet<char> &alphabet) override {
+    return {};
+  }
 };
 
 class BeginEnd : public NodeBase {
@@ -50,28 +53,29 @@ public:
 
   const token::token_union &endMTData() { return *endMT_; }
   std::string toString() override;
-	std::list<tu4::tu4_union<size_t>> to4(const std::set<char> &alphabet, size_t &q0) override;
+  commands_type to4(const compiler::Alphabet<char> &alphabet) override;
 };
 
 class IfFi : public NodeBase {
   void init(token::tokens_list &tokens) override;
 
   class Branch : public NodeBase {
-    char letterToCheck_ = 0;
     void init(token::tokens_list &tokens) override;
 
   public:
     Branch(token::tokens_list &tokens);
 
     std::string toString() override;
-		std::list<tu4::tu4_union<size_t>> to4(const std::set<char> &alphabet, size_t &q0) override;
+    commands_type to4(const compiler::Alphabet<char> &alphabet) override;
   };
+
+  Branch *true_ = nullptr, *false_ = nullptr;
 
 public:
   IfFi(token::tokens_list &tokens);
 
   std::string toString() override;
-	std::list<tu4::tu4_union<size_t>> to4(const std::set<char> &alphabet, size_t &q0) override;
+  commands_type to4(const compiler::Alphabet<char> &alphabet) override;
 };
 
 class DoOd : public NodeBase {
@@ -81,20 +85,23 @@ class DoOd : public NodeBase {
     char letterToCheck_ = 0;
     bool isAnyChar_ = false;
     void init(token::tokens_list &tokens) override;
-		size_t to4_impl(std::list<tu4::tu4_union<size_t>> & commands, char letter, const std::set<char> &alphabet, const size_t &q0);
 
   public:
     Branch(token::tokens_list &tokens);
 
     std::string toString() override;
-		std::list<tu4::tu4_union<size_t>> to4(const std::set<char> &alphabet, size_t &q0) override;
+    commands_type to4(const compiler::Alphabet<char> &alphabet) override;
+    bool isAnyChar() const { return isAnyChar_; }
+    char letterToCheck() const { return letterToCheck_; }
   };
+
+  std::list<Branch *> branches_;
 
 public:
   DoOd(token::tokens_list &tokens);
 
   std::string toString() override;
-	std::list<tu4::tu4_union<size_t>> to4(const std::set<char> &alphabet, size_t &q0) override;
+  commands_type to4(const compiler::Alphabet<char> &alphabet) override;
 };
 
 class MT : public NodeBase {
@@ -110,7 +117,7 @@ class MT : public NodeBase {
 
     std::string toString() override;
     size_t id() { return id_; }
-		std::list<tu4::tu4_union<size_t>> to4(const std::set<char> &alphabet, size_t & q0) override;
+    commands_type to4(const compiler::Alphabet<char> &alphabet) override;
   };
 
   class Lib : public NodeBase {
@@ -122,7 +129,7 @@ class MT : public NodeBase {
 
     std::string toString() override;
     size_t id() { return id_; }
-		std::list<tu4::tu4_union<size_t>> to4(const std::set<char> &alphabet, size_t & q0) override;
+    commands_type to4(const compiler::Alphabet<char> &alphabet) override;
   };
 
   class Definition : public NodeBase {
@@ -135,15 +142,15 @@ class MT : public NodeBase {
 
     size_t id() { return id_; }
     std::string toString() override;
-		std::list<tu4::tu4_union<size_t>> to4(const std::set<char> &alphabet, size_t & q0) override;
+    commands_type to4(const compiler::Alphabet<char> &alphabet) override;
   };
 
   Usage usage_;
+	NodeBase * node_;
   void init(token::tokens_list &tokens) override;
   static bimap<std::string, size_t> namesTable_;
-	static std::map<size_t, Definition*> definitons_;
+  static std::map<size_t, NodeBase *> definitions_;
   static size_t currentId_;
-
 public:
   MT(token::tokens_list &tokens);
 
@@ -155,7 +162,10 @@ public:
     return namesTable_.contains(name);
   }
   std::string toString() override;
-	std::list<tu4::tu4_union<size_t>> to4(const std::set<char> &alphabet, size_t & q0) override;
+  virtual commands_type to4(const compiler::Alphabet<char> &alphabet) override;
+	commands_type forceTo4(const compiler::Alphabet<char> &alphabet) {
+		return node_->to4(alphabet);
+	}
 };
 
 class SetLetter : public NodeBase {
@@ -166,14 +176,16 @@ public:
   SetLetter(token::tokens_list &tokens);
 
   std::string toString() override;
+	commands_type to4(const compiler::Alphabet<char> &alphabet) override;
 };
 
 class Tree {
-  NodeBase *root_ = nullptr;
+  MT *root_ = nullptr;
 
 public:
   void print(std::ostream &os = std::cout);
-  Tree(token::tokens_list &tokens);
+  Tree(token::tokens_list &tokens, const std::string & fileName);
+	commands_type to4();
 };
 } // namespace ast
 

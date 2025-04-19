@@ -1,145 +1,192 @@
+#include "Compiler.hpp"
 #include "AST.hpp"
 #include "Tu4Command.hpp"
+#include <codecvt>
+#include <iterator>
 #include <stdexcept>
 
 using namespace ast;
 
-std::list<tu4::tu4_union<size_t>> MT::to4(const std::set<char> &alphabet,
-                                          size_t &q0) {
-  std::list<tu4::tu4_union<size_t>> result;
-  for (auto &child : childs_) {
-    auto subCommands = child->to4(alphabet, q0);
-    for (auto &subCommand : subCommands)
-      result.push_back(subCommand);
+commands_type MT::to4(const compiler::Alphabet<char> &alphabet) {
+  commands_type result;
+	size_t q = 0;
+	if(usage_ == Usage::DEFINITION) 
+		return {};
+	
+	for (auto &child : childs_) {
+    auto subCommands = child->to4(alphabet);
+		size_t subMaxQ = subCommands.maxQ();
+
+		subCommands.shift(q);
+		result.extend(subCommands);
+
+		q += subMaxQ;
   }
 
   return result;
 }
 
-std::list<tu4::tu4_union<size_t>> MT::Lib::to4(const std::set<char> &alphabet,
-                                               size_t &q0) {
+commands_type MT::Lib::to4(const compiler::Alphabet<char> &alphabet) {
   // ------------------------------------------------------------
-  // |  There must be loading tu4 commands from external files  |
+  // |  There must be loading tu4 commands from external file  |
   // ------------------------------------------------------------
 
   throw std::logic_error("Not realized yet");
 }
 
-std::list<tu4::tu4_union<size_t>> MT::Call::to4(const std::set<char> &alphabet,
-                                                size_t &q0) {
-  return definitons_[id_]->to4(alphabet, q0);
+commands_type MT::Call::to4(const compiler::Alphabet<char> &alphabet) {
+	auto subCommands = definitions_[id_]->to4(alphabet);
+	commands_type result = subCommands;
+	size_t q0 = subCommands.maxQ();
+
+  for(size_t i = 1; i < pow_; ++i) {
+		subCommands.shift(q0);
+		result.extend(subCommands);
+  }
+
+	return result;
 }
 
-std::list<tu4::tu4_union<size_t>>
-MT::Definition::to4(const std::set<char> &alphabet0, size_t &q0) {
-  std::list<tu4::tu4_union<size_t>> result;
-  std::set<char> alphabet = alphabet_->alphabet();
-  alphabet.insert(std::begin(alphabet0), std::end(alphabet0));
+commands_type
+MT::Definition::to4(const compiler::Alphabet<char> &alphabet0) {
+  commands_type result;
+  auto alphabet = compiler::Alphabet(alphabet_->alphabet(), alphabet0);
+	size_t q = 0;
 
   for (auto &child : childs_) {
-    auto subCommands = child->to4(alphabet, q0);
-    for (auto &subCommand : subCommands)
-      result.push_back(subCommand);
+    auto subCommands = child->to4(alphabet);
+		size_t subMaxQ = subCommands.maxQ();
+
+		subCommands.shift(q);
+		result.extend(subCommands);
+
+		q += subMaxQ;
   }
 
   return result;
 }
 
-std::list<tu4::tu4_union<size_t>> BeginEnd::to4(const std::set<char> &alphabet0,
-                                                size_t &q0) {
-  std::list<tu4::tu4_union<size_t>> result;
+commands_type BeginEnd::to4(const compiler::Alphabet<char> &alphabet) {
+  commands_type result;
+	size_t q = 0;
 
   for (auto &child : childs_) {
-    auto subCommands = child->to4(alphabet0, q0);
-    for (auto &subCommand : subCommands)
-      result.push_back(subCommand);
+    auto subCommands = child->to4(alphabet);
+		size_t subMaxQ = subCommands.maxQ();
+
+		subCommands.shift(q);
+		result.extend(subCommands);
+
+		q += subMaxQ;
   }
 
   return result;
 }
 
-std::list<tu4::tu4_union<size_t>> IfFi::to4(const std::set<char> &alphabet,
-                                            size_t &q0) {
-  std::list<tu4::tu4_union<size_t>> result;
-  size_t maxQ = q0;
-  for (auto &child : childs_) {
-    size_t curQ0 = q0;
-    auto subCommands = child->to4(alphabet, curQ0);
-    for (auto &subCommand : subCommands)
-      result.push_back(subCommand);
+commands_type IfFi::to4(const compiler::Alphabet<char> &alphabet) {
+  commands_type result;
+	size_t q = 0;
 
-    maxQ = std::max(maxQ, curQ0);
-  }
+	result.push_back({tu4::Tu4SetLetter<size_t>{0, 'T', 'T', 1}});
+	auto trueSubCommands = true_->to4(alphabet);
+	trueSubCommands.shift(1);
+	q = trueSubCommands.maxQ();
 
-  q0 = maxQ;
-  return result;
-}
-
-std::list<tu4::tu4_union<size_t>>
-IfFi::Branch::to4(const std::set<char> &alphabet, size_t &q0) {
-  std::list<tu4::tu4_union<size_t>> result;
-  result.push_back(
-      tu4::Tu4SetLetter<size_t>(q0, letterToCheck_, letterToCheck_, q0 + 1));
-  q0 = q0 + 1;
-
-  for (auto &child : childs_) {
-    auto subCommands = child->to4(alphabet, q0);
-    for (auto &subCommand : subCommands)
-      result.push_back(subCommand);
-  }
+	result.push_back({tu4::Tu4SetLetter<size_t>{0, 'F', 'F', q }});
+	auto falseSubCommands = true_->to4(alphabet);
+	trueSubCommands.shift(q);
 
   return result;
 }
 
-std::list<tu4::tu4_union<size_t>> DoOd::to4(const std::set<char> &alphabet,
-                                            size_t &q0) {
-  std::list<tu4::tu4_union<size_t>> result;
-  size_t maxQ = q0;
+commands_type
+IfFi::Branch::to4(const compiler::Alphabet<char> &alphabet) {
+  commands_type result;
+	size_t q = 0;
   for (auto &child : childs_) {
-    size_t curQ = q0;
-    auto subCommands = child->to4(alphabet, curQ);
-    for (auto &subCommand : subCommands)
-      result.push_back(subCommand);
+    auto subCommands = child->to4(alphabet);
+		size_t subMaxQ = subCommands.maxQ();
 
-    maxQ = std::max(maxQ, curQ);
+		subCommands.shift(q);
+		result.extend(subCommands);
+
+		q += subMaxQ;
   }
-  q0 = maxQ;
+
   return result;
 }
 
-std::list<tu4::tu4_union<size_t>>
-DoOd::Branch::to4(const std::set<char> &alphabet, size_t &q0) {
-  std::list<tu4::tu4_union<size_t>> result;
-  size_t maxQ = q0;
+commands_type DoOd::to4(const compiler::Alphabet<char> &alphabet) {
+  commands_type result;
+  size_t q = 0;
+  for (auto &branch : branches_) {
+		auto subCommands = branch->to4(alphabet);
+		size_t subMaxQ = subCommands.maxQ() + 1;
 
-  if (isAnyChar_) {
-		for(auto& letter : alphabet) {
-			if(letter == letterToCheck_) 
-				continue;
-			maxQ = std::max(maxQ, to4_impl(result, letter, alphabet, q0));
+		subCommands.shift(q);
+
+		result.extend(subCommands);
+		if(branch->isAnyChar()) {
+			result.push_back({tu4::Tu4SetLetter<size_t>{0, branch->letterToCheck(), branch->letterToCheck(), q + subMaxQ}});
+		} else {
+			result.push_back({tu4::Tu4SetLetter<size_t>{0, branch->letterToCheck(), branch->letterToCheck(), q}});
+			q += subMaxQ;
 		}
-		result.push_back(tu4::Tu4SetLetter<size_t>(q0, letterToCheck_, letterToCheck_, maxQ));
-  } else {
-    maxQ = std::max(maxQ, to4_impl(result, letterToCheck_, alphabet, q0));
-  }
+	}
 
   return result;
 }
 
-size_t DoOd::Branch::to4_impl(std::list<tu4::tu4_union<size_t>> &commands,
-                              char letter, const std::set<char> &alphabet,
-                              const size_t &q0) {
-  commands.push_back(
-      tu4::Tu4SetLetter<size_t>(q0, letterToCheck_, letterToCheck_, q0 + 1));
-  size_t curQ = q0 + 1;
+commands_type
+DoOd::Branch::to4(const compiler::Alphabet<char> &alphabet) {
+	commands_type result;
+	size_t q = 0;
+
   for (auto &child : childs_) {
-    auto subCommands = child->to4(alphabet, curQ);
-    for (auto &subCommand : subCommands)
-      commands.push_back(subCommand);
+    auto subCommands = child->to4(alphabet);
+		size_t subMaxQ = subCommands.maxQ();
+
+		subCommands.shift(q);
+		result.extend(subCommands);
+
+		q += subMaxQ;
   }
 
-  for (auto &letter : alphabet)
-    commands.push_back(tu4::Tu4SetLetter<size_t>(curQ, letter, letter, q0));
+	for(auto& letter : alphabet)
+		result.push_back({tu4::Tu4SetLetter<size_t>{q, letter, letter, 0}});
 
-  return curQ;
+  return result;
+}
+
+commands_type
+SetLetter::to4(const compiler::Alphabet<char> &alphabet) {
+	commands_type result;
+
+	for(auto& letter : alphabet) 
+		result.push_back({tu4::Tu4SetLetter<size_t>{0, letter, letter_, 1}});
+	
+	return result;
+}
+
+commands_type
+Tree::to4() {
+	compiler::Alphabet<char> alphabet;
+
+	auto commands = root_->forceTo4(alphabet);
+	size_t q = commands.maxQ();
+	commands.push_back({tu4::Tu4SetLetter<size_t>{q, '_', '_', q}});
+	for(auto head = std::begin(commands); head != std::end(commands); ++head) {
+		for(auto tail = std::begin(commands); tail != head; ++tail) {
+			if(
+					head->q0() == tail->q0() &&
+					head->letterToCheck() == tail->letterToCheck()
+					) {
+				auto tail0 = std::prev(tail);
+				commands.erase(tail);
+				tail = tail0;
+			}
+		}
+	}
+
+	return commands;
 }

@@ -1,0 +1,60 @@
+#ifndef COMPILER_HPP_
+#define COMPILER_HPP_
+
+#include "Tu4Command.hpp"
+#include <list>
+#include <set>
+namespace compiler {
+template <typename TLetter> class Alphabet : public std::set<TLetter> {
+  using parent = std::set<TLetter>;
+
+public:
+  Alphabet() = default;
+	Alphabet(const std::set<TLetter> & letters) {
+		this->insert(std::begin(letters), std::end(letters));
+	}
+
+  Alphabet(const Alphabet<TLetter> &al1, const Alphabet<TLetter> &al2) {
+    this->insert(std::begin(al1), std::end(al1));
+    this->insert(std::begin(al2), std::end(al2));
+  }
+
+  Alphabet<TLetter> &operator||(const Alphabet<TLetter> &other) {
+    this->insert(std::begin(other), std::end(other));
+
+    return *this;
+  }
+};
+
+template <typename TQ, typename TLetter = char>
+class Commands : public std::list<tu4::tu4_union<TQ, TLetter>> {
+public:
+  void shift(TQ shiftSize) {
+    for (auto &command : *this)
+      command.shift(shiftSize);
+  }
+
+  TQ maxQ() {
+		if(this->empty()) 
+			return 0;
+		
+    TQ maxQ = std::begin(*this)->q();
+    for (auto &command : *this)
+      if (command.q() > maxQ)
+        maxQ = command.q();
+
+		return maxQ;
+  }
+
+	void extend(const Commands<TQ, TLetter> & other) {
+		for(auto& command : other) 
+			this->push_back(command);
+	}
+};
+
+// ------------------------
+// |  base commands type  |
+// ------------------------
+using commands_type = Commands<size_t, char>;
+} // namespace compiler
+#endif // !COMPILER_HPP_

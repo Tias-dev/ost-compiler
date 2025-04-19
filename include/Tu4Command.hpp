@@ -1,44 +1,103 @@
 #ifndef TU_4_COMMAND_HPP_
 #define TU_4_COMMAND_HPP_
 
-
+#include <ostream>
 #include <variant>
 namespace tu4 {
-enum class MoveDirection {
-	LEFT,
-	RIGHT
-};
+enum class MoveDirection { LEFT, RIGHT };
 
-template <typename TQ>
-class Tu4Command {
-	TQ q0_, q_;
-	char letterToCheck_;
+template <typename TQ, typename TLetter = char> class Tu4Command {
+  TQ q0_, q_;
+  TLetter letterToCheck_;
+  std::string comment_;
+
 public:
-	Tu4Command(TQ q0, TQ q, char letterToCheck)
-		: q0_(q0), q_(q), letterToCheck_(letterToCheck) {}
+  Tu4Command(TQ q0, TQ q, TLetter letterToCheck, std::string comment = "")
+      : q0_(q0), q_(q), letterToCheck_(letterToCheck), comment_(comment) {}
 
-	const TQ & q0() {return q0_;}
-	const TQ & q() {return q_;}
+  TQ q0() const { return q0_; }
+  TQ q() const { return q_; }
+  TLetter letterToCheck() const { return letterToCheck_; }
+  const std::string &comment() const { return comment_; }
+
+  void shift(TQ shiftSize) {
+    q0_ += shiftSize;
+    q_ += shiftSize;
+  }
+
+  virtual void print(std::ostream &os) const = 0;
 };
 
-template <typename TQ>
-class Tu4SetLetter : public Tu4Command<TQ> {
-	char letterToSet_;
+template <typename TQ, typename TLetter = char>
+class Tu4SetLetter : public Tu4Command<TQ, TLetter> {
+  TLetter letterToSet_;
+
 public:
-	Tu4SetLetter(TQ q0, char letterToCheck, char letterToSet, TQ q)
-		: Tu4Command<TQ>(q0, q, letterToCheck), letterToSet_(letterToSet) {}
+  Tu4SetLetter(TQ q0, char letterToCheck, TLetter letterToSet, TQ q)
+      : Tu4Command<TQ>(q0, q, letterToCheck), letterToSet_(letterToSet) {}
+
+  void print(std::ostream &os) const override {
+    os << this->q0() << ',' << this->letterToCheck() << ',' << letterToSet_
+       << ',' << this->q();
+    if (this->comment().size() > 0)
+      os << " // " << this->comment();
+  }
 };
 
-template <typename TQ>
-class Tu4Move : public Tu4Command<TQ> {
-	MoveDirection dir_;
+template <typename TQ, typename TLetter = char>
+class Tu4Move : public Tu4Command<TQ, TLetter> {
+  MoveDirection dir_;
+
 public:
-	Tu4Move(TQ q0, char letterToCheck, MoveDirection dir, TQ q)
-		: Tu4Command<TQ>(q0, q, letterToCheck), dir_(dir) {}
+  Tu4Move(TQ q0, TLetter letterToCheck, MoveDirection dir, TQ q)
+      : Tu4Command<TQ>(q0, q, letterToCheck), dir_(dir) {}
+
+  void print(std::ostream &os) const override {
+    os << this->q0() << ',' << this->letterToCheck() << ','
+       << (dir_ == MoveDirection::LEFT ? "<" : ">") << ',' << this->q();
+    if (this->comment().size() > 0)
+      os << " // " << this->comment();
+  }
 };
 
-template <typename TQ>
-using tu4_union = std::variant<Tu4SetLetter<TQ>, Tu4Command<TQ>>;
+template <typename TQ, typename TLetter = char> class tu4_union {
+  using data_type =
+      std::variant<Tu4SetLetter<TQ, TLetter>, Tu4Move<TQ, TLetter>>;
+  data_type data_;
+
+public:
+  tu4_union(data_type data) : data_(data) {}
+
+  void shift(TQ shiftSize) {
+    std::visit([shiftSize](auto &command) { command.shift(shiftSize); }, data_);
+  }
+
+  TQ q0() const {
+    return std::visit([](const auto &command) { return command.q0(); }, data_);
+  }
+  TQ q() const {
+    return std::visit([](const auto &command) { return command.q(); }, data_);
+  }
+
+  TLetter letterToCheck() const {
+    return std::visit(
+        [](const auto &command) { return command.letterToCheck(); }, data_);
+  }
+
+	const std::string & comment() const {
+		return std::visit([](const auto & command) {return command.comment();}, data_);
+	}
+
+  void print(std::ostream &os) const {
+    std::visit([&os](const auto &command) { command.print(os); }, data_);
+  }
+};
 } // namespace tu4
-	
+
+template <typename TQ, typename TLetter = char>
+std::ostream &operator<<(std::ostream &os, const tu4::tu4_union<TQ, TLetter> &command) {
+  command.print(os);
+  return os;
+}
+
 #endif // !TU_4_COMMAND_HPP_
