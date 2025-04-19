@@ -6,34 +6,6 @@
 #include <map>
 #include <ostream>
 #include <sstream>
-namespace log {
-class LogBase : public std::stringstream {
-  std::ostream &os_;
-  std::string prefix_;
-
-protected:
-  LogBase(std::ostream &os, std::string prefix) : os_(os), prefix_(prefix) {}
-
-public:
-  ~LogBase() { os_ << "[" << prefix_ << "]: " << str() << std::endl; }
-};
-
-class log : public LogBase {
-public:
-  log(std::ostream &os = std::cout) : LogBase(os, "LOG") {}
-};
-
-class warn : public LogBase {
-public:
-  warn(std::ostream &os = std::cout) : LogBase(os, "WARN") {}
-};
-
-class error : public LogBase {
-public:
-  error(std::ostream &os = std::cout) : LogBase(os, "ERROR") {}
-};
-} // namespace log
-
 template <typename A, typename B> class bimap {
   std::map<A, B> forward_;
   std::map<B, A> backward_;
@@ -60,6 +32,18 @@ public:
   bool contains(const A &a) { return forward_.contains(a); }
   bool contains(const B &b) { return backward_.contains(b); }
 	size_t size() {return forward_.size();}
+
+	void print(std::ostream & os = std::cout) {
+		os << "-----------------"<< std::endl;
+		for(auto& [k, v] : forward_) 
+			os << k << ": " << v << std::endl;
+
+		os << "~~~~~~~~~~~~~~~~~" << std::endl;
+		for(auto& [k, v] : backward_) 
+			os << k << ": " << v << std::endl;
+		os << "-----------------"<< std::endl;
+		
+	}
 };
 
 struct strfast : public std::stringstream {

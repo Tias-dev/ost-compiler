@@ -25,8 +25,8 @@ public:
 	size_t begin() const;
 	size_t end() const;
 
-	std::string toString();
-	std::string typeToString();
+	std::string toString() const;
+	std::string typeToString() const;
 };
 
 class tokens_list : private std::list<token_union> {

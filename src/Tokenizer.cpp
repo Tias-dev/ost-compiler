@@ -62,9 +62,8 @@ token::token_union read_token(ICharStream &stream) {
 token::tokens_list token::Tokenizer::parse(ICharStream &stream) {
   char c;
   token::tokens_list result;
+	stream >> c;
   while (!stream.eof()) {
-    stream >> c;
-
     if (c == '"') {
       size_t commentBegin = stream.position();
       do {
@@ -75,11 +74,11 @@ token::tokens_list token::Tokenizer::parse(ICharStream &stream) {
       continue;
     }
 
-    if (isspace(c))
-      continue;
-
-    stream << c;
-    result.push_back(read_token(stream));
+    if (!isspace(c)) {
+			stream << c;
+			result.push_back(read_token(stream));
+		}
+    stream >> c;
   }
 
   return result;
@@ -115,11 +114,11 @@ bool token_union::operator!=(const OpType type) const {
   return !(*this == type);
 }
 
-std::string token_union::toString() {
+std::string token_union::toString() const {
   return std::visit([](const auto &token) { return token.toString(); }, data_);
 }
 
-std::string token_union::typeToString() {
+std::string token_union::typeToString() const {
   return std::visit([](const auto &token) { return token.typeToString(); },
                     data_);
 }
@@ -188,7 +187,10 @@ void tokens_list::Session::popFront() {
 }
 
 token_union tokens_list::Session::popFrontAndReturn() {
-  cache_.push(*std::begin(*root_));
+	if(root_->empty()) 
+		throw error::UnexpectedFileEnd();
+
+	cache_.push(*std::begin(*root_));
   token_union token = *std::begin(*root_);
   root_->pop_front();
   return token;

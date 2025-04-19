@@ -143,6 +143,18 @@ public:
   }
 };
 
+class UnexpectedFileEnd : public std::exception {
+	std::string expected_;
+public:
+	UnexpectedFileEnd(std::string expected = "") : expected_(expected) {}
+
+	const char * what() const noexcept override {
+		static std::string message;
+		message = (strfast() << "Unexpected end of file" << (expected_.size() > 0 ? ". Expected: " + expected_ : "")).bump();
+		return message.c_str();
+	}
+};
+
 } // namespace error
 
 #endif // !EXCEPTIONS_HPP_

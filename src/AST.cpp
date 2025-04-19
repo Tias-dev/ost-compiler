@@ -3,45 +3,26 @@
 #include "Tokenizer.hpp"
 #include "exception.hpp"
 #include "utils.hpp"
+#include <iostream>
 #include <iterator>
 #include <optional>
 #include <stdexcept>
 #include <string>
 
 using namespace ast;
-size_t Name::counterId = 0;
-bimap<std::string, size_t> Name::namesTable_ = {};
+void throwMismatch(const std::string &expected, const token::token_union &given);
 
-ast::Name::Name(token::tokens_list &tokens, std::string name)
-    : NodeBase(ExprType::NAME), name_(name) {
-  if (Name::namesTable_.contains(name))
-    id_ = Name::namesTable_[name];
-  else {
-    id_ = Name::counterId++;
-    Name::namesTable_.add(name_, id_);
-  }
-
-  init(tokens);
+Tree::Tree(token::tokens_list & tokens) {
+	root_ = new MT{tokens};
+	if(!tokens.empty()) 
+		throwMismatch("End of file", *std::begin(tokens));
 }
 
-std::optional<size_t> ast::Name::getNameId(const std::string &name) {
-  if (namesTable_.contains(name))
-    return namesTable_[name];
-  return std::nullopt;
-}
-
-std::optional<std::string> ast::Name::getNameById(const size_t id) {
-  if (namesTable_.contains(id))
-    return namesTable_[id];
-  return std::nullopt;
-}
-
-bimap<std::string, size_t> MT::namesTable_{
-	{
-		{"l", 0},
-		{"r", 1},
-		{"K", 2}
-	}
+bimap<std::string, size_t> MT::namesTable_{{{"l", 0}, {"r", 1}, {"K", 2}}};
+std::map<size_t, MT::Definition*> MT::definitons_{
+	// ---------------------------------------------------------
+	// |  pass there links to default MT(l, r, K) definitions  |
+	// ---------------------------------------------------------
 };
 size_t MT::currentId_ = MT::namesTable_.size();
 
@@ -97,7 +78,7 @@ IfFi::Branch::Branch(token::tokens_list &tokens) : NodeBase(ExprType::PAIRED) {
 // | exception wrapper next |
 // --------------------------
 
-void throwMismatch(const std::string &expected, token::token_union &given) {
+void throwMismatch(const std::string &expected, const token::token_union &given) {
   throw error::ExpectedMismatchError(given.begin(), expected, given.toString());
 }
 
@@ -108,15 +89,6 @@ void throwSemantic(const std::string &what, size_t position) {
 // -------------------------
 // |  ast nodes init next  |
 // -------------------------
-
-void Name::init(token::tokens_list &tokens) {
-  auto session = tokens.session();
-
-  name_ = std::begin(tokens)->getName();
-  session.popFront();
-
-  session.commit();
-}
 
 void Alphabet::init(token::tokens_list &tokens) {
   auto session = tokens.session();
@@ -222,7 +194,7 @@ void MT::Call::init(token::tokens_list &tokens) {
   token = *std::begin(tokens);
   if (token == token::OpType::POW) {
     session.popFront();
-    session.popFrontAndReturn();
+    token = session.popFrontAndReturn();
     if (!token.isName())
       throwMismatch("positive pow number", token);
 
@@ -255,7 +227,7 @@ void MT::Lib::init(token::tokens_list &tokens) {
   if (namesTable_.contains(name))
     throw error::RedefinitionError(token);
 
-  namesTable_[name] = currentId_;
+  namesTable_.add(name, currentId_);
 
   token = session.popFrontAndReturn();
   if (token != token::OpType::TERMINATOR)
@@ -286,7 +258,7 @@ void MT::Definition::init(token::tokens_list &tokens) {
     throw error::RedefinitionError(token);
 
   std::string name = token.getName();
-  namesTable_[name] = id_;
+  namesTable_.add(name, id_);
 
   token = session.popFrontAndReturn();
   if (token != token::OpType::TERMINATOR)
@@ -298,9 +270,21 @@ void MT::Definition::init(token::tokens_list &tokens) {
   if (token != token::KwType::BEGIN)
     throwMismatch("BEGIN", token);
 
+  token = *std::begin(tokens);
+  if (token != token::KwType::ALPHABET)
+    throwMismatch("ALPHABET", token);
+	
+	alphabet_ = new Alphabet{tokens};
   session.rollback();
-  childs_.push_back(new BeginEnd{tokens});
-  session.commit();
+
+	BeginEnd * body;
+  childs_.push_back(body = new BeginEnd{tokens});
+	auto & endToken = body->endMTData();
+	if(!endToken.isName() && endToken.getName() != name) 
+		throwMismatch(name, endToken);
+	session.commit();
+
+	definitons_[id_] = this;
 }
 
 void SetLetter::init(token::tokens_list &tokens) {
@@ -389,7 +373,19 @@ void BeginEnd::init(token::tokens_list &tokens) {
   if (tokens.empty())
     throw error::ClosingTokenNotFound(beginToken);
 
-  session.commit();
+	token = session.popFrontAndReturn();
+	if(token != token::KwType::END) 
+		throwMismatch("END", token);
+
+	token = session.popFrontAndReturn();
+	if(!token.isName()) 
+		throwMismatch("MT name", token);
+	endMT_ = token;
+
+	if(!tokens.empty() && *std::begin(tokens) == token::OpType::TERMINATOR) 
+		session.popFront();
+
+	session.commit();
 }
 
 void DoOd::init(token::tokens_list &tokens) {
@@ -410,7 +406,11 @@ void DoOd::init(token::tokens_list &tokens) {
     throw error::ClosingTokenNotFound(beginToken);
 
   session.popFront();
-  session.commit();
+	token = session.popFrontAndReturn();
+	if(token != token::OpType::TERMINATOR) 
+		throwMismatch(";", token);
+
+	session.commit();
 }
 
 void DoOd::Branch::init(token::tokens_list &tokens) {
@@ -429,13 +429,13 @@ void DoOd::Branch::init(token::tokens_list &tokens) {
     token = session.popFrontAndReturn();
   }
 
-	if(token == token::OpType::LAMBDA)
-		letterToCheck_ = '_';
-	else {
-		if (!token.isName() || token.getName().size() > 1)
-			throwMismatch("letter to check", token);
-		letterToCheck_ = token.getName()[0];
-	}
+  if (token == token::OpType::LAMBDA)
+    letterToCheck_ = '_';
+  else {
+    if (!token.isName() || token.getName().size() > 1)
+      throwMismatch("letter to check", token);
+    letterToCheck_ = token.getName()[0];
+  }
 
   token = session.popFrontAndReturn();
   if (token != token::OpType::QUESTION)
@@ -491,4 +491,109 @@ void IfFi::Branch::init(token::tokens_list &tokens) {
     second = std::next(first);
   }
   session.commit();
+}
+
+// -----------------------------
+// |  printing functions next  |
+// -----------------------------
+
+void Tree::print(std::ostream &os) { root_->print(os, 0); }
+
+void NodeBase::print(std::ostream &os, size_t depth) {
+  for (size_t i = 0; i < depth; ++i)
+    os << "  ";
+  os << toString() << std::endl;
+  for (auto &elem : childs_)
+    elem->print(os, depth + 1);
+}
+
+std::string MT::toString() {
+  strfast ss;
+  ss << "MT: ";
+  switch (usage_) {
+  case Usage::DEFINITION:
+    ss << "Definition";
+    break;
+  case Usage::LIB:
+    ss << "Lib";
+    break;
+  case Usage::CALL:
+    ss << "Call";
+  }
+
+  return ss.bump();
+}
+
+std::string MT::Call::toString() {
+  strfast ss;
+  ss << "MT: " << namesTable_[id_];
+	if(pow_ > 1) 
+		ss << "**" << pow_;
+	return ss.bump();
+}
+
+std::string MT::Lib::toString() {
+  strfast ss;
+  ss << "MT: " << namesTable_[id_];
+  return ss.bump();
+}
+
+std::string MT::Definition::toString() {
+  strfast ss;
+  ss << "MT: " << namesTable_[id_] << "; "<< alphabet_->toString();
+  return ss.bump();
+}
+
+std::string Alphabet::toString() {
+  strfast ss;
+  ss << "ALPHABET: ";
+	for(auto& c : alphabet_) 
+		ss << c << ", ";
+	
+  return ss.bump();
+}
+
+std::string DoOd::toString() {
+  strfast ss;
+  ss << "DO ... OD";
+  return ss.bump();
+}
+
+std::string DoOd::Branch::toString() {
+  strfast ss;
+  ss << "DO branch: ";
+	if(isAnyChar_) 
+		ss << "Any char != " << letterToCheck_;
+	else
+	 ss << "current char == " << letterToCheck_;
+
+	return ss.bump();
+}
+
+std::string IfFi::toString() {
+  strfast ss;
+  ss << "IF ... FI";
+
+  return ss.bump();
+}
+
+std::string IfFi::Branch::toString() {
+  strfast ss;
+  ss << "IF branch: if[" << letterToCheck_ << "] then:";
+
+  return ss.bump();
+}
+
+std::string BeginEnd::toString() {
+  strfast ss;
+  ss << "BEGIN ... END";
+
+  return ss.bump();
+}
+
+std::string SetLetter::toString() {
+  strfast ss;
+  ss << "set [" << letter_ << "] letter";
+
+  return ss.bump();
 }

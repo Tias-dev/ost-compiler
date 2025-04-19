@@ -25,17 +25,27 @@ int main(int argc, char * argw[]) {
 	std::cout << "-----------------------------" << std::endl;
 	
 	try {
-		ast::NodeBase * root = new ast::MT{tokens};
+		ast::Tree astTree{tokens};
+		std::cout << "Current MT names table:" << std::endl;
+		ast::MT::printNamesTable();
+		astTree.print();
 	} catch (error::PositionErrorBase & e) {
+
 		std::cout << "Error: " << e.what() << std::endl;
 		size_t position = e.position();
-		size_t width = 20;
+		size_t width = 60;
 		std::fstream fileRunner(fileName);
 		for(size_t i = 0; i < position - std::min(position, width/2); ++i) 
 			fileRunner.get();
 
-		for(size_t i = 0; i < width; ++i) 
-			std::cout << char(fileRunner.get());
+		char c;
+		for(size_t i = 0; i < width; ++i)  {
+			c = fileRunner.get();
+			if(isspace(c)) 
+				c = ' ';
+
+			std::cout << c;
+		}
 		std::cout << std::endl;
 		for(size_t i = 0; i < width/2; ++i) 
 			std::cout << " ";	
