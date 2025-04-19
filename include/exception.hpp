@@ -9,12 +9,12 @@
 namespace error {
 class IPositionError : public std::exception {
 public:
+	virtual const char * what() const noexcept = 0;
   virtual size_t position() const = 0;
 };
 
 class PositionErrorBase : public IPositionError {
   size_t position_;
-
 public:
   PositionErrorBase(size_t position) : position_(position) {}
   size_t position() const override { return position_; }

@@ -3,20 +3,22 @@
 #include "Tokenizer.hpp"
 #include "exception.hpp"
 #include "utils.hpp"
-#include <chrono>
 #include <iterator>
 #include <optional>
 #include <stdexcept>
+#include <string>
 
 using namespace ast;
+size_t Name::counterId = 0;
+bimap<std::string, size_t> Name::namesTable_ = {};
 
 ast::Name::Name(token::tokens_list &tokens, std::string name)
     : NodeBase(ExprType::NAME), name_(name) {
-  if (namesTable_.contains(name))
-    id_ = namesTable_[name];
+  if (Name::namesTable_.contains(name))
+    id_ = Name::namesTable_[name];
   else {
-    id_ = counterId++;
-    namesTable_.add(name_, id_);
+    id_ = Name::counterId++;
+    Name::namesTable_.add(name_, id_);
   }
 
   init(tokens);
@@ -33,6 +35,15 @@ std::optional<std::string> ast::Name::getNameById(const size_t id) {
     return namesTable_[id];
   return std::nullopt;
 }
+
+bimap<std::string, size_t> MT::namesTable_{
+	{
+		{"l", 0},
+		{"r", 1},
+		{"K", 2}
+	}
+};
+size_t MT::currentId_ = MT::namesTable_.size();
 
 MT::MT(token::tokens_list &tokens) : NodeBase(ExprType::MT) { init(tokens); }
 
@@ -71,6 +82,14 @@ MT::Definition::Definition(token::tokens_list &tokens)
 
 SetLetter::SetLetter(token::tokens_list &tokens)
     : NodeBase(ExprType::SET_LETTER) {
+  init(tokens);
+}
+
+DoOd::Branch::Branch(token::tokens_list &tokens) : NodeBase(ExprType::PAIRED) {
+  init(tokens);
+}
+
+IfFi::Branch::Branch(token::tokens_list &tokens) : NodeBase(ExprType::PAIRED) {
   init(tokens);
 }
 
@@ -113,8 +132,8 @@ void Alphabet::init(token::tokens_list &tokens) {
   session.popFront();
 
   bool wasComa = false;
+  token = *std::begin(tokens);
   while (!tokens.empty() && token::OpType::TERMINATOR != token) {
-    token = *std::begin(tokens);
     if (token::OpType::COMA == token) {
       if (wasComa)
         throwSemantic("Multiple comas in alphabet definition", token.begin());
@@ -129,6 +148,7 @@ void Alphabet::init(token::tokens_list &tokens) {
       wasComa = false;
     }
     session.popFront();
+    token = *std::begin(tokens);
   }
 
   if (tokens.empty() || (*std::begin(tokens) != token::OpType::TERMINATOR))
@@ -337,6 +357,8 @@ void BeginEnd::init(token::tokens_list &tokens) {
       break;
     else if (token == token::KwType::BEGIN)
       childs_.push_back(new BeginEnd{tokens});
+    else if (token == token::KwType::ALPHABET)
+      childs_.push_back(new Alphabet{tokens});
     else if (token == token::KwType::MT)
       childs_.push_back(new MT{tokens});
     else if (token == token::KwType::DO)
@@ -391,10 +413,6 @@ void DoOd::init(token::tokens_list &tokens) {
   session.commit();
 }
 
-DoOd::Branch::Branch(token::tokens_list &tokens) : NodeBase(ExprType::PAIRED) {
-  init(tokens);
-}
-
 void DoOd::Branch::init(token::tokens_list &tokens) {
   auto session = tokens.session();
 
@@ -411,6 +429,50 @@ void DoOd::Branch::init(token::tokens_list &tokens) {
     token = session.popFrontAndReturn();
   }
 
+	if(token == token::OpType::LAMBDA)
+		letterToCheck_ = '_';
+	else {
+		if (!token.isName() || token.getName().size() > 1)
+			throwMismatch("letter to check", token);
+		letterToCheck_ = token.getName()[0];
+	}
+
+  token = session.popFrontAndReturn();
+  if (token != token::OpType::QUESTION)
+    throwMismatch("?", token);
+
+  auto first = std::begin(tokens), second = std::next(first);
+  while (tokens.size() > 2 &&
+         !(*first == token::KwType::OD || *second == token::OpType::QUESTION ||
+           *second == token::OpType::RIGHT_BRACKET)) {
+    if (*first == token::OpType::SET_LETTER)
+      childs_.push_back(new SetLetter{tokens});
+    else
+      childs_.push_back(new MT{tokens});
+
+    first = std::begin(tokens);
+    second = std::next(first);
+  }
+  session.commit();
+}
+
+void IfFi::init(token::tokens_list &tokens) {
+  auto session = tokens.session();
+
+  auto token = session.popFrontAndReturn();
+  if (token != token::KwType::IF)
+    throwMismatch("IF", token);
+
+  childs_.push_back(new Branch{tokens});
+  childs_.push_back(new Branch{tokens});
+
+  session.commit();
+}
+
+void IfFi::Branch::init(token::tokens_list &tokens) {
+  auto session = tokens.session();
+
+  auto token = session.popFrontAndReturn();
   if (!token.isName() || token.getName().size() > 1)
     throwMismatch("letter to check", token);
 
@@ -422,14 +484,8 @@ void DoOd::Branch::init(token::tokens_list &tokens) {
 
   auto first = std::begin(tokens), second = std::next(first);
   while (tokens.size() > 2 &&
-         !(*first == token::KwType::OD ||
-					 *second == token::OpType::QUESTION ||
-           *second == token::OpType::RIGHT_BRACKET)
-				 ) {
-    if (*first == token::OpType::SET_LETTER)
-      childs_.push_back(new SetLetter{tokens});
-    else
-      childs_.push_back(new MT{tokens});
+         !(*first == token::KwType::FI || *second == token::OpType::QUESTION)) {
+    childs_.push_back(new MT{tokens});
 
     first = std::begin(tokens);
     second = std::next(first);

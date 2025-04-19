@@ -41,8 +41,10 @@ token::token_union read_token(ICharStream &stream) {
   }
   auto kwPointBegin = kw.begin();
   std::string buffer = "";
+	if(kwPoint->canGoTo(c)) 
+		kwPoint->goTo(c);
 
-  while (!stream.eof() && !isSpace(c) && !opPoint->canGoTo(c)) {
+	while (!stream.eof() && !isSpace(c) && !opPoint->canGoTo(c)) {
     if (*kwPoint != *kwPointBegin && kwPoint->canGoTo(c))
       kwPoint->goTo(c);
     buffer.push_back(c);

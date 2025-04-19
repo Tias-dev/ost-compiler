@@ -38,6 +38,7 @@ public:
   static std::optional<std::string> getNameById(const size_t id);
 };
 
+
 class Alphabet : public NodeBase {
   std::set<char> alphabet_;
 
@@ -55,6 +56,12 @@ public:
 
 class IfFi : public NodeBase {
 	void init(token::tokens_list &tokens) override;
+	class Branch : public NodeBase {
+		char letterToCheck_ = 0;
+		void init(token::tokens_list &tokens) override;
+	public:
+		Branch(token::tokens_list & tokens);
+	};
 public:
   IfFi(token::tokens_list &tokens);
 };
