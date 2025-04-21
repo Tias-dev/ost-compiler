@@ -1,6 +1,7 @@
 #ifndef TU_4_COMMAND_HPP_
 #define TU_4_COMMAND_HPP_
 
+#include "exception.hpp"
 #include <ostream>
 #include <sstream>
 #include <string>
@@ -102,7 +103,7 @@ public:
   }
 
   bool isTerm() const {
-    return std::visit([](const auto &command) { return command.isTerm(); });
+    return std::visit([](const auto &command) { return command.isTerm(); }, data_);
   }
 };
 } // namespace tu4
@@ -118,11 +119,13 @@ template <typename TQ, typename TLetter = char>
 tu4::tu4_union<TQ, TLetter> load(std::istream &is) {
   std::string line, comment = "";
   std::getline(is, line);
+	if(line.size() < 2) 
+		throw error::UnexpectedFileEnd();
 
   std::istringstream iss(line);
   TQ q0, q;
-  TLetter c1, c2;
-  iss >> q0 >> c1 >> c2 >> q;
+  TLetter c1, c2, temp;
+  iss >> q0 >> temp >> c1 >> temp >> c2 >> temp >> q;
   if (line.find("//") != std::string::npos) {
     iss >> comment >> comment;
   }

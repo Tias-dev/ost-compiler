@@ -9,7 +9,7 @@
 #include <iostream>
  
 int main(int argc, char * argw[]) {
-	std::string fileName = (argc > 1 ? argw[1] : "./testProgram2.ost");
+	std::string fileName = (argc > 1 ? argw[1] : "./testProgram.ost");
 	std::fstream file(fileName);
 	if(!file.is_open()) {
 		std::cout << "Can't open file" << std::endl;
@@ -21,15 +21,20 @@ int main(int argc, char * argw[]) {
 	auto tokens = tokenizer.parse(stream);
 	file.close();
 
-	ast::Tree astTree{tokens, fileName};
 	if(globals::printDebugInfo) {
 		std::cout << "Tokenizer output:" << std::endl;
 		for(auto& token : tokens) 
 			std::cout << token.toString() << std::endl;
 		std::cout << "-----------------------------" << std::endl << std::endl;
+	}
+
+	ast::Tree astTree{tokens, fileName};
+	if(globals::printDebugInfo) {
 		std::cout << "Created AST tree:" << std::endl;
 		astTree.print();
 		std::cout << "-----------------------------" << std::endl << std::endl;
+		std::cout << "Names table:" << std::endl;
+		ast::MT::printNamesTable();
 	}
 	globals::foutName = strfast() << "./" << astTree.getTreeName() << ".tu4";
 

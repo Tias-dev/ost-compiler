@@ -1,6 +1,7 @@
 #include "Compiler.hpp"
 #include "AST.hpp"
 #include "Tu4Command.hpp"
+#include "exception.hpp"
 #include "globals.hpp"
 #include "utils.hpp"
 #include <fstream>
@@ -12,8 +13,13 @@ using namespace ast;
 commands_type MT::to4(const compiler::Alphabet<char> &alphabet) {
   commands_type result;
   size_t q = 0;
-  if (usage_ == Usage::DEFINITION)
-    return {};
+	switch (usage_) {
+		case Usage::DEFINITION:
+		case Usage::LIB:
+			return {};
+		default:
+			break;
+	};
 
   for (auto &child : childs_) {
     auto subCommands = child->to4(alphabet);
@@ -29,19 +35,32 @@ commands_type MT::to4(const compiler::Alphabet<char> &alphabet) {
 }
 
 commands_type MT::Lib::to4(const compiler::Alphabet<char> &alphabet) {
-	std::ifstream file(strfast() << globals::libDir << "/" << namesTable_[id_] << ".tu4");
-	commands_type commands;
-	while(!file.eof()) {
-		commands.push_back(load<size_t>(file));
-	}
-	for(auto it = std::begin(commands), itNext = std::next(it); it != std::end(commands); ++it, ++itNext) {
-		if(it->isTerm()) {
-			commands.erase(it);
-			it = std::prev(itNext);
-		}
-	}
+	if(cache_.has_value()) 
+		return *cache_;
+		
+  std::ifstream file(strfast()
+                     << globals::libDir << "/" << namesTable_[id_] << ".tu4");
+	if(!file.good()) 
+		throw std::invalid_argument(strfast() << globals::libDir << "/" << namesTable_[id_] << ".tu4" << " not found!");
+		
+  commands_type commands;
+  try {
+    while (!file.eof()) {
+      commands.push_back(load<size_t>(file));
+    }
+  } catch (error::UnexpectedFileEnd) {
+  }
 
-	return commands;
+  for (auto it = std::begin(commands), itNext = std::next(it);
+       it != std::end(commands); ++it, ++itNext) {
+    if (it->isTerm()) {
+      commands.erase(it);
+      it = std::prev(itNext);
+    }
+  }
+
+	cache_ = commands;
+  return commands;
 }
 
 commands_type MT::Call::to4(const compiler::Alphabet<char> &alphabet) {
@@ -58,6 +77,9 @@ commands_type MT::Call::to4(const compiler::Alphabet<char> &alphabet) {
 }
 
 commands_type MT::Definition::to4(const compiler::Alphabet<char> &alphabet0) {
+  if (cache_.has_value())
+    return *cache_;
+
   commands_type result;
   auto alphabet = alphabet_->alphabet() || alphabet0;
   size_t q = 0;
@@ -72,6 +94,7 @@ commands_type MT::Definition::to4(const compiler::Alphabet<char> &alphabet0) {
     q += subMaxQ;
   }
 
+  cache_ = result;
   return result;
 }
 
@@ -95,32 +118,34 @@ commands_type BeginEnd::to4(const compiler::Alphabet<char> &alphabet) {
 commands_type IfFi::to4(const compiler::Alphabet<char> &alphabet) {
   commands_type result;
   size_t q = 1;
-	std::list<size_t> endStates;
-	compiler::Alphabet<char> used;
-	for(auto& branch : branches_) {
-		result.push_back({tu4::Tu4SetLetter<size_t>{0, branch->letterToCheck(), branch->letterToCheck(), q}});
+  std::list<size_t> endStates;
+  compiler::Alphabet<char> used;
+  for (auto &branch : branches_) {
+    result.push_back({tu4::Tu4SetLetter<size_t>{0, branch->letterToCheck(),
+                                                branch->letterToCheck(), q}});
 
-		auto subCommands = branch->to4(alphabet);
-		auto subMaxQ = subCommands.maxQ();
-		subCommands.shift(q);
+    auto subCommands = branch->to4(alphabet);
+    auto subMaxQ = subCommands.maxQ();
+    subCommands.shift(q);
 
-		result.extend(subCommands);
-		q += subMaxQ;
+    result.extend(subCommands);
+    q += subMaxQ;
 
-		endStates.push_back(q);
-		used.insert(branch->letterToCheck());
+    endStates.push_back(q);
+    used.insert(branch->letterToCheck());
 
-		++q;
-	}
-	
-	auto notUsed = alphabet / used;
-	for(auto& letter : alphabet) {
-		for(auto& endState : endStates) 
-			result.push_back({tu4::Tu4SetLetter<size_t>(endState, letter, letter, q)});
+    ++q;
+  }
 
-		if(notUsed.contains(letter))
-			result.push_back({tu4::Tu4SetLetter<size_t>(0, letter, letter, q)});
-	}
+  auto notUsed = alphabet / used;
+  for (auto &letter : alphabet) {
+    for (auto &endState : endStates)
+      result.push_back(
+          {tu4::Tu4SetLetter<size_t>(endState, letter, letter, q)});
+
+    if (notUsed.contains(letter))
+      result.push_back({tu4::Tu4SetLetter<size_t>(0, letter, letter, q)});
+  }
   return result;
 }
 
@@ -149,41 +174,43 @@ commands_type DoOd::to4(const compiler::Alphabet<char> &alphabet) {
     throw std::logic_error(
         "()!=[some letter] must be unique in DO ... OD circle if exists");
 
-	if(firstBranch->isAnyChar()) {
-		auto subCommands = firstBranch->to4(alphabet);
-		q += subCommands.maxQ();
-		subCommands.shift(1);
-		result.extend(subCommands);
-		for(auto& letter : alphabet) {
-			result.push_back({tu4::Tu4SetLetter<size_t>{q, letter, letter, 0}});
-			if(letter == firstBranch->letterToCheck()) 
-				continue;
-			result.push_back({tu4::Tu4SetLetter<size_t>(0, letter, letter, 1)});
-		}
-		result.push_back({tu4::Tu4SetLetter<size_t>(0, firstBranch->letterToCheck(), firstBranch->letterToCheck(), q + 1)});
-		return result;
-	}
+  if (firstBranch->isAnyChar()) {
+    auto subCommands = firstBranch->to4(alphabet);
+    q += subCommands.maxQ();
+    subCommands.shift(1);
+    result.extend(subCommands);
+    for (auto &letter : alphabet) {
+      result.push_back({tu4::Tu4SetLetter<size_t>{q, letter, letter, 0}});
+      if (letter == firstBranch->letterToCheck())
+        continue;
+      result.push_back({tu4::Tu4SetLetter<size_t>(0, letter, letter, 1)});
+    }
+    result.push_back({tu4::Tu4SetLetter<size_t>(
+        0, firstBranch->letterToCheck(), firstBranch->letterToCheck(), q + 1)});
+    return result;
+  }
 
   compiler::Alphabet<char> used;
-	for(auto& branch : branches_) {
-		used.insert(branch->letterToCheck());
-		result.push_back({tu4::Tu4SetLetter<size_t>(0, branch->letterToCheck(), branch->letterToCheck(), q)});
+  for (auto &branch : branches_) {
+    used.insert(branch->letterToCheck());
+    result.push_back({tu4::Tu4SetLetter<size_t>(0, branch->letterToCheck(),
+                                                branch->letterToCheck(), q)});
 
-		auto subCommands = branch->to4(alphabet);
-		auto subMaxQ = subCommands.maxQ();
-		subCommands.shift(q);
-		result.extend(subCommands);
-		q += subMaxQ;
+    auto subCommands = branch->to4(alphabet);
+    auto subMaxQ = subCommands.maxQ();
+    subCommands.shift(q);
+    result.extend(subCommands);
+    q += subMaxQ;
 
-		for(auto& letter : alphabet)
-			result.push_back({tu4::Tu4SetLetter<size_t>(q, letter, letter, 0)});
+    for (auto &letter : alphabet)
+      result.push_back({tu4::Tu4SetLetter<size_t>(q, letter, letter, 0)});
 
-		++q;
-	}
-	
+    ++q;
+  }
+
   auto notUsed = alphabet / used;
-	for(auto& letter : notUsed) 
-		result.push_back({tu4::Tu4SetLetter<size_t>(0, letter, letter, q)});
+  for (auto &letter : notUsed)
+    result.push_back({tu4::Tu4SetLetter<size_t>(0, letter, letter, q)});
 
   return result;
 }
@@ -218,12 +245,12 @@ commands_type Tree::to4() {
   compiler::Alphabet<char> alphabet;
 
   auto commands = root_->to4(alphabet);
-	for(auto& c : commands) 
-		alphabet.insert(c.letterToCheck());
-	
+  for (auto &c : commands)
+    alphabet.insert(c.letterToCheck());
+
   size_t q = commands.maxQ();
-	for(auto& letter : alphabet) 
-		commands.push_back({tu4::Tu4SetLetter<size_t>(q, letter, letter, q)});
+  for (auto &letter : alphabet)
+    commands.push_back({tu4::Tu4SetLetter<size_t>(q, letter, letter, q)});
 
   return commands;
 }

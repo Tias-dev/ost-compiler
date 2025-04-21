@@ -8,7 +8,6 @@
 #include <list>
 #include <optional>
 #include <ostream>
-#include <set>
 #include <string>
 
 namespace ast {
@@ -124,7 +123,7 @@ class MT : public NodeBase {
   class Lib : public NodeBase {
     size_t id_;
     void init(token::tokens_list &tokens) override;
-
+		std::optional<commands_type> cache_ = std::nullopt;
   public:
     Lib(token::tokens_list &tokens);
 
@@ -137,6 +136,7 @@ class MT : public NodeBase {
     size_t id_;
     void init(token::tokens_list &tokens) override;
     Alphabet *alphabet_;
+		std::optional<commands_type> cache_ = std::nullopt;
 
   public:
     Definition(token::tokens_list &tokens);

@@ -102,11 +102,13 @@ MT::Call::Call(token::tokens_list &tokens) : NodeBase(ExprType::MT), id_(-1) {
 MT::Lib::Lib(token::tokens_list &tokens)
     : NodeBase(ExprType::MT), id_(currentId_++) {
   init(tokens);
+  definitions_[id_] = this;
 }
 
 MT::Definition::Definition(token::tokens_list &tokens)
     : NodeBase(ExprType::MT), id_(currentId_++) {
   init(tokens);
+  definitions_[id_] = this;
 }
 
 SetLetter::SetLetter(token::tokens_list &tokens)
@@ -298,7 +300,7 @@ void MT::Lib::init(token::tokens_list &tokens) {
   if (namesTable_.contains(name))
     throw error::RedefinitionError(token);
 
-  namesTable_.add(name, currentId_);
+  namesTable_.add(name, id_);
 
   token = session.popFrontAndReturn();
   if (token != token::OpType::TERMINATOR)
@@ -355,7 +357,6 @@ void MT::Definition::init(token::tokens_list &tokens) {
     throwMismatch(name, endToken);
   session.commit();
 
-  definitions_[id_] = this;
 }
 
 void SetLetter::init(token::tokens_list &tokens) {
