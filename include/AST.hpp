@@ -30,16 +30,16 @@ public:
 };
 
 class Alphabet : public NodeBase {
-  compiler::Alphabet<char> alphabet_{{'_', 'T', 'F'}};
+  compiler::Alphabet<char> alphabet_{'_'};
 
   void init(token::tokens_list &tokens) override;
-
 public:
   Alphabet(token::tokens_list &tokens);
 
   std::string toString() override;
   const compiler::Alphabet<char> &alphabet() { return alphabet_; }
   commands_type to4(const compiler::Alphabet<char> &alphabet) override {
+		std::cout << toString() << std::endl;
     return {};
   }
 };
@@ -61,15 +61,16 @@ class IfFi : public NodeBase {
 
   class Branch : public NodeBase {
     void init(token::tokens_list &tokens) override;
-
+		char letterToCheck_;
   public:
     Branch(token::tokens_list &tokens);
 
     std::string toString() override;
     commands_type to4(const compiler::Alphabet<char> &alphabet) override;
+		char letterToCheck() const {return letterToCheck_;}
   };
 
-  Branch *true_ = nullptr, *false_ = nullptr;
+	std::list<Branch*> branches_;
 
 public:
   IfFi(token::tokens_list &tokens);
@@ -105,7 +106,7 @@ public:
 };
 
 class MT : public NodeBase {
-  enum class Usage { DEFINITION, LIB, CALL };
+  enum class Usage { OTHER, DEFINITION, LIB, CALL };
 
   class Call : public NodeBase {
     size_t id_;
@@ -151,6 +152,8 @@ class MT : public NodeBase {
   static bimap<std::string, size_t> namesTable_;
   static std::map<size_t, NodeBase *> definitions_;
   static size_t currentId_;
+
+	friend class Tree;
 public:
   MT(token::tokens_list &tokens);
 
@@ -180,12 +183,14 @@ public:
 };
 
 class Tree {
-  MT *root_ = nullptr;
+	MT::Definition *root_ = nullptr;
 
 public:
   void print(std::ostream &os = std::cout);
   Tree(token::tokens_list &tokens, const std::string & fileName);
 	commands_type to4();
+
+	const std::string & getTreeName() const {return MT::namesTable_[root_->id()];};
 };
 } // namespace ast
 

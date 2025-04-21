@@ -18,7 +18,7 @@ void throwMismatch(const std::string &expected,
 
 Tree::Tree(token::tokens_list &tokens, const std::string &fileName) {
   try {
-    root_ = new MT{tokens};
+    root_ = new MT::Definition{tokens};
   } catch (error::PositionErrorBase &e) {
     std::cout << "Error: " << e.what() << std::endl;
     size_t position = e.position();
@@ -39,38 +39,42 @@ Tree::Tree(token::tokens_list &tokens, const std::string &fileName) {
     for (size_t i = 0; i < width / 2; ++i)
       std::cout << " ";
     std::cout << "^" << std::endl;
+
+    exit(1);
   }
   if (!tokens.empty())
     throwMismatch("End of file", *std::begin(tokens));
 }
 
 class MoveMT : public NodeBase {
-	tu4::MoveDirection dir_;
-	void init(token::tokens_list &tokens) override {}
+  tu4::MoveDirection dir_;
+  void init(token::tokens_list &tokens) override {}
 
 public:
-	MoveMT(tu4::MoveDirection dir) : NodeBase(ExprType::MT), dir_(dir) {} 
-	std::string toString() override {
-		return (dir_ == tu4::MoveDirection::LEFT ? "<" : ">");
-	}
+  MoveMT(tu4::MoveDirection dir) : NodeBase(ExprType::MT), dir_(dir) {}
+  std::string toString() override {
+    return (dir_ == tu4::MoveDirection::LEFT ? "<" : ">");
+  }
 
-	commands_type to4(const compiler::Alphabet<char> &alphabet) override {
-		commands_type result;
-		for(auto& letter : alphabet) 
-			result.push_back({tu4::Tu4Move<size_t>{0, letter, dir_, 1}});
+  commands_type to4(const compiler::Alphabet<char> &alphabet) override {
+    commands_type result;
+    for (auto &letter : alphabet)
+      result.push_back({tu4::Tu4Move<size_t>{0, letter, dir_, 1}});
 
-		return result;
-	}
+    return result;
+  }
 };
 
 bimap<std::string, size_t> MT::namesTable_{{{"l", 0}, {"r", 1}}};
 std::map<size_t, NodeBase *> MT::definitions_{
-	{0, new MoveMT{tu4::MoveDirection::LEFT}},
-	{1, new MoveMT{tu4::MoveDirection::RIGHT}}
-};
+    {0, new MoveMT{tu4::MoveDirection::LEFT}},
+    {1, new MoveMT{tu4::MoveDirection::RIGHT}}};
 size_t MT::currentId_ = MT::namesTable_.size();
 
-MT::MT(token::tokens_list &tokens) : NodeBase(ExprType::MT) { init(tokens); node_ = *std::begin(childs_); }
+MT::MT(token::tokens_list &tokens) : NodeBase(ExprType::MT) {
+  init(tokens);
+  node_ = *std::begin(childs_);
+}
 
 BeginEnd::BeginEnd(token::tokens_list &tokens) : NodeBase(ExprType::PAIRED) {
   init(tokens);
@@ -178,6 +182,28 @@ void Alphabet::init(token::tokens_list &tokens) {
 void MT::init(token::tokens_list &tokens) {
   auto session = tokens.session();
   token::token_union token = session.popFrontAndReturn();
+
+	usage_ = Usage::OTHER;
+  if (token == token::KwType::DO) {
+    session.rollback();
+    node_ = new DoOd{tokens};
+		childs_.push_back(node_);
+    return;
+  }
+
+  if (token == token::KwType::IF) {
+    session.rollback();
+    node_ = new IfFi{tokens};
+		childs_.push_back(node_);
+    return;
+  }
+
+  if (token == token::OpType::SET_LETTER) {
+    session.rollback();
+    node_ = new SetLetter{tokens};
+		childs_.push_back(node_);
+    return;
+  }
 
   if (token != token::KwType::MT) {
     if (token.isName() && MT::isMTName(token.getName())) {
@@ -325,7 +351,7 @@ void MT::Definition::init(token::tokens_list &tokens) {
   BeginEnd *body;
   childs_.push_back(body = new BeginEnd{tokens});
   auto &endToken = body->endMTData();
-  if (!endToken.isName() && endToken.getName() != name)
+  if (!endToken.isName() || endToken.getName() != name)
     throwMismatch(name, endToken);
   session.commit();
 
@@ -456,6 +482,8 @@ void DoOd::init(token::tokens_list &tokens) {
     throwMismatch(";", token);
 
   session.commit();
+  for (auto &branch : branches_)
+    childs_.push_back(branch);
 }
 
 void DoOd::Branch::init(token::tokens_list &tokens) {
@@ -490,10 +518,7 @@ void DoOd::Branch::init(token::tokens_list &tokens) {
   while (tokens.size() > 2 &&
          !(*first == token::KwType::OD || *second == token::OpType::QUESTION ||
            *second == token::OpType::RIGHT_BRACKET)) {
-    if (*first == token::OpType::SET_LETTER)
-      childs_.push_back(new SetLetter{tokens});
-    else
-      childs_.push_back(new MT{tokens});
+    childs_.push_back(new MT{tokens});
 
     first = std::begin(tokens);
     second = std::next(first);
@@ -509,20 +534,22 @@ void IfFi::init(token::tokens_list &tokens) {
     throwMismatch("IF", token);
 
   auto tokenBegin = *std::begin(tokens);
-  for (size_t i = 0; i < 2; ++i) {
+  token = *std::begin(tokens);
+  while (tokens.size() > 0 && token != token::KwType::FI) {
+		auto branch = new Branch{tokens};
+    branches_.push_back(branch);
+		childs_.push_back(branch);
     token = *std::begin(tokens);
-    if (token.getName() == "T")
-      true_ = new Branch{tokens};
-    else
-      false_ = new Branch{tokens};
   }
+  if (tokens.size() == 0)
+    throw error::UnexpectedFileEnd("FI");
 
-  if (!true_)
-    throwSemantic("No true branch found", tokenBegin.begin());
-  if (!false_)
-    throwSemantic("No false branch found", tokenBegin.begin());
+  session.popFront();
+  if (tokens.size() > 0 && *std::begin(tokens) == token::OpType::TERMINATOR)
+    session.popFront();
 
   session.commit();
+
 }
 
 void IfFi::Branch::init(token::tokens_list &tokens) {
@@ -531,16 +558,16 @@ void IfFi::Branch::init(token::tokens_list &tokens) {
   auto token = session.popFrontAndReturn();
   if (!token.isName() || token.getName().size() > 1)
     throwMismatch("letter to check", token);
+  letterToCheck_ = token.getName()[0];
 
   token = session.popFrontAndReturn();
   if (token != token::OpType::QUESTION)
     throwMismatch("?", token);
 
   auto first = std::begin(tokens), second = std::next(first);
-  while (tokens.size() > 2 &&
-         !(*first == token::KwType::FI || *second == token::OpType::QUESTION)) {
+  while (tokens.size() > 2 && *first != token::KwType::FI &&
+         *second != token::OpType::QUESTION) {
     childs_.push_back(new MT{tokens});
-
     first = std::begin(tokens);
     second = std::next(first);
   }
@@ -565,6 +592,9 @@ std::string MT::toString() {
   strfast ss;
   ss << "MT: ";
   switch (usage_) {
+	case Usage::OTHER:
+		ss << "OTHER";
+		break;
   case Usage::DEFINITION:
     ss << "Definition";
     break;

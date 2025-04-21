@@ -49,6 +49,7 @@ public:
 struct strfast : public std::stringstream {
 public:
   std::string bump() { return str(); }
+	operator std::string() {return bump();}
 };
 
 #endif // !UTILS_HPP_

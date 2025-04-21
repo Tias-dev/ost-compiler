@@ -2,6 +2,8 @@
 #define TU_4_COMMAND_HPP_
 
 #include <ostream>
+#include <sstream>
+#include <string>
 #include <variant>
 namespace tu4 {
 enum class MoveDirection { LEFT, RIGHT };
@@ -25,6 +27,7 @@ public:
     q_ += shiftSize;
   }
 
+  virtual bool isTerm() const = 0;
   virtual void print(std::ostream &os) const = 0;
 };
 
@@ -33,7 +36,7 @@ class Tu4SetLetter : public Tu4Command<TQ, TLetter> {
   TLetter letterToSet_;
 
 public:
-  Tu4SetLetter(TQ q0, char letterToCheck, TLetter letterToSet, TQ q)
+  Tu4SetLetter(TQ q0, TLetter letterToCheck, TLetter letterToSet, TQ q)
       : Tu4Command<TQ>(q0, q, letterToCheck), letterToSet_(letterToSet) {}
 
   void print(std::ostream &os) const override {
@@ -41,6 +44,9 @@ public:
        << ',' << this->q();
     if (this->comment().size() > 0)
       os << " // " << this->comment();
+  }
+  bool isTerm() const override {
+    return (this->letterToCheck() == letterToSet_) && (this->q0() == this->q());
   }
 };
 
@@ -58,6 +64,8 @@ public:
     if (this->comment().size() > 0)
       os << " // " << this->comment();
   }
+
+  bool isTerm() const override { return false; }
 };
 
 template <typename TQ, typename TLetter = char> class tu4_union {
@@ -84,20 +92,50 @@ public:
         [](const auto &command) { return command.letterToCheck(); }, data_);
   }
 
-	const std::string & comment() const {
-		return std::visit([](const auto & command) {return command.comment();}, data_);
-	}
+  const std::string &comment() const {
+    return std::visit([](const auto &command) { return command.comment(); },
+                      data_);
+  }
 
   void print(std::ostream &os) const {
     std::visit([&os](const auto &command) { command.print(os); }, data_);
+  }
+
+  bool isTerm() const {
+    return std::visit([](const auto &command) { return command.isTerm(); });
   }
 };
 } // namespace tu4
 
 template <typename TQ, typename TLetter = char>
-std::ostream &operator<<(std::ostream &os, const tu4::tu4_union<TQ, TLetter> &command) {
+std::ostream &operator<<(std::ostream &os,
+                         const tu4::tu4_union<TQ, TLetter> &command) {
   command.print(os);
   return os;
+}
+
+template <typename TQ, typename TLetter = char>
+tu4::tu4_union<TQ, TLetter> load(std::istream &is) {
+  std::string line, comment = "";
+  std::getline(is, line);
+
+  std::istringstream iss(line);
+  TQ q0, q;
+  TLetter c1, c2;
+  iss >> q0 >> c1 >> c2 >> q;
+  if (line.find("//") != std::string::npos) {
+    iss >> comment >> comment;
+  }
+
+  switch (c2) {
+  case '>':
+  case '<':
+    return {tu4::Tu4Move<TQ, TLetter>{
+        q0, c1,
+        (c2 == '<' ? tu4::MoveDirection::LEFT : tu4::MoveDirection::RIGHT), q}};
+  default:
+    return {tu4::Tu4SetLetter<TQ, TLetter>(q0, c1, c2, q)};
+  }
 }
 
 #endif // !TU_4_COMMAND_HPP_

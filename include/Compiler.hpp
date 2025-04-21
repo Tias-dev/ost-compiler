@@ -7,9 +7,11 @@
 namespace compiler {
 template <typename TLetter> class Alphabet : public std::set<TLetter> {
   using parent = std::set<TLetter>;
-
+	TLetter lambda_;
 public:
-  Alphabet() = default;
+  Alphabet(const TLetter lambda = '_'): lambda_(lambda) {
+		this->insert(lambda);
+	};
 	Alphabet(const std::set<TLetter> & letters) {
 		this->insert(std::begin(letters), std::end(letters));
 	}
@@ -19,11 +21,23 @@ public:
     this->insert(std::begin(al2), std::end(al2));
   }
 
-  Alphabet<TLetter> &operator||(const Alphabet<TLetter> &other) {
-    this->insert(std::begin(other), std::end(other));
+  Alphabet<TLetter> operator||(const Alphabet<TLetter> &other) const {
+    Alphabet<TLetter> res(*this);
+		res.insert(std::begin(other), std::end(other));
 
-    return *this;
+    return res;
   }
+
+	Alphabet<char> operator/(const Alphabet<TLetter> & other) const {
+		Alphabet<TLetter> res{this->lambda_};
+		for(auto& letter : *this) {
+			if(other.contains(letter)) 
+				continue;
+			res.insert(letter);
+		}
+		return res;
+	}
+
 };
 
 template <typename TQ, typename TLetter = char>
