@@ -1,0 +1,77 @@
+#ifndef LINE_HPP_
+#define LINE_HPP_
+
+#include <cctype>
+#include <stdexcept>
+#include <string>
+namespace tu4run {
+template <typename CharT = char>
+class Line {
+	std::basic_string<CharT> data_;
+	size_t cursor_;
+	CharT lambda_;
+public:
+	Line(std::basic_string<CharT> & data, CharT lambda =  CharT('_'))
+		: data_(data), lambda_(lambda) {
+		for(auto& c : data_) 
+			if(isspace(c)) 
+				c = lambda_;
+		
+		data_ += lambda_;
+		if(data_.size() == 1) {
+			cursor_ = 0;
+			return;
+		}
+
+		cursor_ = data_.size() - 1;
+		while(cursor_ > 1 && data_[cursor_] == lambda_) {
+			--cursor_;
+		}
+		if(data_[cursor_] != lambda_) 
+			++cursor_;
+	}
+
+	void shiftLeft() {
+		if(cursor_ > 0) 
+			--cursor_;
+		else
+		 throw std::runtime_error("Trying to go out of line from left border");;
+	}
+
+	void shiftRight() {
+		if(cursor_ + 1 == data_.size()) 
+			data_.push_back(lambda_);
+		++cursor_;
+	}
+
+	void setLetter(CharT letter) {
+		data_[cursor_] = letter;
+	}
+
+	const std::basic_string<CharT> & line() const {
+		return data_;
+	}
+
+	size_t cursor() const {
+		return cursor_;
+	}
+
+	CharT getLetter() const {
+		return data_[cursor_];
+	}
+};
+
+} // namespace tu4run
+
+template <typename CharT>
+std::ostream & operator<<(std::ostream & os, const tu4run::Line<CharT> & line) {
+	static const std::string space{' '}, cursorMark{"^\n"};
+	os << line.line() << '\n';
+	size_t cursor = line.cursor();
+	for(size_t _ = 0; _ < cursor; ++_) 
+		os << space;
+	os << cursorMark;
+
+	return os;
+}
+#endif // !LINE_HPP_

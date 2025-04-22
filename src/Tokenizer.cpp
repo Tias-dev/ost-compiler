@@ -84,10 +84,6 @@ token::tokens_list token::Tokenizer::parse(ICharStream &stream) {
   return result;
 }
 
-template <class... Ts> struct overloads : Ts... {
-  using Ts::operator()...;
-};
-
 namespace token {
 bool token_union::operator==(const KwType type) const {
   return std::visit(

@@ -48,7 +48,7 @@ public:
       command.shift(shiftSize);
   }
 
-  TQ maxQ() {
+  TQ maxQ() const {
 		if(this->empty()) 
 			return 0;
 		

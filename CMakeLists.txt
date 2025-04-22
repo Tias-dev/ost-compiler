@@ -16,8 +16,11 @@ add_compile_options(-g -std=c++20)
 
 add_library(src_lib STATIC ${SRC_FILES})
 
-add_executable(main main.cpp)
-target_link_libraries(main src_lib)
+add_executable(ost Compiler.cpp)
+target_link_libraries(ost src_lib)
+
+add_executable(tu4run Tu4Run.cpp)
+target_link_libraries(tu4run src_lib)
 
 # include(FetchContent)
 # FetchContent_Declare(

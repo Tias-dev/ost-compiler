@@ -10,6 +10,8 @@
  
 int main(int argc, char * argw[]) {
 	std::string fileName = (argc > 1 ? argw[1] : "./testProgram.ost");
+	std::string outDir = (argc > 2 ? argw[2] : "./");
+	globals::libDir = (argc > 3 ? argw[3] : globals::libDir);
 	std::fstream file(fileName);
 	if(!file.is_open()) {
 		std::cout << "Can't open file" << std::endl;
@@ -36,7 +38,7 @@ int main(int argc, char * argw[]) {
 		std::cout << "Names table:" << std::endl;
 		ast::MT::printNamesTable();
 	}
-	globals::foutName = strfast() << "./" << astTree.getTreeName() << ".tu4";
+	globals::foutName = strfast() << outDir << astTree.getTreeName() << ".tu4";
 
 	std::ofstream fout(globals::foutName);
 	compiler::commands_type commands = astTree.to4();

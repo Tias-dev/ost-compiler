@@ -52,4 +52,8 @@ public:
 	operator std::string() {return bump();}
 };
 
+template <class ...TS>
+struct overloads : TS... {
+	using TS::operator()...;
+};
 #endif // !UTILS_HPP_

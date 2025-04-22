@@ -2,8 +2,11 @@
 #define TU_4_COMMAND_HPP_
 
 #include "exception.hpp"
+#include "utils.hpp"
+#include <optional>
 #include <ostream>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <variant>
 namespace tu4 {
@@ -49,6 +52,8 @@ public:
   bool isTerm() const override {
     return (this->letterToCheck() == letterToSet_) && (this->q0() == this->q());
   }
+
+  TLetter letterToSet() const { return letterToSet_; }
 };
 
 template <typename TQ, typename TLetter = char>
@@ -67,43 +72,94 @@ public:
   }
 
   bool isTerm() const override { return false; }
+  MoveDirection moveDirection() const { return dir_; }
 };
 
 template <typename TQ, typename TLetter = char> class tu4_union {
   using data_type =
       std::variant<Tu4SetLetter<TQ, TLetter>, Tu4Move<TQ, TLetter>>;
-  data_type data_;
+	std::optional<data_type> data_;
 
 public:
+	tu4_union() = default;
   tu4_union(data_type data) : data_(data) {}
 
+  tu4_union(const tu4_union<TQ, TLetter> & other) : data_(other.data_) {}
+  tu4_union(tu4_union<TQ, TLetter> && other) : data_(std::move(other.data_)) {}
+	
+	tu4_union<TQ, TLetter> & operator=(const tu4_union<TQ, TLetter> & other) {
+		data_ = other.data_;
+
+		return *this;
+	}
+
+	tu4_union<TQ, TLetter> & operator=(tu4_union<TQ, TLetter> && other) {
+		data_ = std::move(other.data_);
+
+		return *this;
+	}
+
   void shift(TQ shiftSize) {
-    std::visit([shiftSize](auto &command) { command.shift(shiftSize); }, data_);
+    std::visit([shiftSize](auto &command) { command.shift(shiftSize); }, *data_);
   }
 
   TQ q0() const {
-    return std::visit([](const auto &command) { return command.q0(); }, data_);
+    return std::visit([](const auto &command) { return command.q0(); }, *data_);
   }
   TQ q() const {
-    return std::visit([](const auto &command) { return command.q(); }, data_);
+    return std::visit([](const auto &command) { return command.q(); }, *data_);
   }
 
   TLetter letterToCheck() const {
     return std::visit(
-        [](const auto &command) { return command.letterToCheck(); }, data_);
+        [](const auto &command) { return command.letterToCheck(); }, *data_);
   }
 
   const std::string &comment() const {
     return std::visit([](const auto &command) { return command.comment(); },
-                      data_);
+                      *data_);
   }
 
   void print(std::ostream &os) const {
-    std::visit([&os](const auto &command) { command.print(os); }, data_);
+    std::visit([&os](const auto &command) { command.print(os); }, *data_);
   }
 
   bool isTerm() const {
-    return std::visit([](const auto &command) { return command.isTerm(); }, data_);
+    return std::visit([](const auto &command) { return command.isTerm(); },
+                      *data_);
+  }
+
+  bool isShift() const {
+    return std::visit(overloads{[](const Tu4SetLetter<TQ> &) { return false; },
+                                [](const Tu4Move<TQ> &) { return true; }},
+                      *data_);
+  }
+
+  MoveDirection getMoveDirection() const {
+    return std::visit(
+        overloads{
+            [](const Tu4SetLetter<TQ> &) {
+              throw std::logic_error(
+                  "Set letter command has no move direction");
+              return MoveDirection::LEFT;
+            },
+            [](const Tu4Move<TQ> &command) { return command.moveDirection(); }},
+        *data_);
+  }
+
+  bool isSetLetter() const {
+    return std::visit(overloads{[](const Tu4SetLetter<TQ> &c) { return true; },
+                                [](const Tu4Move<TQ> &) { return false; }},
+                      *data_);
+  }
+  TLetter getLetterToSet() const {
+    return std::visit(
+        overloads{[](const Tu4SetLetter<TQ> &c) { return c.letterToSet(); },
+                  [](const Tu4Move<TQ> &) {
+                    throw std::logic_error("Move command has no letter to set");
+                    return TLetter(0);
+                  }},
+        *data_);
   }
 };
 } // namespace tu4
@@ -119,8 +175,8 @@ template <typename TQ, typename TLetter = char>
 tu4::tu4_union<TQ, TLetter> load(std::istream &is) {
   std::string line, comment = "";
   std::getline(is, line);
-	if(line.size() < 2) 
-		throw error::UnexpectedFileEnd();
+  if (line.size() < 2)
+    throw error::UnexpectedFileEnd();
 
   std::istringstream iss(line);
   TQ q0, q;
