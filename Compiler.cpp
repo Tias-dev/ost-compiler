@@ -9,9 +9,10 @@
 #include <iostream>
  
 int main(int argc, char * argw[]) {
-	std::string fileName = (argc > 1 ? argw[1] : "./testProgram.ost");
-	std::string outDir = (argc > 2 ? argw[2] : "./");
-	globals::libDir = (argc > 3 ? argw[3] : globals::libDir);
+	std::string fileName = (argc > 1 ? argw[1] : "./build/sumOfParts/mult.ost");
+	std::string outDir = (argc > 2 ? argw[2] : "./build/sumOfParts/build/");
+	// globals::libDir = (argc > 3 ? argw[3] : globals::libDir);
+	globals::libDir = (argc > 3 ? argw[3] : "./build/sumOfParts/build/");
 	std::fstream file(fileName);
 	if(!file.is_open()) {
 		std::cout << "Can't open file" << std::endl;

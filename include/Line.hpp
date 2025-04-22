@@ -1,6 +1,7 @@
 #ifndef LINE_HPP_
 #define LINE_HPP_
 
+#include "exception.hpp"
 #include <cctype>
 #include <stdexcept>
 #include <string>
@@ -35,7 +36,7 @@ public:
 		if(cursor_ > 0) 
 			--cursor_;
 		else
-		 throw std::runtime_error("Trying to go out of line from left border");;
+		 throw error::Tu4RunError<CharT>(*this, "Trying to go out of line from left border");
 	}
 
 	void shiftRight() {

@@ -4,6 +4,7 @@
 #include "Tokenizer.hpp"
 #include "utils.hpp"
 #include <exception>
+#include <stdexcept>
 #include <string>
 
 namespace error {
@@ -151,6 +152,32 @@ public:
 	const char * what() const noexcept override {
 		static std::string message;
 		message = (strfast() << "Unexpected end of file" << (expected_.size() > 0 ? ". Expected: " + expected_ : "")).bump();
+		return message.c_str();
+	}
+};
+} // namespace error
+
+namespace tu4run {
+template <typename CharT>
+class Line;
+} // namespace tu4run
+	
+namespace error {
+template <typename CharT>
+std::ostream & operator<<(std::ostream & os, const tu4run::Line<CharT> & line);
+
+template <typename CharT = char>
+class Tu4RunError : public std::runtime_error {
+	const tu4run::Line<CharT> & line_;
+	std::string detail_;
+public:
+	Tu4RunError(const tu4run::Line<CharT> & line, std::string detail)
+		: line_(line), detail_(detail), std::runtime_error(detail) {}
+
+	const char * what() const noexcept override {
+		static std::string message;
+		message = (strfast() << "Line state:\n" << line_ << "\nError: " << detail_);
+
 		return message.c_str();
 	}
 };

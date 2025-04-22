@@ -39,14 +39,8 @@ token::token_union read_token(ICharStream &stream) {
     auto opType = opPoint->get();
     return {token::Operation(opType, begin, stream.position())};
   }
-  auto kwPointBegin = kw.begin();
   std::string buffer = "";
-	if(kwPoint->canGoTo(c)) 
-		kwPoint->goTo(c);
-
-	while (!stream.eof() && !isSpace(c) && !opPoint->canGoTo(c)) {
-    if (*kwPoint != *kwPointBegin && kwPoint->canGoTo(c))
-      kwPoint->goTo(c);
+  while (!stream.eof() && !isSpace(c) && !opPoint->canGoTo(c)) {
     buffer.push_back(c);
     stream >> c;
   }
@@ -54,7 +48,14 @@ token::token_union read_token(ICharStream &stream) {
   if (!stream.eof())
     stream << c;
 
-  if (kwPoint->isTerm())
+  size_t i;
+  for (i = 0; i < buffer.size(); ++i)
+    if (kwPoint->canGoTo(buffer[i]))
+      kwPoint->goTo(buffer[i]);
+    else
+      break;
+
+  if (i == buffer.size() && kwPoint->isTerm())
     return {token::Keyword(kwPoint->get(), begin, stream.position())};
   return {token::Name(buffer, begin, stream.position())};
 }
@@ -62,7 +63,7 @@ token::token_union read_token(ICharStream &stream) {
 token::tokens_list token::Tokenizer::parse(ICharStream &stream) {
   char c;
   token::tokens_list result;
-	stream >> c;
+  stream >> c;
   while (!stream.eof()) {
     if (c == '"') {
       size_t commentBegin = stream.position();
@@ -75,9 +76,9 @@ token::tokens_list token::Tokenizer::parse(ICharStream &stream) {
     }
 
     if (!isspace(c)) {
-			stream << c;
-			result.push_back(read_token(stream));
-		}
+      stream << c;
+      result.push_back(read_token(stream));
+    }
     stream >> c;
   }
 
@@ -130,13 +131,13 @@ std::string token_union::getName() const {
   return std::visit(
       overloads{[](const Name &token) { return token.name(); },
                 [](const Keyword &token) {
-                  throw error::ExpectedMismatchError(token.begin(), "valid mt name",
-                                                     token.toString());
+                  throw error::ExpectedMismatchError(
+                      token.begin(), "valid mt name", token.toString());
                   return std::string();
                 },
                 [](const Operation &token) {
-                  throw error::ExpectedMismatchError(token.begin(), "valid mt name",
-                                                     token.toString());
+                  throw error::ExpectedMismatchError(
+                      token.begin(), "valid mt name", token.toString());
                   return std::string();
                 }},
       data_);
@@ -183,16 +184,14 @@ void tokens_list::Session::popFront() {
 }
 
 token_union tokens_list::Session::popFrontAndReturn() {
-	if(root_->empty()) 
-		throw error::UnexpectedFileEnd();
+  if (root_->empty())
+    throw error::UnexpectedFileEnd();
 
-	cache_.push(*std::begin(*root_));
+  cache_.push(*std::begin(*root_));
   token_union token = *std::begin(*root_);
   root_->pop_front();
   return token;
 }
 
-tokens_list::Session::~Session() {
-	rollback();
-}
+tokens_list::Session::~Session() { rollback(); }
 } // namespace token

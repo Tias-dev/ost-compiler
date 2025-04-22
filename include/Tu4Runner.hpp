@@ -4,10 +4,10 @@
 #include "Compiler.hpp"
 #include "Line.hpp"
 #include "Tu4Command.hpp"
+#include "exception.hpp"
 #include "utils.hpp"
 #include <cstddef>
 #include <map>
-#include <stdexcept>
 #include <vector>
 namespace tu4run {
 template <typename TQ = size_t, typename CharT = char> class Tu4Runner {
@@ -33,8 +33,8 @@ public:
   bool step() {
     CharT c = line_.getLetter();
     if (!commands_[q_].contains(c))
-      throw std::runtime_error(strfast() << "No command for state: [" << q_
-                                         << "] and letter: [" << c << "]");
+      throw error::Tu4RunError<CharT>(line_, std::string(strfast() << "No command for state: [" << q_
+                                         << "] and letter: [" << c << "]"));
 
     const tu4::tu4_union<TQ, CharT> &command = commands_[q_][c];
     if (command.isShift()) {
@@ -53,8 +53,8 @@ public:
 			// std::cout << "Setting letter, " << letterToSet << std::endl;
       line_.setLetter(letterToSet);
     } else {
-      throw std::logic_error(strfast() << "Given command: [" << command
-                                       << "] no shift and no set letter");
+      throw error::Tu4RunError<CharT>(line_, std::string(strfast() << "Given command: [" << command
+                                       << "] no shift and no set letter"));
     }
 
 		// std::cout << q_ << ":";
