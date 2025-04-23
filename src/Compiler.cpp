@@ -6,6 +6,7 @@
 #include "utils.hpp"
 #include <fstream>
 #include <iterator>
+#include <stack>
 #include <stdexcept>
 
 using namespace ast;
@@ -77,15 +78,31 @@ commands_type MT::Call::to4(const compiler::Alphabet<char> &alphabet) {
 }
 
 commands_type MT::Definition::to4(const compiler::Alphabet<char> &alphabet0) {
+	static std::set<size_t> defineStack;
   if (cache_.has_value())
     return *cache_;
 
   commands_type result;
+	if(defineStack.contains(id_)) {
+			result.push_back({tu4::Tu4SetLetter<size_t>{id_, '_', '_', id_}});
+			return result;
+	}
+
+	defineStack.insert(id_);
+
   auto alphabet = alphabet_->alphabet() || alphabet0;
   size_t q = 0;
 
   for (auto &child : childs_) {
     auto subCommands = child->to4(alphabet);
+		if(subCommands.size() > 0 && std::begin(subCommands)->isTerm() && std::begin(subCommands)->q() == id_) {
+			std::cout << "Recursion for state: " << q << std::endl;
+			for(auto& letter : alphabet) 
+				result.push_back({tu4::Tu4SetLetter<size_t>(q, letter, letter, 0)});
+
+			continue;
+		} 
+			
     size_t subMaxQ = subCommands.maxQ();
 
     subCommands.shift(q);
@@ -95,6 +112,7 @@ commands_type MT::Definition::to4(const compiler::Alphabet<char> &alphabet0) {
   }
 
   cache_ = result;
+	defineStack.erase(id_);
   return result;
 }
 
@@ -119,6 +137,28 @@ commands_type IfFi::to4(const compiler::Alphabet<char> &alphabet) {
   commands_type result;
   size_t q = 1;
   std::list<size_t> endStates;
+
+  auto firstBranch = *std::begin(branches_);
+  if (firstBranch->isAnyChar() && branches_.size() > 1)
+    throw std::logic_error(
+        "()!=[some letter] must be unique in IF ... FI mt");
+
+  if (firstBranch->isAnyChar()) {
+    auto subCommands = firstBranch->to4(alphabet);
+    q += subCommands.maxQ();
+    subCommands.shift(1);
+    result.extend(subCommands);
+    for (auto &letter : alphabet) {
+      result.push_back({tu4::Tu4SetLetter<size_t>(q, letter, letter, q + 1)});
+      if (letter == firstBranch->letterToCheck())
+        continue;
+      result.push_back({tu4::Tu4SetLetter<size_t>(0, letter, letter, 1)});
+    }
+    result.push_back({tu4::Tu4SetLetter<size_t>(
+        0, firstBranch->letterToCheck(), firstBranch->letterToCheck(), q + 1)});
+    return result;
+  }
+
   compiler::Alphabet<char> used;
   for (auto &branch : branches_) {
     result.push_back({tu4::Tu4SetLetter<size_t>{0, branch->letterToCheck(),
@@ -146,22 +186,6 @@ commands_type IfFi::to4(const compiler::Alphabet<char> &alphabet) {
     if (notUsed.contains(letter))
       result.push_back({tu4::Tu4SetLetter<size_t>(0, letter, letter, q)});
   }
-  return result;
-}
-
-commands_type IfFi::Branch::to4(const compiler::Alphabet<char> &alphabet) {
-  commands_type result;
-  size_t q = 0;
-  for (auto &child : childs_) {
-    auto subCommands = child->to4(alphabet);
-    size_t subMaxQ = subCommands.maxQ();
-
-    subCommands.shift(q);
-    result.extend(subCommands);
-
-    q += subMaxQ;
-  }
-
   return result;
 }
 
@@ -215,7 +239,7 @@ commands_type DoOd::to4(const compiler::Alphabet<char> &alphabet) {
   return result;
 }
 
-commands_type DoOd::Branch::to4(const compiler::Alphabet<char> &alphabet) {
+commands_type Branch::to4(const compiler::Alphabet<char> &alphabet) {
   commands_type result;
   size_t q = 0;
 

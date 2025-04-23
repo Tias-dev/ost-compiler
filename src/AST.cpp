@@ -116,11 +116,7 @@ SetLetter::SetLetter(token::tokens_list &tokens)
   init(tokens);
 }
 
-DoOd::Branch::Branch(token::tokens_list &tokens) : NodeBase(ExprType::PAIRED) {
-  init(tokens);
-}
-
-IfFi::Branch::Branch(token::tokens_list &tokens) : NodeBase(ExprType::PAIRED) {
+Branch::Branch(token::tokens_list &tokens) : NodeBase(ExprType::PAIRED) {
   init(tokens);
 }
 
@@ -487,7 +483,7 @@ void DoOd::init(token::tokens_list &tokens) {
     childs_.push_back(branch);
 }
 
-void DoOd::Branch::init(token::tokens_list &tokens) {
+void Branch::init(token::tokens_list &tokens) {
   auto session = tokens.session();
 
   auto token = session.popFrontAndReturn();
@@ -517,7 +513,7 @@ void DoOd::Branch::init(token::tokens_list &tokens) {
 
   auto first = std::begin(tokens), second = std::next(first);
   while (tokens.size() > 2 &&
-         !(*first == token::KwType::OD || *second == token::OpType::QUESTION ||
+         !(*first == token::KwType::FI || *second == token::OpType::QUESTION ||
            *second == token::OpType::RIGHT_BRACKET)) {
     childs_.push_back(new MT{tokens});
 
@@ -551,28 +547,6 @@ void IfFi::init(token::tokens_list &tokens) {
 
   session.commit();
 
-}
-
-void IfFi::Branch::init(token::tokens_list &tokens) {
-  auto session = tokens.session();
-
-  auto token = session.popFrontAndReturn();
-  if (!token.isName() || token.getName().size() > 1)
-    throwMismatch("letter to check", token);
-  letterToCheck_ = token.getName()[0];
-
-  token = session.popFrontAndReturn();
-  if (token != token::OpType::QUESTION)
-    throwMismatch("?", token);
-
-  auto first = std::begin(tokens), second = std::next(first);
-  while (tokens.size() > 2 && *first != token::KwType::FI &&
-         *second != token::OpType::QUESTION) {
-    childs_.push_back(new MT{tokens});
-    first = std::begin(tokens);
-    second = std::next(first);
-  }
-  session.commit();
 }
 
 // -----------------------------
@@ -644,9 +618,9 @@ std::string DoOd::toString() {
   return ss.bump();
 }
 
-std::string DoOd::Branch::toString() {
+std::string Branch::toString() {
   strfast ss;
-  ss << "DO branch: ";
+  ss << "branch: ";
   if (isAnyChar_)
     ss << "Any char != " << letterToCheck_;
   else
@@ -659,12 +633,6 @@ std::string IfFi::toString() {
   strfast ss;
   ss << "IF ... FI";
 
-  return ss.bump();
-}
-
-std::string IfFi::Branch::toString() {
-  strfast ss;
-  ss << "If branch:";
   return ss.bump();
 }
 

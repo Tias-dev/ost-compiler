@@ -177,6 +177,9 @@ tu4::tu4_union<TQ, TLetter> load(std::istream &is) {
   std::getline(is, line);
   if (line.size() < 2)
     throw error::UnexpectedFileEnd();
+	for(auto& c : line) 
+		if(c == TLetter(' ')) 
+			c = TLetter('_');
 
   std::istringstream iss(line);
   TQ q0, q;

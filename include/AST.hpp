@@ -55,19 +55,22 @@ public:
   commands_type to4(const compiler::Alphabet<char> &alphabet) override;
 };
 
+class Branch : public NodeBase {
+	char letterToCheck_ = 0;
+	bool isAnyChar_ = false;
+	void init(token::tokens_list &tokens) override;
+
+public:
+	Branch(token::tokens_list &tokens);
+
+	std::string toString() override;
+	commands_type to4(const compiler::Alphabet<char> &alphabet) override;
+	bool isAnyChar() const { return isAnyChar_; }
+	char letterToCheck() const { return letterToCheck_; }
+};
+
 class IfFi : public NodeBase {
   void init(token::tokens_list &tokens) override;
-
-  class Branch : public NodeBase {
-    void init(token::tokens_list &tokens) override;
-		char letterToCheck_;
-  public:
-    Branch(token::tokens_list &tokens);
-
-    std::string toString() override;
-    commands_type to4(const compiler::Alphabet<char> &alphabet) override;
-		char letterToCheck() const {return letterToCheck_;}
-  };
 
 	std::list<Branch*> branches_;
 
@@ -81,19 +84,6 @@ public:
 class DoOd : public NodeBase {
   void init(token::tokens_list &tokens) override;
 
-  class Branch : public NodeBase {
-    char letterToCheck_ = 0;
-    bool isAnyChar_ = false;
-    void init(token::tokens_list &tokens) override;
-
-  public:
-    Branch(token::tokens_list &tokens);
-
-    std::string toString() override;
-    commands_type to4(const compiler::Alphabet<char> &alphabet) override;
-    bool isAnyChar() const { return isAnyChar_; }
-    char letterToCheck() const { return letterToCheck_; }
-  };
 
   std::list<Branch *> branches_;
 

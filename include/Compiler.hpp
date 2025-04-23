@@ -51,11 +51,13 @@ public:
   TQ maxQ() const {
 		if(this->empty()) 
 			return 0;
-		
+
     TQ maxQ = std::begin(*this)->q();
     for (auto &command : *this)
-      if (command.q() > maxQ)
+      if (command.q() > maxQ) {
         maxQ = command.q();
+			}
+	
 
 		return maxQ;
   }
