@@ -30,6 +30,7 @@ AST invariants:
 1. When creating component consume all tokens it needed if success, consume nothing on failure
 2. On failure trowed exceptions with description the place if failed, expected and given tokens
 
-Compiling invariants
-1. Each MT begin with 0 state
-2. Max used state is exit state i.e. there are mustn't be situations where max state placed as begin state to any commands in MT
+## Changes tests
+osttest
+There are some tests that testing basic functions of ost compiler. PR requests will not be passing without passing these tests
+

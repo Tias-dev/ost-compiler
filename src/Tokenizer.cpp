@@ -70,9 +70,9 @@ token::tokens_list token::Tokenizer::parse(ICharStream &stream) {
       do {
         stream >> c;
       } while (!stream.eof() && (c != '"'));
-      if (c != '"' || stream.eof())
-        throw error::CommentNotClosedError(commentBegin);
-      continue;
+			if(c != '"') 
+				throw error::CommentNotClosedError(commentBegin);
+			stream >> c;
     }
 
     if (!isspace(c)) {

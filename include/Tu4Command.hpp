@@ -31,6 +31,11 @@ public:
     q_ += shiftSize;
   }
 
+	void shiftDown(TQ shiftSize) {
+    q0_ -= shiftSize;
+    q_ -= shiftSize;
+	}
+
   virtual bool isTerm() const = 0;
   virtual void print(std::ostream &os) const = 0;
 };
@@ -161,6 +166,10 @@ public:
                   }},
         *data_);
   }
+
+	void shiftDown(TQ shiftSize) {
+		std::visit([shiftSize](auto & command) {command.shiftDown(shiftSize);}, *data_);
+	}
 };
 } // namespace tu4
 

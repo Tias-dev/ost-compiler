@@ -7,16 +7,23 @@
 #include <cctype>
 #include <fstream>
 #include <iostream>
+#include <stdexcept>
  
 int main(int argc, char * argw[]) {
 	std::string fileName = (argc > 1 ? argw[1] : "mt.ost");
+
 	std::string outDir = (argc > 2 ? argw[2] : "./");
+	if(outDir[outDir.size() - 1] != '/') 
+		outDir.push_back('/');
+	
 	globals::libDir = (argc > 3 ? argw[3] : globals::libDir);
+	if(globals::libDir[globals::libDir.size() - 1] != '/') 
+		globals::libDir.push_back('/');
+
 	std::fstream file(fileName);
-	if(!file.is_open()) {
-		std::cout << "Can't open file" << std::endl;
-		return 1;
-	}
+	if(!file.is_open()) 
+		throw std::invalid_argument("Can't open file");
+	
 	CharStream stream(file);
 
 	auto tokenizer = token::Tokenizer{};

@@ -6,6 +6,6 @@ namespace globals {
 inline std::string foutName = "./out.tu4";
 inline std::string libDir = "./";
 
-inline bool printDebugInfo = true;
+inline bool printDebugInfo = false;
 } // namespace globals
 #endif // !GLOBALS_HPP_

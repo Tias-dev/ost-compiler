@@ -37,6 +37,12 @@ int main(int argc, char * argw[]) {
 	Line<char> line(s);
 	Tu4Runner<size_t, char> runner(line, commands);
 	size_t steps = runner.loop();
+	// while(true) {
+	// 	std::cin.get();
+	// 	runner.step();
+	// 	std::cout << line << std::endl;
+	// }
+
 	std::cout << "Steps: " << steps << " Out line:" << std::endl;
 	std::cout << line << std::endl;
 

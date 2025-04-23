@@ -6,128 +6,114 @@
 #include "utils.hpp"
 #include <fstream>
 #include <iterator>
-#include <stack>
+#include <map>
 #include <stdexcept>
 
 using namespace ast;
 
+static size_t currentState = 0;
+
 commands_type MT::to4(const compiler::Alphabet<char> &alphabet) {
   commands_type result;
-  size_t q = 0;
-	switch (usage_) {
-		case Usage::DEFINITION:
-		case Usage::LIB:
-			return {};
-		default:
-			break;
-	};
+  switch (usage_) {
+  case Usage::DEFINITION:
+  case Usage::LIB:
+    return {};
+  default:
+    break;
+  };
 
   for (auto &child : childs_) {
     auto subCommands = child->to4(alphabet);
-    size_t subMaxQ = subCommands.maxQ();
-
-    subCommands.shift(q);
     result.extend(subCommands);
-
-    q += subMaxQ;
   }
 
   return result;
 }
 
 commands_type MT::Lib::to4(const compiler::Alphabet<char> &alphabet) {
-	if(cache_.has_value()) 
-		return *cache_;
-		
-  std::ifstream file(strfast()
-                     << globals::libDir << "/" << namesTable_[id_] << ".tu4");
-	if(!file.good()) 
-		throw std::invalid_argument(strfast() << globals::libDir << "/" << namesTable_[id_] << ".tu4" << " not found!");
-		
   commands_type commands;
-  try {
-    while (!file.eof()) {
-      commands.push_back(load<size_t>(file));
-    }
-  } catch (error::UnexpectedFileEnd) {
-  }
+	if(cache_.has_value()) {
+		commands = *cache_;
+	} else {
+		std::ifstream file(strfast()
+											 << globals::libDir << "/" << namesTable_[id_] << ".tu4");
+		if (!file.good())
+			throw std::invalid_argument(strfast()
+																	<< globals::libDir << "/" << namesTable_[id_]
+																	<< ".tu4" << " not found!");
+		try {
+			while (!file.eof()) {
+				commands.push_back(load<size_t>(file));
+			}
+		} catch (error::UnexpectedFileEnd) {
+		}
 
-  for (auto it = std::begin(commands), itNext = std::next(it);
-       it != std::end(commands); ++it, ++itNext) {
-    if (it->isTerm()) {
-      commands.erase(it);
-      it = std::prev(itNext);
-    }
-  }
+		for (auto it = std::begin(commands), itNext = std::next(it);
+				 it != std::end(commands); ++it, ++itNext) {
+			if (it->isTerm()) {
+				commands.erase(it);
+				it = std::prev(itNext);
+			}
+		}
+	}
 
 	cache_ = commands;
+	commands.shiftTo(currentState);
+	currentState += commands.deltaQ();
   return commands;
 }
 
 commands_type MT::Call::to4(const compiler::Alphabet<char> &alphabet) {
-  auto subCommands = definitions_[id_]->to4(alphabet);
-  commands_type result = subCommands;
-  size_t q0 = subCommands.maxQ();
+  commands_type result;
 
-  for (size_t i = 1; i < pow_; ++i) {
-    subCommands.shift(q0);
+  for (size_t i = 0; i < pow_; ++i) {
+		auto subCommands = definitions_[id_]->to4(alphabet);
     result.extend(subCommands);
   }
+	
 
   return result;
 }
 
 commands_type MT::Definition::to4(const compiler::Alphabet<char> &alphabet0) {
-	static std::set<size_t> defineStack;
-  if (cache_.has_value())
-    return *cache_;
-
+  static std::map<size_t, size_t> defineStack;
   commands_type result;
-	if(defineStack.contains(id_)) {
-			result.push_back({tu4::Tu4SetLetter<size_t>{id_, '_', '_', id_}});
-			return result;
-	}
 
-	defineStack.insert(id_);
-
-  auto alphabet = alphabet_->alphabet() || alphabet0;
-  size_t q = 0;
-
-  for (auto &child : childs_) {
-    auto subCommands = child->to4(alphabet);
-		if(subCommands.size() > 0 && std::begin(subCommands)->isTerm() && std::begin(subCommands)->q() == id_) {
-			std::cout << "Recursion for state: " << q << std::endl;
-			for(auto& letter : alphabet) 
-				result.push_back({tu4::Tu4SetLetter<size_t>(q, letter, letter, 0)});
-
-			continue;
-		} 
-			
-    size_t subMaxQ = subCommands.maxQ();
-
-    subCommands.shift(q);
-    result.extend(subCommands);
-
-    q += subMaxQ;
+  if (defineStack.contains(id_)) {
+    size_t outQ = defineStack[id_];
+    for (auto &letter : alphabet0)
+      result.push_back(
+          {tu4::Tu4SetLetter<size_t>{currentState, letter, letter, outQ}});
+		++currentState;
+    return result;
   }
 
-  cache_ = result;
-	defineStack.erase(id_);
+  defineStack[id_] = currentState;
+	if(cache_.has_value()) {
+		result = *cache_;
+		result.shiftTo(currentState);
+		currentState += result.deltaQ();
+	} else {
+		auto alphabet = alphabet_->alphabet() || alphabet0;
+
+		for (auto &child : childs_) {
+			auto subCommands = child->to4(alphabet);
+			result.extend(subCommands);
+		}
+		cache_ = result;
+	}
+
+  defineStack.erase(id_);
   return result;
 }
 
 commands_type BeginEnd::to4(const compiler::Alphabet<char> &alphabet) {
   commands_type result;
-  size_t q = 0;
 
   for (auto &child : childs_) {
     auto subCommands = child->to4(alphabet);
-    size_t subMaxQ = subCommands.maxQ();
-
-    subCommands.shift(q);
     result.extend(subCommands);
-
-    q += subMaxQ;
   }
 
   return result;
@@ -135,63 +121,54 @@ commands_type BeginEnd::to4(const compiler::Alphabet<char> &alphabet) {
 
 commands_type IfFi::to4(const compiler::Alphabet<char> &alphabet) {
   commands_type result;
-  size_t q = 1;
-  std::list<size_t> endStates;
+	size_t qBegin = currentState++;
 
   auto firstBranch = *std::begin(branches_);
   if (firstBranch->isAnyChar() && branches_.size() > 1)
-    throw std::logic_error(
-        "()!=[some letter] must be unique in IF ... FI mt");
+    throw std::logic_error("()!=[some letter] must be unique in IF ... FI mt");
+
 
   if (firstBranch->isAnyChar()) {
-    auto subCommands = firstBranch->to4(alphabet);
-    q += subCommands.maxQ();
-    subCommands.shift(1);
+		for(auto& letter : alphabet) 
+			if(letter != firstBranch->letterToCheck()) 
+				result.push_back({tu4::Tu4SetLetter<size_t>{qBegin, letter, letter, currentState}});
+
+		auto subCommands = firstBranch->to4(alphabet);
     result.extend(subCommands);
-    for (auto &letter : alphabet) {
-      result.push_back({tu4::Tu4SetLetter<size_t>(q, letter, letter, q + 1)});
-      if (letter == firstBranch->letterToCheck())
-        continue;
-      result.push_back({tu4::Tu4SetLetter<size_t>(0, letter, letter, 1)});
-    }
+
     result.push_back({tu4::Tu4SetLetter<size_t>(
-        0, firstBranch->letterToCheck(), firstBranch->letterToCheck(), q + 1)});
+        qBegin, firstBranch->letterToCheck(), firstBranch->letterToCheck(), currentState)});
+
     return result;
   }
 
   compiler::Alphabet<char> used;
+	std::list<size_t> endStates;
   for (auto &branch : branches_) {
-    result.push_back({tu4::Tu4SetLetter<size_t>{0, branch->letterToCheck(),
-                                                branch->letterToCheck(), q}});
-
+    result.push_back({tu4::Tu4SetLetter<size_t>{qBegin, branch->letterToCheck(),
+                                                branch->letterToCheck(), currentState}});
     auto subCommands = branch->to4(alphabet);
-    auto subMaxQ = subCommands.maxQ();
-    subCommands.shift(q);
-
     result.extend(subCommands);
-    q += subMaxQ;
 
-    endStates.push_back(q);
+    endStates.push_back(currentState++);
     used.insert(branch->letterToCheck());
-
-    ++q;
   }
 
   auto notUsed = alphabet / used;
   for (auto &letter : alphabet) {
     for (auto &endState : endStates)
       result.push_back(
-          {tu4::Tu4SetLetter<size_t>(endState, letter, letter, q)});
+          {tu4::Tu4SetLetter<size_t>(endState, letter, letter, currentState)});
 
     if (notUsed.contains(letter))
-      result.push_back({tu4::Tu4SetLetter<size_t>(0, letter, letter, q)});
+      result.push_back({tu4::Tu4SetLetter<size_t>(qBegin, letter, letter, currentState)});
   }
   return result;
 }
 
 commands_type DoOd::to4(const compiler::Alphabet<char> &alphabet) {
   commands_type result;
-  size_t q = 1;
+	size_t qBegin = currentState++;
 
   auto firstBranch = *std::begin(branches_);
   if (firstBranch->isAnyChar() && branches_.size() > 1)
@@ -199,58 +176,49 @@ commands_type DoOd::to4(const compiler::Alphabet<char> &alphabet) {
         "()!=[some letter] must be unique in DO ... OD circle if exists");
 
   if (firstBranch->isAnyChar()) {
+		for(auto& letter : alphabet) 
+			if(letter != firstBranch->letterToCheck()) 
+				result.push_back({tu4::Tu4SetLetter<size_t>{qBegin, letter, letter, currentState}});
+
     auto subCommands = firstBranch->to4(alphabet);
-    q += subCommands.maxQ();
-    subCommands.shift(1);
     result.extend(subCommands);
-    for (auto &letter : alphabet) {
-      result.push_back({tu4::Tu4SetLetter<size_t>{q, letter, letter, 0}});
-      if (letter == firstBranch->letterToCheck())
-        continue;
-      result.push_back({tu4::Tu4SetLetter<size_t>(0, letter, letter, 1)});
-    }
+
+    for (auto &letter : alphabet) 
+      result.push_back({tu4::Tu4SetLetter<size_t>{currentState, letter, letter, qBegin}});
+
+		++currentState;
     result.push_back({tu4::Tu4SetLetter<size_t>(
-        0, firstBranch->letterToCheck(), firstBranch->letterToCheck(), q + 1)});
+        qBegin, firstBranch->letterToCheck(), firstBranch->letterToCheck(), currentState)});
     return result;
   }
 
   compiler::Alphabet<char> used;
   for (auto &branch : branches_) {
     used.insert(branch->letterToCheck());
-    result.push_back({tu4::Tu4SetLetter<size_t>(0, branch->letterToCheck(),
-                                                branch->letterToCheck(), q)});
-
+    result.push_back({tu4::Tu4SetLetter<size_t>(qBegin, branch->letterToCheck(),
+                                                branch->letterToCheck(), currentState)});
     auto subCommands = branch->to4(alphabet);
-    auto subMaxQ = subCommands.maxQ();
-    subCommands.shift(q);
     result.extend(subCommands);
-    q += subMaxQ;
 
     for (auto &letter : alphabet)
-      result.push_back({tu4::Tu4SetLetter<size_t>(q, letter, letter, 0)});
+      result.push_back({tu4::Tu4SetLetter<size_t>(currentState, letter, letter, qBegin)});
 
-    ++q;
+		++currentState;
   }
 
   auto notUsed = alphabet / used;
   for (auto &letter : notUsed)
-    result.push_back({tu4::Tu4SetLetter<size_t>(0, letter, letter, q)});
+    result.push_back({tu4::Tu4SetLetter<size_t>(qBegin, letter, letter, currentState)});
 
   return result;
 }
 
 commands_type Branch::to4(const compiler::Alphabet<char> &alphabet) {
   commands_type result;
-  size_t q = 0;
 
   for (auto &child : childs_) {
     auto subCommands = child->to4(alphabet);
-    size_t subMaxQ = subCommands.maxQ();
-
-    subCommands.shift(q);
     result.extend(subCommands);
-
-    q += subMaxQ;
   }
 
   return result;
@@ -258,9 +226,10 @@ commands_type Branch::to4(const compiler::Alphabet<char> &alphabet) {
 
 commands_type SetLetter::to4(const compiler::Alphabet<char> &alphabet) {
   commands_type result;
+	size_t qBegin = currentState++;
 
   for (auto &letter : alphabet)
-    result.push_back({tu4::Tu4SetLetter<size_t>{0, letter, letter_, 1}});
+    result.push_back({tu4::Tu4SetLetter<size_t>{qBegin, letter, letter_, currentState}});
 
   return result;
 }
@@ -272,9 +241,35 @@ commands_type Tree::to4() {
   for (auto &c : commands)
     alphabet.insert(c.letterToCheck());
 
-  size_t q = commands.maxQ();
+	if(globals::printDebugInfo) 
+		std::cout << "Terminal state: " << currentState << std::endl;
+	
   for (auto &letter : alphabet)
-    commands.push_back({tu4::Tu4SetLetter<size_t>(q, letter, letter, q)});
+    commands.push_back({tu4::Tu4SetLetter<size_t>(currentState, letter, letter, currentState)});
 
   return commands;
 }
+
+class MoveMT : public NodeBase {
+  tu4::MoveDirection dir_;
+  void init(token::tokens_list &tokens) override {}
+
+public:
+  MoveMT(tu4::MoveDirection dir) : NodeBase(ExprType::MT), dir_(dir) {}
+  std::string toString() override {
+    return (dir_ == tu4::MoveDirection::LEFT ? "<" : ">");
+  }
+
+  commands_type to4(const compiler::Alphabet<char> &alphabet) override {
+    commands_type result;
+		size_t qBegin = currentState++;
+    for (auto &letter : alphabet)
+      result.push_back({tu4::Tu4Move<size_t>{qBegin, letter, dir_, currentState}});
+
+    return result;
+  }
+};
+
+std::map<size_t, NodeBase *> MT::definitions_{
+    {0, new MoveMT{tu4::MoveDirection::LEFT}},
+    {1, new MoveMT{tu4::MoveDirection::RIGHT}}};

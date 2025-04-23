@@ -47,19 +47,46 @@ public:
     for (auto &command : *this)
       command.shift(shiftSize);
   }
+	
+	void shiftTo(TQ state) {
+		TQ minQ = this->minQ();
+		if(minQ > state) {
+			TQ delta = minQ - state;
+			for (auto &command : *this)
+				command.shiftDown(delta);
+		} else {
+			TQ delta = state - minQ;
+			for (auto &command : *this)
+				command.shift(delta);
 
-  TQ maxQ() const {
+		}
+		
+		
+	}
+
+	TQ minQ() const {
+		if(this->empty()) 
+			return 0;
+    TQ minQ =  std::begin(*this)->q();
+    for (auto &command : *this)
+      if(command.q0() < minQ) 
+				minQ = command.q0();
+
+		return minQ;
+	}
+
+  TQ deltaQ() const {
 		if(this->empty()) 
 			return 0;
 
-    TQ maxQ = std::begin(*this)->q();
+    TQ maxQ = std::begin(*this)->q(), minQ = maxQ;
     for (auto &command : *this)
-      if (command.q() > maxQ) {
+      if (command.q() > maxQ) 
         maxQ = command.q();
-			}
-	
+			 else if(command.q0() < minQ) 
+				minQ = command.q0();
 
-		return maxQ;
+		return maxQ - minQ;
   }
 
 	void extend(const Commands<TQ, TLetter> & other) {

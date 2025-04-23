@@ -56,4 +56,6 @@ template <class ...TS>
 struct overloads : TS... {
 	using TS::operator()...;
 };
+
+void fileRollAround(const std::string & fileName, size_t position, size_t width);
 #endif // !UTILS_HPP_

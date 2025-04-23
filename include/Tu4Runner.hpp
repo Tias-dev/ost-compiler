@@ -6,6 +6,7 @@
 #include "Tu4Command.hpp"
 #include "exception.hpp"
 #include "utils.hpp"
+#include <algorithm>
 #include <cstddef>
 #include <map>
 #include <vector>
@@ -19,7 +20,11 @@ private:
 public:
   Tu4Runner(Line<CharT> &line, const compiler::Commands<TQ, CharT> &commands)
       : line_(line) {
-    commands_.assign(commands.maxQ() + 1, {});
+		size_t maxQ = 0;
+		for(auto& command : commands) 
+			maxQ = std::max(command.q(), maxQ);
+		
+    commands_.assign(maxQ + 1, {});
     for (auto &command : commands) {
       commands_[command.q0()][command.letterToCheck()] = command;
 		}

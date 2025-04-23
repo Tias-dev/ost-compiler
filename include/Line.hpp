@@ -60,6 +60,14 @@ public:
 	CharT getLetter() const {
 		return data_[cursor_];
 	}
+
+	bool operator==(const Line<CharT> & other) const {
+		return line() == other.line() && cursor() == other.cursor();
+	}
+
+	bool operator!=(const Line<CharT> & other) const {
+		return !(*this == other);
+	}
 };
 
 } // namespace tu4run

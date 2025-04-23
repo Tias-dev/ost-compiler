@@ -22,6 +22,9 @@ target_link_libraries(ost src_lib)
 add_executable(tu4run Tu4Run.cpp)
 target_link_libraries(tu4run src_lib)
 
+add_executable(osttest Tests.cpp)
+target_link_libraries(osttest src_lib)
+
 # include(FetchContent)
 # FetchContent_Declare(
 #   googletest

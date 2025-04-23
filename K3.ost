@@ -1,8 +1,19 @@
+" 123 12 1 234"
 MT K3;
 	BEGIN
 		ALPHABET: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9;
-		MT R; LIB;
-		MT L; LIB;
+		MT R;
+		BEGIN
+			ALPHABET: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9;
+			r; DO () != _ ? r OD;
+		END R;
+
+		MT L;
+		BEGIN
+			ALPHABET: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9;
+			l; DO () != _ ? l OD;
+		END L;
+
 		L**3 ; r;
 		DO 0? a(_); R**4; a(0); L**4; a(0) ;r
 			1? a(_); R**4; a(1); L**4; a(1) ;r
@@ -17,6 +28,4 @@ MT K3;
 		OD;
 		R**3;
 END K3
-
-
-
+"16: 123 12 1 234 12"

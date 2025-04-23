@@ -21,54 +21,16 @@ Tree::Tree(token::tokens_list &tokens, const std::string &fileName) {
     root_ = new MT::Definition{tokens};
   } catch (error::PositionErrorBase &e) {
     std::cout << "Error: " << e.what() << std::endl;
-    size_t position = e.position();
-    size_t width = 60;
-    std::fstream fileRunner(fileName);
-    for (size_t i = 0; i < position - std::min(position, width / 2); ++i)
-      fileRunner.get();
-
-    char c;
-    for (size_t i = 0; i < width; ++i) {
-      c = fileRunner.get();
-      if (isspace(c))
-        c = ' ';
-
-      std::cout << c;
-    }
-    std::cout << std::endl;
-    for (size_t i = 0; i < width / 2; ++i)
-      std::cout << " ";
-    std::cout << "^" << std::endl;
-
+    size_t position = e.position(); size_t width = 60;
+		fileRollAround(fileName, position, width);
     exit(1);
   }
   if (!tokens.empty())
     throwMismatch("End of file", *std::begin(tokens));
 }
 
-class MoveMT : public NodeBase {
-  tu4::MoveDirection dir_;
-  void init(token::tokens_list &tokens) override {}
-
-public:
-  MoveMT(tu4::MoveDirection dir) : NodeBase(ExprType::MT), dir_(dir) {}
-  std::string toString() override {
-    return (dir_ == tu4::MoveDirection::LEFT ? "<" : ">");
-  }
-
-  commands_type to4(const compiler::Alphabet<char> &alphabet) override {
-    commands_type result;
-    for (auto &letter : alphabet)
-      result.push_back({tu4::Tu4Move<size_t>{0, letter, dir_, 1}});
-
-    return result;
-  }
-};
 
 bimap<std::string, size_t> MT::namesTable_{{{"l", 0}, {"r", 1}}};
-std::map<size_t, NodeBase *> MT::definitions_{
-    {0, new MoveMT{tu4::MoveDirection::LEFT}},
-    {1, new MoveMT{tu4::MoveDirection::RIGHT}}};
 size_t MT::currentId_ = MT::namesTable_.size();
 
 MT::MT(token::tokens_list &tokens) : NodeBase(ExprType::MT) {
@@ -513,7 +475,7 @@ void Branch::init(token::tokens_list &tokens) {
 
   auto first = std::begin(tokens), second = std::next(first);
   while (tokens.size() > 2 &&
-         !(*first == token::KwType::FI || *second == token::OpType::QUESTION ||
+         !(*first == token::KwType::FI || *first == token::KwType::OD || *second == token::OpType::QUESTION ||
            *second == token::OpType::RIGHT_BRACKET)) {
     childs_.push_back(new MT{tokens});
 
