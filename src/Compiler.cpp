@@ -13,7 +13,7 @@ using namespace ast;
 
 static size_t currentState = 0;
 
-commands_type MT::to4(const compiler::Alphabet<char> &alphabet) {
+commands_type MT::to4_impl(const compiler::Alphabet<char> &alphabet) {
   commands_type result;
   switch (usage_) {
   case Usage::DEFINITION:
@@ -31,7 +31,7 @@ commands_type MT::to4(const compiler::Alphabet<char> &alphabet) {
   return result;
 }
 
-commands_type MT::Lib::to4(const compiler::Alphabet<char> &alphabet) {
+commands_type MT::Lib::to4_impl(const compiler::Alphabet<char> &alphabet) {
   commands_type commands;
 	if(cache_.has_value()) {
 		commands = *cache_;
@@ -64,11 +64,14 @@ commands_type MT::Lib::to4(const compiler::Alphabet<char> &alphabet) {
   return commands;
 }
 
-commands_type MT::Call::to4(const compiler::Alphabet<char> &alphabet) {
+commands_type MT::Call::to4_impl(const compiler::Alphabet<char> &alphabet) {
   commands_type result;
+	NodeBase * definition = definitions_[id_];
+	definition->begin_ = begin();
+	definition->end_ = end();
 
-  for (size_t i = 0; i < pow_; ++i) {
-		auto subCommands = definitions_[id_]->to4(alphabet);
+	for (size_t i = 0; i < pow_; ++i) {
+		auto subCommands = definition->to4(alphabet);
     result.extend(subCommands);
   }
 	
@@ -76,7 +79,7 @@ commands_type MT::Call::to4(const compiler::Alphabet<char> &alphabet) {
   return result;
 }
 
-commands_type MT::Definition::to4(const compiler::Alphabet<char> &alphabet0) {
+commands_type MT::Definition::to4_impl(const compiler::Alphabet<char> &alphabet0) {
   static std::map<size_t, size_t> defineStack;
   commands_type result;
 
@@ -108,7 +111,7 @@ commands_type MT::Definition::to4(const compiler::Alphabet<char> &alphabet0) {
   return result;
 }
 
-commands_type BeginEnd::to4(const compiler::Alphabet<char> &alphabet) {
+commands_type BeginEnd::to4_impl(const compiler::Alphabet<char> &alphabet) {
   commands_type result;
 
   for (auto &child : childs_) {
@@ -119,7 +122,7 @@ commands_type BeginEnd::to4(const compiler::Alphabet<char> &alphabet) {
   return result;
 }
 
-commands_type IfFi::to4(const compiler::Alphabet<char> &alphabet) {
+commands_type IfFi::to4_impl(const compiler::Alphabet<char> &alphabet) {
   commands_type result;
 	size_t qBegin = currentState++;
 
@@ -133,7 +136,7 @@ commands_type IfFi::to4(const compiler::Alphabet<char> &alphabet) {
 			if(letter != firstBranch->letterToCheck()) 
 				result.push_back({tu4::Tu4SetLetter<size_t>{qBegin, letter, letter, currentState}});
 
-		auto subCommands = firstBranch->to4(alphabet);
+		auto subCommands = firstBranch->to4_impl(alphabet);
     result.extend(subCommands);
 
     result.push_back({tu4::Tu4SetLetter<size_t>(
@@ -147,7 +150,7 @@ commands_type IfFi::to4(const compiler::Alphabet<char> &alphabet) {
   for (auto &branch : branches_) {
     result.push_back({tu4::Tu4SetLetter<size_t>{qBegin, branch->letterToCheck(),
                                                 branch->letterToCheck(), currentState}});
-    auto subCommands = branch->to4(alphabet);
+    auto subCommands = branch->to4_impl(alphabet);
     result.extend(subCommands);
 
     endStates.push_back(currentState++);
@@ -166,7 +169,7 @@ commands_type IfFi::to4(const compiler::Alphabet<char> &alphabet) {
   return result;
 }
 
-commands_type DoOd::to4(const compiler::Alphabet<char> &alphabet) {
+commands_type DoOd::to4_impl(const compiler::Alphabet<char> &alphabet) {
   commands_type result;
 	size_t qBegin = currentState++;
 
@@ -180,7 +183,7 @@ commands_type DoOd::to4(const compiler::Alphabet<char> &alphabet) {
 			if(letter != firstBranch->letterToCheck()) 
 				result.push_back({tu4::Tu4SetLetter<size_t>{qBegin, letter, letter, currentState}});
 
-    auto subCommands = firstBranch->to4(alphabet);
+    auto subCommands = firstBranch->to4_impl(alphabet);
     result.extend(subCommands);
 
     for (auto &letter : alphabet) 
@@ -197,7 +200,7 @@ commands_type DoOd::to4(const compiler::Alphabet<char> &alphabet) {
     used.insert(branch->letterToCheck());
     result.push_back({tu4::Tu4SetLetter<size_t>(qBegin, branch->letterToCheck(),
                                                 branch->letterToCheck(), currentState)});
-    auto subCommands = branch->to4(alphabet);
+    auto subCommands = branch->to4_impl(alphabet);
     result.extend(subCommands);
 
     for (auto &letter : alphabet)
@@ -213,7 +216,7 @@ commands_type DoOd::to4(const compiler::Alphabet<char> &alphabet) {
   return result;
 }
 
-commands_type Branch::to4(const compiler::Alphabet<char> &alphabet) {
+commands_type Branch::to4_impl(const compiler::Alphabet<char> &alphabet) {
   commands_type result;
 
   for (auto &child : childs_) {
@@ -224,7 +227,7 @@ commands_type Branch::to4(const compiler::Alphabet<char> &alphabet) {
   return result;
 }
 
-commands_type SetLetter::to4(const compiler::Alphabet<char> &alphabet) {
+commands_type SetLetter::to4_impl(const compiler::Alphabet<char> &alphabet) {
   commands_type result;
 	size_t qBegin = currentState++;
 
@@ -237,14 +240,14 @@ commands_type SetLetter::to4(const compiler::Alphabet<char> &alphabet) {
 commands_type Tree::to4() {
   compiler::Alphabet<char> alphabet;
 
-  auto commands = root_->to4(alphabet);
+  auto commands = root_->to4_impl(alphabet);
   for (auto &c : commands)
     alphabet.insert(c.letterToCheck());
 
 	if(globals::printDebugInfo) 
 		std::cout << "Terminal state: " << currentState << std::endl;
 	
-  for (auto &letter : alphabet)
+	for (auto &letter : alphabet)
     commands.push_back({tu4::Tu4SetLetter<size_t>(currentState, letter, letter, currentState)});
 
   return commands;
@@ -260,7 +263,7 @@ public:
     return (dir_ == tu4::MoveDirection::LEFT ? "<" : ">");
   }
 
-  commands_type to4(const compiler::Alphabet<char> &alphabet) override {
+  commands_type to4_impl(const compiler::Alphabet<char> &alphabet) override {
     commands_type result;
 		size_t qBegin = currentState++;
     for (auto &letter : alphabet)

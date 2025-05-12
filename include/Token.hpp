@@ -17,6 +17,7 @@ class Token {
 
 protected:
   Token(size_t begin, size_t end, Type type);
+
 public:
   virtual std::string toString() const = 0;
   virtual size_t begin() const { return begin_; }
@@ -37,10 +38,22 @@ public:
   }
   static std::string typeToString() { return "Name"; }
 
-	const std::string & name() const {return name_;}
+  const std::string &name() const { return name_; }
 };
 
-enum class KwType { MT, BEGIN, END, ALPHABET, IF, FI, DO, OD, LIB };
+enum class KwType {
+  MT,
+  BEGIN,
+  END,
+  ALPHABET,
+  IF,
+  FI,
+  DO,
+  OD,
+  LIB,
+  LAMBDA,
+  SET_LETTER
+};
 
 class Keyword : public Token {
   KwType kwtype_;
@@ -58,10 +71,8 @@ enum class OpType {
   TERMINATOR,
   COMA,
   SEMICOLON,
-  SET_LETTER,
   LEFT_BRACKET,
   RIGHT_BRACKET,
-  LAMBDA,
   POW,
   QUESTION,
   NOT_EQUAL

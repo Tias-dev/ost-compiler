@@ -2,6 +2,7 @@
 #define TU_4_COMMAND_HPP_
 
 #include "exception.hpp"
+#include "globals.hpp"
 #include "utils.hpp"
 #include <optional>
 #include <ostream>
@@ -19,7 +20,10 @@ template <typename TQ, typename TLetter = char> class Tu4Command {
 
 public:
   Tu4Command(TQ q0, TQ q, TLetter letterToCheck, std::string comment = "")
-      : q0_(q0), q_(q), letterToCheck_(letterToCheck), comment_(comment) {}
+      : q0_(q0), q_(q), letterToCheck_(letterToCheck), comment_(comment) {
+				if(globals::enableBreakpoints) 
+					comment_ = globals::breakpointer->getCurrentPosition();
+			}
 
   TQ q0() const { return q0_; }
   TQ q() const { return q_; }
@@ -45,8 +49,8 @@ class Tu4SetLetter : public Tu4Command<TQ, TLetter> {
   TLetter letterToSet_;
 
 public:
-  Tu4SetLetter(TQ q0, TLetter letterToCheck, TLetter letterToSet, TQ q)
-      : Tu4Command<TQ>(q0, q, letterToCheck), letterToSet_(letterToSet) {}
+  Tu4SetLetter(TQ q0, TLetter letterToCheck, TLetter letterToSet, TQ q, std::string comment = "")
+      : Tu4Command<TQ>(q0, q, letterToCheck, comment), letterToSet_(letterToSet) {}
 
   void print(std::ostream &os) const override {
     os << this->q0() << ',' << this->letterToCheck() << ',' << letterToSet_
@@ -66,7 +70,7 @@ class Tu4Move : public Tu4Command<TQ, TLetter> {
   MoveDirection dir_;
 
 public:
-  Tu4Move(TQ q0, TLetter letterToCheck, MoveDirection dir, TQ q)
+  Tu4Move(TQ q0, TLetter letterToCheck, MoveDirection dir, TQ q, std::string comment = "")
       : Tu4Command<TQ>(q0, q, letterToCheck), dir_(dir) {}
 
   void print(std::ostream &os) const override {

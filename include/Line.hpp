@@ -62,7 +62,19 @@ public:
 	}
 
 	bool operator==(const Line<CharT> & other) const {
-		return line() == other.line() && cursor() == other.cursor();
+		auto & line1 = line(), &line2 = other.line();
+		size_t minLen = std::min(line1.size(), line2.size());
+		for(size_t i = 0; i < minLen; ++i) 
+			if(line1[i] != line2[i]) 
+				return false;
+		for(size_t i = minLen; i < line1.size(); ++i) 
+			if(line1[i] != lambda_) 
+				return false;	
+		for(size_t i = minLen; i < line2.size(); ++i) 
+			if(line2[i] != other.lambda_) 
+				return false;	
+			
+		return cursor() == other.cursor();
 	}
 
 	bool operator!=(const Line<CharT> & other) const {

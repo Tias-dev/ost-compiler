@@ -2,10 +2,8 @@
 #include "Compiler.hpp"
 #include "Token.hpp"
 #include "Tokenizer.hpp"
-#include "Tu4Command.hpp"
 #include "exception.hpp"
 #include "utils.hpp"
-#include <fstream>
 #include <iostream>
 #include <iterator>
 #include <optional>
@@ -105,6 +103,7 @@ void Alphabet::init(token::tokens_list &tokens) {
 
   if (token::KwType::ALPHABET != token)
     throwMismatch("ALPHABET", token);
+	begin_ = token.begin();
   session.popFront();
 
   token = *std::begin(tokens);
@@ -134,6 +133,7 @@ void Alphabet::init(token::tokens_list &tokens) {
 
   if (tokens.empty() || (*std::begin(tokens) != token::OpType::TERMINATOR))
     throwSemantic("Alphabet definition must be finished by ;", token.end());
+	end_ = token.begin();
 
   session.popFront();
   session.commit();
@@ -142,12 +142,14 @@ void Alphabet::init(token::tokens_list &tokens) {
 void MT::init(token::tokens_list &tokens) {
   auto session = tokens.session();
   token::token_union token = session.popFrontAndReturn();
-
+	begin_ = token.begin();
 	usage_ = Usage::OTHER;
+
   if (token == token::KwType::DO) {
     session.rollback();
     node_ = new DoOd{tokens};
 		childs_.push_back(node_);
+		end_ = node_->end();
     return;
   }
 
@@ -155,13 +157,15 @@ void MT::init(token::tokens_list &tokens) {
     session.rollback();
     node_ = new IfFi{tokens};
 		childs_.push_back(node_);
+		end_ = node_->end();
     return;
   }
 
-  if (token == token::OpType::SET_LETTER) {
+  if (token == token::KwType::SET_LETTER) {
     session.rollback();
     node_ = new SetLetter{tokens};
 		childs_.push_back(node_);
+		end_ = node_->end();
     return;
   }
 
@@ -169,7 +173,8 @@ void MT::init(token::tokens_list &tokens) {
     if (token.isName() && MT::isMTName(token.getName())) {
       session.rollback();
       usage_ = Usage::CALL;
-      childs_.push_back(new Call{tokens});
+      childs_.push_back(node_ = new Call{tokens});
+			end_ = node_->end();
       return;
     }
     throwSemantic("Expected already defined mt name", token.begin());
@@ -193,13 +198,15 @@ void MT::init(token::tokens_list &tokens) {
 
     if (token == token::KwType::LIB) {
       usage_ = Usage::LIB;
-      childs_.push_back(new Lib{tokens});
+      childs_.push_back(node_ = new Lib{tokens});
     } else {
       usage_ = Usage::DEFINITION;
-      childs_.push_back(new Definition{tokens});
+      childs_.push_back(node_ = new Definition{tokens});
     }
+		end_ = node_->end();
     return;
   }
+	end_ = node_->end();
 }
 
 std::optional<size_t> toNumber(const std::string &s) {
@@ -219,6 +226,8 @@ void MT::Call::init(token::tokens_list &tokens) {
 
   if (!token.isName() || !namesTable_.contains(token.getName()))
     throwSemantic("Expected already defined mt name", token.begin());
+	begin_ = token.begin();
+	end_ = token.begin() + token.getName().size();
 
   id_ = namesTable_[token.getName()];
 
@@ -234,6 +243,7 @@ void MT::Call::init(token::tokens_list &tokens) {
       throwMismatch("positive pow number", token);
 
     pow_ = *pow;
+		end_ = token.end();
     token = *std::begin(tokens);
   }
 
@@ -249,6 +259,8 @@ void MT::Lib::init(token::tokens_list &tokens) {
 
   if (token != token::KwType::MT)
     throwMismatch("MT", token);
+
+	begin_ = token.begin();
 
   token = session.popFrontAndReturn();
   if (!token.isName())
@@ -268,6 +280,7 @@ void MT::Lib::init(token::tokens_list &tokens) {
   if (token != token::KwType::LIB)
     throwMismatch("LIB", token);
 
+	end_ = token.end();
   token = session.popFrontAndReturn();
   if (token != token::OpType::TERMINATOR)
     throwMismatch(";", token);
@@ -281,6 +294,7 @@ void MT::Definition::init(token::tokens_list &tokens) {
   auto token = session.popFrontAndReturn();
   if (token != token::KwType::MT)
     throwMismatch("MT", token);
+	begin_ = token.begin();
 
   token = session.popFrontAndReturn();
   if (!token.isName())
@@ -313,6 +327,8 @@ void MT::Definition::init(token::tokens_list &tokens) {
   auto &endToken = body->endMTData();
   if (!endToken.isName() || endToken.getName() != name)
     throwMismatch(name, endToken);
+	
+	end_ = endToken.end();
   session.commit();
 
 }
@@ -321,18 +337,20 @@ void SetLetter::init(token::tokens_list &tokens) {
   auto session = tokens.session();
 
   auto token = session.popFrontAndReturn();
-  if (token != token::OpType::SET_LETTER)
+  if (token != token::KwType::SET_LETTER)
     throwMismatch("a", token);
+
+	begin_ = token.begin();
 
   token = session.popFrontAndReturn();
   if (token != token::OpType::LEFT_BRACKET)
     throwMismatch("(", token);
 
   token = session.popFrontAndReturn();
-  if (!(token == token::OpType::LAMBDA || token.isName()))
+  if (!(token == token::KwType::LAMBDA || token.isName()))
     throwMismatch("_ or letter", token);
 
-  if (token == token::OpType::LAMBDA)
+  if (token == token::KwType::LAMBDA)
     letter_ = '_';
   else {
     std::string name = token.getName();
@@ -344,6 +362,8 @@ void SetLetter::init(token::tokens_list &tokens) {
   token = session.popFrontAndReturn();
   if (token != token::OpType::RIGHT_BRACKET)
     throwMismatch(")", token);
+
+	end_ = token.end();
 
   session.commit();
 
@@ -360,6 +380,7 @@ void BeginEnd::init(token::tokens_list &tokens) {
   auto token = session.popFrontAndReturn();
   if (token != token::KwType::BEGIN)
     throwMismatch("BEGIN", token);
+	begin_ = token.begin();
   auto beginToken = token;
   session.commit();
   while (!tokens.empty() && token != token::KwType::END) {
@@ -391,7 +412,7 @@ void BeginEnd::init(token::tokens_list &tokens) {
     // -----------------------------
     else if (token == token::OpType::TERMINATOR)
       session.popFront();
-    else if (token == token::OpType::SET_LETTER)
+    else if (token == token::KwType::SET_LETTER)
       childs_.push_back(new SetLetter{tokens});
     // ----------------------------------------------
     // |  all unchecked cases -- unexpected tokens  |
@@ -411,6 +432,7 @@ void BeginEnd::init(token::tokens_list &tokens) {
   if (!token.isName())
     throwMismatch("MT name", token);
   endMT_ = token;
+	end_ = endMT_->end();
 
   if (!tokens.empty() && *std::begin(tokens) == token::OpType::TERMINATOR)
     session.popFront();
@@ -425,6 +447,7 @@ void DoOd::init(token::tokens_list &tokens) {
   if (token != token::KwType::DO)
     throwMismatch("DO", token);
 
+	begin_ = token.begin();
   auto beginToken = token;
   token = *std::begin(tokens);
   while (!tokens.empty() && token != token::KwType::OD) {
@@ -435,6 +458,7 @@ void DoOd::init(token::tokens_list &tokens) {
   if (tokens.empty())
     throw error::ClosingTokenNotFound(beginToken);
 
+	end_ = token.end();
   session.popFront();
   token = session.popFrontAndReturn();
   if (token != token::OpType::TERMINATOR)
@@ -443,12 +467,14 @@ void DoOd::init(token::tokens_list &tokens) {
   session.commit();
   for (auto &branch : branches_)
     childs_.push_back(branch);
+
 }
 
 void Branch::init(token::tokens_list &tokens) {
   auto session = tokens.session();
 
   auto token = session.popFrontAndReturn();
+	begin_ = token.begin();
   if (token == token::OpType::LEFT_BRACKET) {
     token = session.popFrontAndReturn();
     if (token != token::OpType::RIGHT_BRACKET)
@@ -461,7 +487,7 @@ void Branch::init(token::tokens_list &tokens) {
     token = session.popFrontAndReturn();
   }
 
-  if (token == token::OpType::LAMBDA)
+  if (token == token::KwType::LAMBDA)
     letterToCheck_ = '_';
   else {
     if (!token.isName() || token.getName().size() > 1)
@@ -478,6 +504,7 @@ void Branch::init(token::tokens_list &tokens) {
          !(*first == token::KwType::FI || *first == token::KwType::OD || *second == token::OpType::QUESTION ||
            *second == token::OpType::RIGHT_BRACKET)) {
     childs_.push_back(new MT{tokens});
+		end_ = (*std::prev(std::end(childs_)))->end();
 
     first = std::begin(tokens);
     second = std::next(first);
@@ -489,6 +516,7 @@ void IfFi::init(token::tokens_list &tokens) {
   auto session = tokens.session();
 
   auto token = session.popFrontAndReturn();
+	begin_ = token.begin();
   if (token != token::KwType::IF)
     throwMismatch("IF", token);
 
@@ -503,6 +531,7 @@ void IfFi::init(token::tokens_list &tokens) {
   if (tokens.size() == 0)
     throw error::UnexpectedFileEnd("FI");
 
+	end_ = token.end();
   session.popFront();
   if (tokens.size() > 0 && *std::begin(tokens) == token::OpType::TERMINATOR)
     session.popFront();
@@ -520,7 +549,7 @@ void Tree::print(std::ostream &os) { root_->print(os, 0); }
 void NodeBase::print(std::ostream &os, size_t depth) {
   for (size_t i = 0; i < depth; ++i)
     os << "  ";
-  os << toString() << std::endl;
+  os << toString() << " begin: " << begin_ << " end: " << end_ << std::endl;
   for (auto &elem : childs_)
     elem->print(os, depth + 1);
 }

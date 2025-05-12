@@ -1,4 +1,5 @@
 #include "AST.hpp"
+#include "BreakPointer.hpp"
 #include "CharStream.hpp"
 #include "Compiler.hpp"
 #include "Tokenizer.hpp"
@@ -19,6 +20,9 @@ int main(int argc, char * argw[]) {
 	globals::libDir = (argc > 3 ? argw[3] : globals::libDir);
 	if(globals::libDir[globals::libDir.size() - 1] != '/') 
 		globals::libDir.push_back('/');
+
+	if(globals::enableBreakpoints) 
+		globals::breakpointer = new FileBreakpointer{fileName};
 
 	std::fstream file(fileName);
 	if(!file.is_open()) 

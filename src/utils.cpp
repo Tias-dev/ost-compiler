@@ -21,3 +21,21 @@ void fileRollAround(const std::string & fileName, size_t position, size_t width)
       std::cout << " ";
     std::cout << "^" << std::endl;
 }
+
+std::string strip(const std::string & s) {
+	std::string result;
+	if(s.size() == 0) 
+		return result;
+		
+	size_t i = 0, j = s.size()-1;
+	while(i < s.size() && s[i] == ' ') 
+		++i;
+	
+	while(j > 0 && s[j] == ' ') 
+		--j;
+
+	for(size_t k = i; k <= j; ++k) 
+		result.push_back(s[k]);
+
+	return result;
+}

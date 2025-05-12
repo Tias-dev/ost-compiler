@@ -6,25 +6,27 @@
 #include "exception.hpp"
 #include "utils.hpp"
 #include <cmath>
+#include <cstddef>
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
-#include <sstream>
 #include <stdexcept>
 #include <string>
 const char *help =
-    "osttest [TEST .ost]\n"
+    "osttest [PROGRAM .ost] [TESTS plaintext]\n"
     "osttest -- ost toolkit testings utility\n"
     "Works in given -- expected format\n"
     "\n"
-    "TEST format:\n"
-    "TEST is the usual .ost file with:\n"
-    "1. [line] one line comment at the top of the file -- it is base line "
-    "state\n"
-    "2. [number: line] one line comment at the bottom of the file -- it is "
-    "expected line state, number is cursor pos\n"
+    "PROGRAM format:\n"
+    "PROGRAM is the usual .ost file\n"
+		"TEST is the plaintext file with pairs of 2/(3) lines:"
+    "1. first line is given line state"
+    "2. second line is expected line state\n"
+		"3. OPTIONAL: cursor position at the end of program(if not specified it will be after last non space cell)"
+		"4. Tests delimeter: line of any number of '-' symbols"
     "\n"
     "Output:\n"
-    "Returns 0 if test passed i.e. result line state equal expected line state "
+    "Returns 0 if all tests are passed i.e. result line state equal expected line state for all tests "
     "including cursor position and non 0 otherwise\n"
     "If any exceptions happens, print exception what() and return also non 0\n";
 
@@ -34,34 +36,12 @@ int main(int argc, char *argw[]) {
     return 1;
   }
 
-  std::string given, expected, temp;
   size_t cursorExpected;
 
-  std::ifstream file(argw[1]);
-  if (file.bad())
+  std::ifstream programFile(argw[1]);
+  if (!programFile.good())
     throw std::invalid_argument(strfast() << "Can't open file: " << argw[1]);
-
-  std::getline(file, given);
-  while (!file.eof()) {
-    std::getline(file, temp);
-    if (!file.eof())
-      expected = temp;
-  }
-
-  given = given.substr(1, given.size() - 2);
-  expected = expected.substr(1, expected.size() - 2);
-
-  std::stringstream ss(expected);
-  ss >> cursorExpected >> temp;
-  std::getline(ss, expected);
-
-	tu4run::Line<char> givenLine{given}, expectedLine{expected};
-
-	file.close();
-	file.open(argw[1]);
-
-	CharStream stream{file};
-	
+	CharStream stream{programFile};
 	token::Tokenizer tokenizer{};
 	token::tokens_list tokens;
 	try {
@@ -73,15 +53,53 @@ int main(int argc, char *argw[]) {
 	}
 	ast::Tree tree{tokens, argw[1]};
 	auto commands = tree.to4();
-	
-	tu4run::Tu4Runner<size_t, char> runner{givenLine, commands};
-	runner.loop();
-	if(givenLine != expectedLine) {
-		std::cout << "Error:" << std::endl;
-		std::cout << "Expected: " << expectedLine.cursor() << ": [" << expectedLine.line() << "]" << std::endl;
-		std::cout << "Given: " << givenLine.cursor() << ": [" << givenLine.line() << "]" << std::endl;
-		return 1;
+
+	std::ifstream testsFile(argw[2]);
+	size_t i_test = 1;
+	std::string given = "", expected, delimeter;
+
+	bool wasErrors = false;
+	while(!testsFile.eof()) {
+		long long cursor = -1;
+
+		if(given == "") {
+			std::getline(testsFile, given);
+			continue;
+		} 
+
+		std::getline(testsFile, expected);
+		std::getline(testsFile, delimeter);
+		delimeter = strip(delimeter);
+		if(delimeter.size() > 0 && delimeter[0] >= '0' && delimeter[0] <= '9') {
+			cursor = atol(delimeter.c_str());
+			std::getline(testsFile, delimeter);
+		}
+
+		for(auto& c : delimeter) 
+			if(c != '-') 
+				throw std::invalid_argument(strfast() << "Tests delimeter awaits to consist of '-' only, [" << c << "] given");
+		
+			
+		tu4run::Line<char> givenLine{given}, expectedLine{expected};
+		if(cursor != -1) {
+			while(cursor > expectedLine.cursor()) 
+				expectedLine.shiftRight();
+			while(cursor < expectedLine.cursor())
+				expectedLine.shiftLeft();
+		}
+			
+		tu4run::Tu4Runner<size_t, char> runner{givenLine, commands};
+		runner.loop();
+		if(givenLine != expectedLine) {
+			std::cout << i_test<< ") Error:" << std::endl;
+			std::cout << "Expected: " << expectedLine.cursor() << ": [" << expectedLine.line() << "]" << std::endl;
+			std::cout << "Given: " << givenLine.cursor() << ": [" << givenLine.line() << "]" << std::endl;
+			wasErrors = true;
+		} else {
+			std::cout << i_test << ") Passed" << std::endl;
+		}
+		given = "", expected = "", delimeter = "", ++i_test;
 	}
-	std::cout << "Passed" << std::endl;
-  return 0;
+
+  return wasErrors ? 1 : 0;
 }

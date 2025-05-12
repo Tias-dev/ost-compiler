@@ -23,15 +23,15 @@ std::pair<OpTrie, KwTrie> initTries() {
   kw.add("DO", token::KwType::DO);
   kw.add("OD", token::KwType::OD);
   kw.add("LIB", token::KwType::LIB);
+  kw.add("_", token::KwType::LAMBDA);
+  kw.add("a", token::KwType::SET_LETTER);
 
   OpTrie op;
   op.add(";", token::OpType::TERMINATOR);
   op.add(",", token::OpType::COMA);
   op.add(":", token::OpType::SEMICOLON);
-  op.add("a", token::OpType::SET_LETTER);
   op.add("(", token::OpType::LEFT_BRACKET);
   op.add(")", token::OpType::RIGHT_BRACKET);
-  op.add("_", token::OpType::LAMBDA);
   op.add("**", token::OpType::POW);
   op.add("?", token::OpType::QUESTION);
   op.add("!=", token::OpType::NOT_EQUAL);

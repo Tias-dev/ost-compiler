@@ -3,6 +3,7 @@
 
 #include "Compiler.hpp"
 #include "Tokenizer.hpp"
+#include "globals.hpp"
 #include "utils.hpp"
 #include <iostream>
 #include <list>
@@ -19,26 +20,38 @@ protected:
   std::list<NodeBase *> childs_;
   ExprType type_;
   virtual void init(token::tokens_list &tokens) = 0;
+  size_t begin_ = 0, end_ = 0;
 
+  virtual commands_type to4_impl(const compiler::Alphabet<char> &alphabet) = 0;
+	friend class MT;
 public:
   NodeBase(ExprType type) : type_(type) {}
 
   virtual std::string toString() = 0;
   void print(std::ostream &os, size_t depth = 0);
-  virtual commands_type to4(const compiler::Alphabet<char> &alphabet) = 0;
+  commands_type to4(const compiler::Alphabet<char> &alphabet) {
+    globals::breakpointer->onEnter(begin(), end());
+    auto result = to4_impl(alphabet);
+    globals::breakpointer->onExit();
+
+    return result;
+  }
+
+  size_t begin() const { return begin_; }
+  size_t end() const { return end_; }
 };
 
 class Alphabet : public NodeBase {
   compiler::Alphabet<char> alphabet_{'_'};
 
   void init(token::tokens_list &tokens) override;
+
 public:
   Alphabet(token::tokens_list &tokens);
 
   std::string toString() override;
   const compiler::Alphabet<char> &alphabet() { return alphabet_; }
-  commands_type to4(const compiler::Alphabet<char> &alphabet) override {
-		std::cout << toString() << std::endl;
+  commands_type to4_impl(const compiler::Alphabet<char> &alphabet) override {
     return {};
   }
 };
@@ -52,38 +65,37 @@ public:
 
   const token::token_union &endMTData() { return *endMT_; }
   std::string toString() override;
-  commands_type to4(const compiler::Alphabet<char> &alphabet) override;
+  commands_type to4_impl(const compiler::Alphabet<char> &alphabet) override;
 };
 
 class Branch : public NodeBase {
-	char letterToCheck_ = 0;
-	bool isAnyChar_ = false;
-	void init(token::tokens_list &tokens) override;
+  char letterToCheck_ = 0;
+  bool isAnyChar_ = false;
+  void init(token::tokens_list &tokens) override;
 
 public:
-	Branch(token::tokens_list &tokens);
+  Branch(token::tokens_list &tokens);
 
-	std::string toString() override;
-	commands_type to4(const compiler::Alphabet<char> &alphabet) override;
-	bool isAnyChar() const { return isAnyChar_; }
-	char letterToCheck() const { return letterToCheck_; }
+  std::string toString() override;
+  commands_type to4_impl(const compiler::Alphabet<char> &alphabet) override;
+  bool isAnyChar() const { return isAnyChar_; }
+  char letterToCheck() const { return letterToCheck_; }
 };
 
 class IfFi : public NodeBase {
   void init(token::tokens_list &tokens) override;
 
-	std::list<Branch*> branches_;
+  std::list<Branch *> branches_;
 
 public:
   IfFi(token::tokens_list &tokens);
 
   std::string toString() override;
-  commands_type to4(const compiler::Alphabet<char> &alphabet) override;
+  commands_type to4_impl(const compiler::Alphabet<char> &alphabet) override;
 };
 
 class DoOd : public NodeBase {
   void init(token::tokens_list &tokens) override;
-
 
   std::list<Branch *> branches_;
 
@@ -91,7 +103,7 @@ public:
   DoOd(token::tokens_list &tokens);
 
   std::string toString() override;
-  commands_type to4(const compiler::Alphabet<char> &alphabet) override;
+  commands_type to4_impl(const compiler::Alphabet<char> &alphabet) override;
 };
 
 class MT : public NodeBase {
@@ -107,43 +119,45 @@ class MT : public NodeBase {
 
     std::string toString() override;
     size_t id() { return id_; }
-    commands_type to4(const compiler::Alphabet<char> &alphabet) override;
+    commands_type to4_impl(const compiler::Alphabet<char> &alphabet) override;
   };
 
   class Lib : public NodeBase {
     size_t id_;
     void init(token::tokens_list &tokens) override;
-		std::optional<commands_type> cache_ = std::nullopt;
+    std::optional<commands_type> cache_ = std::nullopt;
+
   public:
     Lib(token::tokens_list &tokens);
 
     std::string toString() override;
     size_t id() { return id_; }
-    commands_type to4(const compiler::Alphabet<char> &alphabet) override;
+    commands_type to4_impl(const compiler::Alphabet<char> &alphabet) override;
   };
 
   class Definition : public NodeBase {
     size_t id_;
     void init(token::tokens_list &tokens) override;
     Alphabet *alphabet_;
-		std::optional<commands_type> cache_ = std::nullopt;
+    std::optional<commands_type> cache_ = std::nullopt;
 
   public:
     Definition(token::tokens_list &tokens);
 
     size_t id() { return id_; }
     std::string toString() override;
-    commands_type to4(const compiler::Alphabet<char> &alphabet) override;
+    commands_type to4_impl(const compiler::Alphabet<char> &alphabet) override;
   };
 
   Usage usage_;
-	NodeBase * node_;
+  NodeBase *node_;
   void init(token::tokens_list &tokens) override;
   static bimap<std::string, size_t> namesTable_;
   static std::map<size_t, NodeBase *> definitions_;
   static size_t currentId_;
 
-	friend class Tree;
+  friend class Tree;
+
 public:
   MT(token::tokens_list &tokens);
 
@@ -155,10 +169,11 @@ public:
     return namesTable_.contains(name);
   }
   std::string toString() override;
-  virtual commands_type to4(const compiler::Alphabet<char> &alphabet) override;
-	commands_type forceTo4(const compiler::Alphabet<char> &alphabet) {
-		return node_->to4(alphabet);
-	}
+  virtual commands_type
+  to4_impl(const compiler::Alphabet<char> &alphabet) override;
+  commands_type forceTo4(const compiler::Alphabet<char> &alphabet) {
+    return node_->to4(alphabet);
+  }
 };
 
 class SetLetter : public NodeBase {
@@ -169,18 +184,20 @@ public:
   SetLetter(token::tokens_list &tokens);
 
   std::string toString() override;
-	commands_type to4(const compiler::Alphabet<char> &alphabet) override;
+  commands_type to4_impl(const compiler::Alphabet<char> &alphabet) override;
 };
 
 class Tree {
-	MT::Definition *root_ = nullptr;
+  MT::Definition *root_ = nullptr;
 
 public:
   void print(std::ostream &os = std::cout);
-  Tree(token::tokens_list &tokens, const std::string & fileName);
-	commands_type to4();
+  Tree(token::tokens_list &tokens, const std::string &fileName);
+  commands_type to4();
 
-	const std::string & getTreeName() const {return MT::namesTable_[root_->id()];};
+  const std::string &getTreeName() const {
+    return MT::namesTable_[root_->id()];
+  };
 };
 } // namespace ast
 

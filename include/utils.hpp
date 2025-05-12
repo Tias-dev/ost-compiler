@@ -58,4 +58,6 @@ struct overloads : TS... {
 };
 
 void fileRollAround(const std::string & fileName, size_t position, size_t width);
+
+std::string strip(const std::string & s);
 #endif // !UTILS_HPP_
