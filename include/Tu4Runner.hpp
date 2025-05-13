@@ -13,12 +13,12 @@
 namespace tu4run {
 template <typename TQ = size_t, typename CharT = char> class Tu4Runner {
 private:
-  Line<CharT> &line_;
+  Line<CharT> line_;
   std::vector<std::map<CharT, tu4::tu4_union<TQ, CharT>>> commands_;
   TQ q_ = 0;
 
 public:
-  Tu4Runner(Line<CharT> &line, const compiler::Commands<TQ, CharT> &commands)
+  Tu4Runner(const Line<CharT> &line, const compiler::Commands<TQ, CharT> &commands)
       : line_(line) {
 		size_t maxQ = 0;
 		for(auto& command : commands) 
@@ -30,18 +30,21 @@ public:
 		}
   }
 
+	const tu4::tu4_union<TQ, CharT>& nextCommand() const {
+		char curLetter = line_.getLetter();
+    if (!commands_[q_].contains(curLetter))
+			throw error::Tu4RunError<CharT>(line_, std::string(strfast() << "No command for state: [" << q_
+																				 << "] and letter: [" << curLetter << "]"));
+		return commands_[q_].at(curLetter);
+	}
+
   /**
    * @brief do command step
    *
    * @return true if executed command was terminating and false -- otherwise
    */
   bool step() {
-    CharT c = line_.getLetter();
-    if (!commands_[q_].contains(c))
-      throw error::Tu4RunError<CharT>(line_, std::string(strfast() << "No command for state: [" << q_
-                                         << "] and letter: [" << c << "]"));
-
-    const tu4::tu4_union<TQ, CharT> &command = commands_[q_][c];
+    const tu4::tu4_union<TQ, CharT> &command = nextCommand();
     if (command.isShift()) {
       tu4::MoveDirection dir = command.getMoveDirection();
 			// std::cout << "Shifting, " << int(dir) << std::endl;
@@ -62,14 +65,7 @@ public:
                                        << "] no shift and no set letter"));
     }
 
-		// std::cout << q_ << ":";
     q_ = command.q();
-		// std::cout << q_ << std::endl;
-		// std::cout << line_.line() << std::endl;
-		// size_t cursor = line_.cursor();
-		// for(size_t i = 0; i < cursor; ++i) 
-		// 	std::cout << ' ';
-		// std::cout << '^' << std::endl;
     return command.isTerm();
   }
 

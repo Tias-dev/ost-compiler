@@ -8,11 +8,11 @@
 namespace tu4run {
 template <typename CharT = char>
 class Line {
-	std::basic_string<CharT> data_;
+	std::string data_;
 	size_t cursor_;
 	CharT lambda_;
 public:
-	Line(std::basic_string<CharT> & data, CharT lambda =  CharT('_'))
+	Line(const std::string & data, CharT lambda =  CharT('_'))
 		: data_(data), lambda_(lambda) {
 		for(auto& c : data_) 
 			if(isspace(c)) 
@@ -25,7 +25,7 @@ public:
 		}
 
 		cursor_ = data_.size() - 1;
-		while(cursor_ > 1 && data_[cursor_] == lambda_) {
+		while(cursor_ > 0 && data_[cursor_] == lambda_) {
 			--cursor_;
 		}
 		if(data_[cursor_] != lambda_) 

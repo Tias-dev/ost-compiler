@@ -21,7 +21,7 @@ template <typename TQ, typename TLetter = char> class Tu4Command {
 public:
   Tu4Command(TQ q0, TQ q, TLetter letterToCheck, std::string comment = "")
       : q0_(q0), q_(q), letterToCheck_(letterToCheck), comment_(comment) {
-				if(globals::enableBreakpoints) 
+				if(globals::enableBreakpoints && comment_ == "") 
 					comment_ = globals::breakpointer->getCurrentPosition();
 			}
 
@@ -71,7 +71,7 @@ class Tu4Move : public Tu4Command<TQ, TLetter> {
 
 public:
   Tu4Move(TQ q0, TLetter letterToCheck, MoveDirection dir, TQ q, std::string comment = "")
-      : Tu4Command<TQ>(q0, q, letterToCheck), dir_(dir) {}
+      : Tu4Command<TQ>(q0, q, letterToCheck, comment), dir_(dir) {}
 
   void print(std::ostream &os) const override {
     os << this->q0() << ',' << this->letterToCheck() << ','
@@ -124,9 +124,8 @@ public:
         [](const auto &command) { return command.letterToCheck(); }, *data_);
   }
 
-  const std::string &comment() const {
-    return std::visit([](const auto &command) { return command.comment(); },
-                      *data_);
+  std::string comment() const {
+    return std::visit([](const auto &command) { return command.comment(); }, *data_);
   }
 
   void print(std::ostream &os) const {
@@ -190,9 +189,6 @@ tu4::tu4_union<TQ, TLetter> load(std::istream &is) {
   std::getline(is, line);
   if (line.size() < 2)
     throw error::UnexpectedFileEnd();
-	for(auto& c : line) 
-		if(c == TLetter(' ')) 
-			c = TLetter('_');
 
   std::istringstream iss(line);
   TQ q0, q;
@@ -202,15 +198,31 @@ tu4::tu4_union<TQ, TLetter> load(std::istream &is) {
     iss >> comment >> comment;
   }
 
+	if(c1 == TLetter(' ')) c1 = TLetter('_'); 
+	if(c2 == TLetter(' ')) c2 = TLetter('_'); 
+		
+
   switch (c2) {
   case '>':
   case '<':
     return {tu4::Tu4Move<TQ, TLetter>{
         q0, c1,
-        (c2 == '<' ? tu4::MoveDirection::LEFT : tu4::MoveDirection::RIGHT), q}};
+        (c2 == '<' ? tu4::MoveDirection::LEFT : tu4::MoveDirection::RIGHT), q, comment}};
   default:
-    return {tu4::Tu4SetLetter<TQ, TLetter>(q0, c1, c2, q)};
+    return {tu4::Tu4SetLetter<TQ, TLetter>(q0, c1, c2, q, comment)};
   }
+}
+
+template <typename TQ, typename TLetter = char>
+std::list<tu4::tu4_union<TQ, TLetter>> loadMultiple(std::istream &is) {
+	std::list<tu4::tu4_union<TQ, TLetter>> commands;
+	try {
+		while(true) {
+			commands.push_back(load<size_t, char>(is));
+		}
+	} catch (error::UnexpectedFileEnd) { }
+
+	return commands;
 }
 
 #endif // !TU_4_COMMAND_HPP_

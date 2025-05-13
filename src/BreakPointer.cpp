@@ -37,14 +37,15 @@ FileBreakpointer::State FileBreakpointer::State::load(const std::string &s) {
 	if(i == s.size()) 
 		throwError();
 
-	fileName = s.substr(j, i - j - 1);
+	fileName = s.substr(j, i - j);
+	++i;
 	j = i;
 
 	while(i < s.size() && s[i] != ',') ++i;
 	if(i == s.size()) 
 		throwError();
 
-	begin = atoll(s.substr(j, i - j - 1).c_str());
+	begin = atoll(s.substr(j, i - j).c_str());
 	end = atoll(s.substr(i + 1).c_str());
 
 	return State{fileName, begin, end};

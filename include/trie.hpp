@@ -43,7 +43,7 @@ template <typename TData> class Trie {
     bool isTerm() const;
     bool isLeaf() const;
     const TData &data() const;
-    std::optional<const TData &> data_opt() const;
+    const std::optional<TData> & data_opt() const;
   };
 
   class NodeIterator : public IActivePoint<TData> {
@@ -87,12 +87,14 @@ template <typename TData> class Trie {
       node_->tr_[c] = new Node(node_);
     }
     void setData(TData data) { node_->data_ = data; }
+
+		const Node * node() const {return node_;}
   };
 
   Node *root_ = new Node;
 
   using point_type_ = std::shared_ptr<NodeIterator>;
-  point_type_ begin_() { return std::make_shared<NodeIterator>(root_); }
+  point_type_ begin_() const { return std::make_shared<NodeIterator>(root_); }
 
 	class Bimap {
 		std::map<std::string, TData> toData_;
@@ -113,7 +115,7 @@ public:
   Trie() {};
 
   void add(const std::string &s, TData data);
-  std::optional<const TData &> find(const std::string &s) const;
+  const std::optional<TData>& find(const std::string &s) const;
 
   using point_type = std::shared_ptr<IActivePoint<TData>>;
 	using bimap_type = Bimap;
@@ -124,7 +126,7 @@ public:
    *
    * @return point at root of tree
    */
-  point_type begin() { return begin_(); }
+  point_type begin() const { return begin_(); }
 	bimap_type bimap() const;
 };
 
@@ -137,7 +139,7 @@ template <typename TData> bool Trie<TData>::Node::isLeaf() const {
 }
 
 template <typename TData>
-std::optional<const TData &> Trie<TData>::Node::data_opt() const {
+const std::optional<TData>& Trie<TData>::Node::data_opt() const {
   return data_;
 }
 
@@ -159,17 +161,18 @@ void Trie<TData>::add(const std::string &s, TData data) {
 }
 
 template <typename TData>
-std::optional<const TData &> Trie<TData>::find(const std::string &s) const {
+const std::optional<TData>& Trie<TData>::find(const std::string &s) const {
+	static const std::optional<TData> nullopt = std::nullopt;
   point_type_ activePoint = begin_();
   for (auto &c : s) {
     if (!activePoint->canGoTo(c))
-      return std::nullopt;
+      return nullopt;
     activePoint->goTo(c);
   }
   if (!activePoint->isTerm())
-    return std::nullopt;
+    return nullopt;
 
-  return activePoint->node_->data_opt();
+  return activePoint->node()->data_opt();
 }
 
 template <typename TData>

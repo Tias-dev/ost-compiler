@@ -21,7 +21,7 @@ Tree::Tree(token::tokens_list &tokens, const std::string &fileName) {
     std::cout << "Error: " << e.what() << std::endl;
     size_t position = e.position(); size_t width = 60;
 		fileRollAround(fileName, position, width);
-    exit(1);
+		throw &e;
   }
   if (!tokens.empty())
     throwMismatch("End of file", *std::begin(tokens));

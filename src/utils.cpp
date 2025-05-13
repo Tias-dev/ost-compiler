@@ -1,6 +1,7 @@
 #include "utils.hpp"
 #include <fstream>
 #include <iostream>
+#include <list>
 
 
 void fileRollAround(const std::string & fileName, size_t position, size_t width) {
@@ -36,6 +37,24 @@ std::string strip(const std::string & s) {
 
 	for(size_t k = i; k <= j; ++k) 
 		result.push_back(s[k]);
+
+	return result;
+}
+
+std::list<std::string> split(const std::string &s, char sep, bool includeEmpty) {
+	std::list<std::string> result;
+	std::string word;
+
+	for(auto& c : s) 
+		if(c == sep) {
+			if(includeEmpty || word.size() > 0) 
+				result.push_back(word);
+			word = "";
+		} else 
+			word.push_back(c);
+
+	if(includeEmpty || word.size() > 0) 
+		result.push_back(word);
 
 	return result;
 }
