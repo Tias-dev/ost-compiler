@@ -37,6 +37,7 @@ public:
 																				 << "] and letter: [" << curLetter << "]"));
 		return commands_[q_].at(curLetter);
 	}
+	const Line<CharT> & line() const {return line_;}
 
   /**
    * @brief do command step

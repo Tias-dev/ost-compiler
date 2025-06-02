@@ -1,12 +1,8 @@
-#include "AST.hpp"
 #include "BreakPointer.hpp"
-#include "CharStream.hpp"
 #include "Compiler.hpp"
 #include "Line.hpp"
-#include "Tokenizer.hpp"
 #include "Tu4Command.hpp"
 #include "Tu4Runner.hpp"
-#include "globals.hpp"
 #include "trie.hpp"
 #include <cstdlib>
 #include <fstream>
@@ -59,8 +55,8 @@ initRunner(const std::string &fileName, const std::string &line) {
 
 void printState(const tu4run::Tu4Runner<size_t, char> &runner) {
   static std::ifstream file;
-  static size_t i = -1;
-  static size_t nLine = -1;
+  static size_t nColumn = 0;
+  static size_t nLine = 1e18;
 
   auto command = runner.nextCommand();
   auto comment = command.comment();
@@ -68,27 +64,35 @@ void printState(const tu4run::Tu4Runner<size_t, char> &runner) {
 		std::cout << "No debug information in line: " << command << std::endl;
 		return;
 	}
-  auto [fileName, begin, end] = FileBreakpointer::State::load(comment);
+  auto state = FileBreakpointer::State::load(comment);
+	const std::string & fileName = state.fileName();
+	size_t row = state.row(), column = state.column(), index = state.index();
   std::string line;
 
-  if (i == size_t(-1) || i > begin) {
+  if (nLine > row) {
 		if(!file.is_open()) 
 			file.open(fileName);
 		else {
 			file.clear();
 			file.seekg(0);
 		}
-			
-    i = 0;
-    nLine = 0;
+    nLine = 1;
   }
 
-  while (!file.eof() && i + line.size() <= begin) {
+  while (!file.eof() && nLine <= row) {
     std::getline(file, line);
-    i += line.size();
     ++nLine;
   }
+
+	for(auto& c : line) 
+		if(c == '\t') 
+			c = ' ';
+	
   std::cout << nLine << " :" << line << std::endl;
+  std::cout << nLine << " :";
+	for(size_t i = 0; i < column; ++i) 
+		std::cout << " ";
+	std::cout << "^" << std::endl;
 }
 
 int main(int argc, char *argw[]) {
@@ -132,8 +136,10 @@ int main(int argc, char *argw[]) {
     default:
       std::cout << "Warning: command not supported: " << *word << std::endl;
     }
-		if(runner) 
+		if(runner) {
+			std::cout << runner->line().line() << std::endl;
 			printState(*runner);
+		}
   }
 
   return 0;

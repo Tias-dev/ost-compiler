@@ -11,13 +11,15 @@
 #include <stdexcept>
  
 int main(int argc, char * argw[]) {
-	std::string fileName = (argc > 1 ? argw[1] : "mt.ost");
+	if(argc < 3) 
+		throw std::invalid_argument("Usage: ost <program>.ost <output dir> <library dir>");
+	std::string fileName = argw[1];
 
-	std::string outDir = (argc > 2 ? argw[2] : "./");
+	std::string outDir = argw[2];
 	if(outDir[outDir.size() - 1] != '/') 
 		outDir.push_back('/');
 	
-	globals::libDir = (argc > 3 ? argw[3] : globals::libDir);
+	globals::libDir = argw[3];
 	if(globals::libDir[globals::libDir.size() - 1] != '/') 
 		globals::libDir.push_back('/');
 

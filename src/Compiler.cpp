@@ -248,7 +248,7 @@ commands_type Tree::to4() {
 		std::cout << "Terminal state: " << currentState << std::endl;
 	
 	for (auto &letter : alphabet)
-    commands.push_back({tu4::Tu4SetLetter<size_t>(currentState, letter, letter, currentState)});
+    commands.push_back({tu4::Tu4SetLetter<size_t>(currentState, letter, letter, currentState, "END")});
 
   return commands;
 }
