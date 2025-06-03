@@ -1,6 +1,7 @@
 #ifndef UTILS_HPP_
 #define UTILS_HPP_
 
+#include "FilePosition.hpp"
 #include <iostream>
 #include <list>
 #include <map>
@@ -52,12 +53,13 @@ public:
 	operator std::string() {return bump();}
 };
 
+
 template <class ...TS>
 struct overloads : TS... {
 	using TS::operator()...;
 };
 
-void fileRollAround(const std::string & fileName, size_t position, size_t width);
+void fileRollAround(const std::string & fileName, const FilePosition & position, size_t width);
 
 std::string strip(const std::string & s);
 std::list<std::string> split(const std::string &s, char sep = ' ', bool includeEmpty = false);

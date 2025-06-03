@@ -1,5 +1,6 @@
 #include "AST.hpp"
 #include "CharStream.hpp"
+#include "FilePosition.hpp"
 #include "Line.hpp"
 #include "Tokenizer.hpp"
 #include "Tu4Runner.hpp"
@@ -10,8 +11,10 @@
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <stdexcept>
 #include <string>
+
 const char *help =
     "osttest [PROGRAM .ost] [TESTS plaintext]\n"
     "osttest -- ost toolkit testings utility\n"
@@ -19,14 +22,14 @@ const char *help =
     "\n"
     "PROGRAM format:\n"
     "PROGRAM is the usual .ost file\n"
-		"TEST is the plaintext file with pairs of 2/(3) lines:"
-    "1. first line is given line state"
+		"TEST is the plaintext file with pairs of 2/(3) lines:\n"
+    "1. first line is given line state\n"
     "2. second line is expected line state\n"
-		"3. OPTIONAL: cursor position at the end of program(if not specified it will be after last non space cell)"
-		"4. Tests delimeter: line of any number of '-' symbols"
+		"3. OPTIONAL: cursor position at the end of program(if not specified it will be after last non space cell)\n"
+		"4. Tests delimeter: line of any number of '-' symbols\n"
     "\n"
     "Output:\n"
-    "Returns 0 if all tests are passed i.e. result line state equal expected line state for all tests "
+    "Returns 0 if all tests are passed i.e. result line state equal expected line state for all tests \n"
     "including cursor position and non 0 otherwise\n"
     "If any exceptions happens, print exception what() and return also non 0\n";
 
@@ -44,8 +47,9 @@ int main(int argc, char *argw[]) {
 	CharStream stream{programFile};
 	token::Tokenizer tokenizer{};
 	token::tokens_list tokens;
+	FileRoller roller{std::make_shared<std::string>(argw[1])};
 	try {
-		tokens = tokenizer.parse(stream);
+		tokens = tokenizer.parse(stream, roller);
 	} catch (error::PositionErrorBase & e) {
     std::cout << "Error: " << e.what() << std::endl;
 		fileRollAround(argw[1], e.position(), 60);
@@ -80,7 +84,7 @@ int main(int argc, char *argw[]) {
 				throw std::invalid_argument(strfast() << "Tests delimeter awaits to consist of '-' only, [" << c << "] given");
 		
 			
-		tu4run::Line<char> givenLine{given}, expectedLine{expected};
+		tu4run::Line<char> expectedLine{expected};
 		if(cursor != -1) {
 			while(cursor > expectedLine.cursor()) 
 				expectedLine.shiftRight();
@@ -88,12 +92,12 @@ int main(int argc, char *argw[]) {
 				expectedLine.shiftLeft();
 		}
 			
-		tu4run::Tu4Runner<size_t, char> runner{givenLine, commands};
+		tu4run::Tu4Runner<size_t, char> runner{tu4run::Line<char>(given), commands};
 		runner.loop();
-		if(givenLine != expectedLine) {
+		if(runner.line() != expectedLine) {
 			std::cout << i_test<< ") Error:" << std::endl;
 			std::cout << "Expected: " << expectedLine.cursor() << ": [" << expectedLine.line() << "]" << std::endl;
-			std::cout << "Given: " << givenLine.cursor() << ": [" << givenLine.line() << "]" << std::endl;
+			std::cout << "Given: " << runner.line().cursor() << ": [" << runner.line().line() << "]" << std::endl;
 			wasErrors = true;
 		} else {
 			std::cout << i_test << ") Passed" << std::endl;

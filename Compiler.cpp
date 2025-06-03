@@ -2,12 +2,14 @@
 #include "BreakPointer.hpp"
 #include "CharStream.hpp"
 #include "Compiler.hpp"
+#include "FilePosition.hpp"
 #include "Tokenizer.hpp"
 #include "globals.hpp"
 #include "utils.hpp"
 #include <cctype>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <stdexcept>
  
 int main(int argc, char * argw[]) {
@@ -33,7 +35,8 @@ int main(int argc, char * argw[]) {
 	CharStream stream(file);
 
 	auto tokenizer = token::Tokenizer{};
-	auto tokens = tokenizer.parse(stream);
+	FileRoller roller{std::make_shared<std::string>(fileName)};
+	auto tokens = tokenizer.parse(stream, roller);
 	file.close();
 
 	if(globals::printDebugInfo) {

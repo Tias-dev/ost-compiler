@@ -1,38 +1,61 @@
 #ifndef FILE_POSITION_HPP_
 #define FILE_POSITION_HPP_
 
-#include "utils.hpp"
 #include <memory>
-class FilePosition {
-	protected:
-	std::shared_ptr<std::string> fileName_;
-	size_t row_;
-	size_t column_;
-	size_t index_;
+#include <vector>
+
+class IFileRoller {
+	public:
+  struct Position {
+    size_t row;
+    size_t column;
+  };
+
+  virtual Position convert(size_t index) const = 0;
+  virtual std::shared_ptr<std::string> fileName() const = 0;
+};
+class FileRoller : public IFileRoller {
+  std::shared_ptr<std::string> fileName_;
+  std::vector<size_t> newLines_;
+
 public:
-	FilePosition( std::shared_ptr<std::string> fileName, size_t row, size_t column, size_t index)
-		: fileName_(fileName), row_(row), column_(column), index_(index) {};
+  FileRoller(std::shared_ptr<std::string> fileName);
 
-	FilePosition(std::shared_ptr<std::string> fileName, size_t index);
+  Position convert(size_t index) const override;
+  std::shared_ptr<std::string> fileName() const override { return fileName_; }
+};
 
-	std::string to_string() const {
-		return strfast() << *fileName_ << ":" << row_ << ":" << column_;
-	}
+class FilePosition {
+protected:
+  std::shared_ptr<std::string> fileName_;
+  size_t row_;
+  size_t column_;
+	const static std::shared_ptr<std::string> defaultFName_;
+public:
 
-	const std::string & fileName() const {
-		return *fileName_;
-	}
+  FilePosition(): fileName_(defaultFName_) {}
+	FilePosition(std::shared_ptr<std::string> fileName, size_t row, size_t column)
+      : fileName_(fileName), row_(row), column_(column) {};
 
-	size_t row() const {
-		return row_;
-	}
+  FilePosition(const IFileRoller &roller, size_t index)
+      : fileName_(roller.fileName()) {
+    auto pos = roller.convert(index);
+    row_ = pos.row;
+    column_ = pos.column;
+  }
 
-	size_t column() const {
-		return column_;
-	}
+  std::string to_string() const;
+	static FilePosition from_string(const std::string & s);
+  const std::string &fileName() const { return *fileName_; }
 
-	size_t index() const {
-		return index_;
+  size_t row() const { return row_; }
+
+  size_t column() const { return column_; }
+
+	bool operator<(const FilePosition & other) const {
+		if(row_ == other.row_)
+			return column_ < other.column_;
+		return row_ < other.row_;
 	}
 };
 

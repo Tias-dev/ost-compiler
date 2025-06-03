@@ -5,9 +5,9 @@
 #include <utility>
 
 namespace token {
-Token::Token(size_t begin, size_t end, Type type)
+Token::Token(const FilePosition & begin, const FilePosition & end, Type type)
     : id_(currentId++), begin_(begin), end_(end), type_(type) {
-  if (begin >= end)
+  if (end < begin)
     throw error::BordersError(begin, end);
 }
 } // namespace token

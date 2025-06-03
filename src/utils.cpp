@@ -1,24 +1,20 @@
 #include "utils.hpp"
+#include "FilePosition.hpp"
 #include <fstream>
 #include <iostream>
 #include <list>
+#include <string>
 
-
-void fileRollAround(const std::string & fileName, size_t position, size_t width) {
+void fileRollAround(const std::string & fileName, const FilePosition &position, size_t width) {
     std::fstream fileRunner(fileName);
-    for (size_t i = 0; i < position - std::min(position, width / 2); ++i)
-      fileRunner.get();
-
-    char c;
-    for (size_t i = 0; i < width; ++i) {
-      c = fileRunner.get();
-      if (isspace(c))
-        c = ' ';
-
-      std::cout << c;
-    }
+		size_t row = 0, column = 1;
+		std::string line;
+		while(row < position.row()) {
+			std::getline(fileRunner, line);
+		}
+		std::cout << line.substr(position.column() > width/2 ? position.column() - width / 2 : 0, width);
     std::cout << std::endl;
-    for (size_t i = 0; i < width / 2; ++i)
+    for (size_t i = 0; i < position.column(); ++i)
       std::cout << " ";
     std::cout << "^" << std::endl;
 }

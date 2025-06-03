@@ -1,6 +1,7 @@
 #ifndef EXCEPTIONS_HPP_
 #define EXCEPTIONS_HPP_
 
+#include "FilePosition.hpp"
 #include "Tokenizer.hpp"
 #include "utils.hpp"
 #include <exception>
@@ -11,14 +12,14 @@ namespace error {
 class IPositionError : public std::exception {
 public:
 	virtual const char * what() const noexcept = 0;
-  virtual size_t position() const = 0;
+  virtual const FilePosition & position() const = 0;
 };
 
 class PositionErrorBase : public IPositionError {
-  size_t position_;
+  FilePosition position_;
 public:
-  PositionErrorBase(size_t position) : position_(position) {}
-  size_t position() const override { return position_; }
+  PositionErrorBase(const FilePosition & position) : position_(position) {}
+  const FilePosition & position() const override { return position_; }
 };
 
 class UndefinedOperatorError : public PositionErrorBase {
@@ -26,7 +27,7 @@ class UndefinedOperatorError : public PositionErrorBase {
   std::string message_;
 
 public:
-  UndefinedOperatorError(size_t position) : PositionErrorBase(position) {}
+  UndefinedOperatorError(const FilePosition & position) : PositionErrorBase(position) {}
   const char *what() const noexcept override {
     return "Undefined operator, names with operators at begin not allowed";
   }
@@ -34,40 +35,37 @@ public:
 
 class CommentNotClosedError : public PositionErrorBase {
 public:
-  CommentNotClosedError(size_t position) : PositionErrorBase(position) {}
+  CommentNotClosedError(const FilePosition & position) : PositionErrorBase(position) {}
   const char *what() const noexcept override { return "Comment not closed"; }
 };
 
 class BordersError : public std::exception {
-  size_t begin_, end_;
+  FilePosition begin_, end_;
 
 public:
-  BordersError(size_t begin, size_t end) : begin_(begin), end_(end) {}
+  BordersError(const FilePosition & begin, const FilePosition & end) : begin_(begin), end_(end) {}
 
   const char *what() const noexcept override {
     static std::string message;
     message =
-        (strfast() << "begin(" << begin_ << ") of token must be less then end("
-                   << end_ << ")")
-            .bump();
+        (strfast() << "begin(" << begin_.to_string() << ") of token must be less then end("
+                   << end_.to_string() << ")");
     return message.c_str();
   }
 };
 
 class ExpectedMismatchError : public PositionErrorBase {
-  size_t position_;
   std::string expected_, given_;
 
 public:
-  ExpectedMismatchError(size_t position, std::string expected,
+  ExpectedMismatchError(const FilePosition & position, std::string expected,
                         std::string given)
       : PositionErrorBase(position), expected_(expected), given_(given) {}
 
   const char *what() const noexcept override {
     static std::string message;
     message = (strfast() << "Semantic error: expected [" << expected_
-                         << "], but given: [" << given_ << "]")
-                  .bump();
+                         << "], but given: [" << given_ << "]");
 
     return message.c_str();
   }
@@ -77,7 +75,7 @@ class SemanticError : public PositionErrorBase {
   std::string what_;
 
 public:
-  SemanticError(size_t position, std::string what)
+  SemanticError(const FilePosition & position, std::string what)
       : PositionErrorBase(position), what_(what) {}
   const char *what() const noexcept override { return what_.c_str(); }
 };

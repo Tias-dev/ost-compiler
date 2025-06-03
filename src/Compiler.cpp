@@ -1,5 +1,6 @@
 #include "Compiler.hpp"
 #include "AST.hpp"
+#include "FilePosition.hpp"
 #include "Tu4Command.hpp"
 #include "exception.hpp"
 #include "globals.hpp"
@@ -7,6 +8,7 @@
 #include <fstream>
 #include <iterator>
 #include <map>
+#include <memory>
 #include <stdexcept>
 
 using namespace ast;
@@ -257,8 +259,9 @@ class MoveMT : public NodeBase {
   tu4::MoveDirection dir_;
   void init(token::tokens_list &tokens) override {}
 
+	const static FilePosition defaultFpos;
 public:
-  MoveMT(tu4::MoveDirection dir) : NodeBase(ExprType::MT), dir_(dir) {}
+  MoveMT(tu4::MoveDirection dir) : NodeBase(ExprType::MT, defaultFpos, defaultFpos), dir_(dir) {}
   std::string toString() override {
     return (dir_ == tu4::MoveDirection::LEFT ? "<" : ">");
   }
@@ -271,7 +274,12 @@ public:
 
     return result;
   }
+	commands_type to4(const compiler::Alphabet<char> &alphabet) override {
+		return to4_impl(alphabet);
+	}
 };
+
+const FilePosition MoveMT::defaultFpos =  FilePosition(std::make_shared<std::string>("default fpos"), 0, 0);
 
 std::map<size_t, NodeBase *> MT::definitions_{
     {0, new MoveMT{tu4::MoveDirection::LEFT}},

@@ -2,6 +2,7 @@
 #define TOKENIZER_HPP_
 
 #include "CharStream.hpp"
+#include "FilePosition.hpp"
 #include "Token.hpp"
 #include <list>
 #include <stack>
@@ -22,8 +23,8 @@ public:
 	bool isName() const;
 	std::string getName() const;
 	
-	size_t begin() const;
-	size_t end() const;
+	FilePosition begin() const;
+	FilePosition end() const;
 
 	std::string toString() const;
 	std::string typeToString() const;
@@ -60,12 +61,12 @@ public:
 
 class ITokenizer {
 public:
-	virtual tokens_list parse(ICharStream & stream) = 0;
+	virtual tokens_list parse(ICharStream & stream, const IFileRoller & roller) = 0;
 };
 
 class Tokenizer : public ITokenizer {
 	public:
-		tokens_list parse(ICharStream & stream) override;
+		tokens_list parse(ICharStream & stream, const IFileRoller & roller) override;
 };
 
 

@@ -2,6 +2,7 @@
 #define AST_HPP_
 
 #include "Compiler.hpp"
+#include "FilePosition.hpp"
 #include "Tokenizer.hpp"
 #include "globals.hpp"
 #include "utils.hpp"
@@ -20,16 +21,17 @@ protected:
   std::list<NodeBase *> childs_;
   ExprType type_;
   virtual void init(token::tokens_list &tokens) = 0;
-  size_t begin_ = 0, end_ = 0;
+  FilePosition begin_, end_;
 
   virtual commands_type to4_impl(const compiler::Alphabet<char> &alphabet) = 0;
 	friend class MT;
 public:
+  NodeBase(ExprType type, FilePosition begin, FilePosition end) : type_(type), begin_(begin), end_(end) {}
   NodeBase(ExprType type) : type_(type) {}
 
   virtual std::string toString() = 0;
   void print(std::ostream &os, size_t depth = 0);
-  commands_type to4(const compiler::Alphabet<char> &alphabet) {
+  virtual commands_type to4(const compiler::Alphabet<char> &alphabet) {
     globals::breakpointer->onEnter(begin(), end());
     auto result = to4_impl(alphabet);
     globals::breakpointer->onExit();
@@ -37,8 +39,8 @@ public:
     return result;
   }
 
-  size_t begin() const { return begin_; }
-  size_t end() const { return end_; }
+  const FilePosition & begin() const { return begin_; }
+  const FilePosition & end() const { return end_; }
 };
 
 class Alphabet : public NodeBase {

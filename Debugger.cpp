@@ -1,5 +1,5 @@
 #include "BreakPointer.hpp"
-#include "Compiler.hpp"
+#include "FilePosition.hpp"
 #include "Line.hpp"
 #include "Tu4Command.hpp"
 #include "Tu4Runner.hpp"
@@ -7,14 +7,13 @@
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
-#include <stdexcept>
 #include <string>
 
 const char *preview =
     "ost programm debugger\n"
     "input: 'run <program name .tu4>' to start debug(program must be compiled "
     "with -g flag)\n"
-    "input: 'step' to do step and show file state\n"
+    "input: 'step' or empty line to do step and show file state\n"
     "input: 'step -n [number]' to do 'n' steps and show file state\n"
     "input: 'go' to start stepping loop until program's end or breakpoint "
     "occured\n"
@@ -36,63 +35,52 @@ impl::Trie<Command> initCommands() {
   return trie;
 }
 
-tu4run::Tu4Runner<size_t, char>*
-initRunner(const std::string &fileName, const std::string &line) {
-  std::ifstream file(fileName);
-  if (!file.is_open())
-    throw std::invalid_argument("Bad file name");
-
-	auto commandsRaw = loadMultiple<size_t, char>(file);
-	compiler::Commands<size_t, char> commands;
-	for(auto& command : commandsRaw) 
-		commands.push_back(command);
-
-  tu4run::Line<char> line_{line.c_str()};
-  auto runner = new tu4run::Tu4Runner<size_t, char>(line_, commands);
-
-  return runner;
-}
-
 void printState(const tu4run::Tu4Runner<size_t, char> &runner) {
   static std::ifstream file;
   static size_t nColumn = 0;
   static size_t nLine = 1e18;
 
   auto command = runner.nextCommand();
+  if (command.isTerm())
+    return;
+
   auto comment = command.comment();
-	if(comment.empty()) {
-		std::cout << "No debug information in line: " << command << std::endl;
-		return;
-	}
+  if (comment.empty()) {
+    std::cout << "No debug information in line: " << command << std::endl;
+    return;
+  }
   auto state = FileBreakpointer::State::load(comment);
-	const std::string & fileName = state.fileName();
-	size_t row = state.row(), column = state.column(), index = state.index();
+  const std::string &fileName = state.begin.fileName();
+  const FilePosition &begin = state.begin, &end = state.end;
   std::string line;
 
-  if (nLine > row) {
-		if(!file.is_open()) 
-			file.open(fileName);
-		else {
-			file.clear();
-			file.seekg(0);
-		}
+  if (nLine > begin.row()) {
+    if (!file.is_open())
+      file.open(fileName);
+    else {
+      file.clear();
+      file.seekg(0);
+    }
     nLine = 1;
   }
 
-  while (!file.eof() && nLine <= row) {
+  while (!file.eof() && nLine <= begin.row()) {
     std::getline(file, line);
     ++nLine;
   }
 
-	for(auto& c : line) 
-		if(c == '\t') 
-			c = ' ';
-	
+  for (auto &c : line)
+    if (c == '\t')
+      c = ' ';
+
   std::cout << nLine << " :" << line << std::endl;
   std::cout << nLine << " :";
-	for(size_t i = 0; i < column; ++i) 
-		std::cout << " ";
-	std::cout << "^" << std::endl;
+  for (size_t i = 0; i+1 < begin.column(); ++i)
+    std::cout << " ";
+  size_t endIndex = (begin.row() == end.row() ? end.column() : line.size());
+  for (size_t i = begin.column(); i < endIndex; ++i)
+    std::cout << "^";
+  std::cout << std::endl;
 }
 
 int main(int argc, char *argw[]) {
@@ -100,15 +88,23 @@ int main(int argc, char *argw[]) {
 
   std::cout << preview;
   std::string line;
-	tu4run::Tu4Runner<size_t, char>* runner = nullptr;
-	std::string fileName;
-	size_t n = 1;
+  tu4run::Tu4Runner<size_t, char> *runner = nullptr;
+  std::string fileName;
+  size_t n = 1;
   while (!std::cin.eof()) {
     std::getline(std::cin, line);
     auto words = split(line);
 
-    if (words.size() == 0)
+    if (words.size() == 0) {
+			if(runner && !runner->terminated()) 
+				runner->step();
+				if (!runner->terminated()) {
+					std::cout << runner->line();
+					printState(*runner);
+				}
+				
       continue;
+    }
 
     auto word = std::begin(words);
     Command command = commands.find(*word).value_or(Command::NONE);
@@ -123,23 +119,30 @@ int main(int argc, char *argw[]) {
         continue;
       }
       fileName = *(++word);
-			std::cout << "Input line: ";
+      std::cout << "Input line: ";
       std::getline(std::cin, line);
-      runner = initRunner(fileName, line);
-			break;
-		case Command::STEP:
-			if(words.size() > 2 && *(++word) == "-n")
-				n = atoll((++word)->c_str());
-			while(n-- > 0 && runner->step()) {}
-			n += 2;
-			break;
+      runner = tu4run::initRunner(fileName, line);
+      break;
+    case Command::STEP:
+      if (words.size() > 2 && *(++word) == "-n") {
+        n = atoll(word->c_str());
+      }
+      for (size_t i = 0; i < n && !runner->step(); ++i) {
+      }
+
+      n = 1;
+      break;
+    case Command::GO:
+      runner->loop();
+      std::cout << runner->line() << std::endl;
+      break;
     default:
       std::cout << "Warning: command not supported: " << *word << std::endl;
     }
-		if(runner) {
-			std::cout << runner->line().line() << std::endl;
-			printState(*runner);
-		}
+    if (runner && !runner->terminated()) {
+      std::cout << runner->line();
+      printState(*runner);
+    }
   }
 
   return 0;

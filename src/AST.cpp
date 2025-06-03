@@ -1,5 +1,6 @@
 #include "AST.hpp"
 #include "Compiler.hpp"
+#include "FilePosition.hpp"
 #include "Token.hpp"
 #include "Tokenizer.hpp"
 #include "exception.hpp"
@@ -19,7 +20,7 @@ Tree::Tree(token::tokens_list &tokens, const std::string &fileName) {
     root_ = new MT::Definition{tokens};
   } catch (error::PositionErrorBase &e) {
     std::cout << "Error: " << e.what() << std::endl;
-    size_t position = e.position(); size_t width = 60;
+    auto& position = e.position(); size_t width = 60;
 		fileRollAround(fileName, position, width);
 		throw &e;
   }
@@ -89,7 +90,7 @@ void throwMismatch(const std::string &expected,
   throw error::ExpectedMismatchError(given.begin(), expected, given.toString());
 }
 
-void throwSemantic(const std::string &what, size_t position) {
+void throwSemantic(const std::string &what, const FilePosition & position) {
   throw error::SemanticError(position, what);
 }
 
@@ -227,7 +228,7 @@ void MT::Call::init(token::tokens_list &tokens) {
   if (!token.isName() || !namesTable_.contains(token.getName()))
     throwSemantic("Expected already defined mt name", token.begin());
 	begin_ = token.begin();
-	end_ = token.begin() + token.getName().size();
+	end_ = token.end();
 
   id_ = namesTable_[token.getName()];
 
@@ -549,7 +550,7 @@ void Tree::print(std::ostream &os) { root_->print(os, 0); }
 void NodeBase::print(std::ostream &os, size_t depth) {
   for (size_t i = 0; i < depth; ++i)
     os << "  ";
-  os << toString() << " begin: " << begin_ << " end: " << end_ << std::endl;
+  os << toString() << " begin: " << begin_.to_string() << " end: " << end_.to_string() << std::endl;
   for (auto &elem : childs_)
     elem->print(os, depth + 1);
 }

@@ -1,5 +1,6 @@
 #include "Tokenizer.hpp"
 #include "CharStream.hpp"
+#include "FilePosition.hpp"
 #include "Token.hpp"
 #include "exception.hpp"
 #include <cctype>
@@ -16,12 +17,11 @@ bool isSpace(int c) { return isspace(c) || (c == '"'); }
  *
  * @return one of tokens in union type
  */
-token::token_union read_token(ICharStream &stream) {
+token::token_union read_token(ICharStream &stream, const IFileRoller & roller) {
   static auto [op, kw] = impl::initTries();
   auto opPoint = op.begin();
   auto kwPoint = kw.begin();
-  size_t begin = stream.position();
-
+	FilePosition beginPosition{roller, stream.position()};
   char c;
   stream >> c;
   if (opPoint->canGoTo(c)) {
@@ -34,10 +34,10 @@ token::token_union read_token(ICharStream &stream) {
     stream << c;
 
     if (!opPoint->isTerm())
-      throw error::UndefinedOperatorError(stream.position());
+      throw error::UndefinedOperatorError({roller, stream.position()});
 
     auto opType = opPoint->get();
-    return {token::Operation(opType, begin, stream.position())};
+    return {token::Operation(opType, beginPosition, FilePosition{roller, stream.position()})};
   }
   std::string buffer = "";
   while (!stream.eof() && !isSpace(c) && !opPoint->canGoTo(c)) {
@@ -56,17 +56,17 @@ token::token_union read_token(ICharStream &stream) {
       break;
 
   if (i == buffer.size() && kwPoint->isTerm())
-    return {token::Keyword(kwPoint->get(), begin, stream.position())};
-  return {token::Name(buffer, begin, stream.position())};
+    return {token::Keyword(kwPoint->get(), beginPosition, FilePosition{roller, stream.position()})};
+  return {token::Name(buffer, beginPosition, FilePosition{roller, stream.position()})};
 }
 
-token::tokens_list token::Tokenizer::parse(ICharStream &stream) {
+token::tokens_list token::Tokenizer::parse(ICharStream &stream, const IFileRoller & roller) {
   char c;
   token::tokens_list result;
   stream >> c;
   while (!stream.eof()) {
     if (c == '"') {
-      size_t commentBegin = stream.position();
+      FilePosition commentBegin{roller, stream.position()};
       do {
         stream >> c;
       } while (!stream.eof() && (c != '"'));
@@ -77,7 +77,7 @@ token::tokens_list token::Tokenizer::parse(ICharStream &stream) {
 
     if (!isspace(c)) {
       stream << c;
-      result.push_back(read_token(stream));
+      result.push_back(read_token(stream, roller));
     }
     stream >> c;
   }
@@ -143,11 +143,11 @@ std::string token_union::getName() const {
       data_);
 }
 
-size_t token_union::begin() const {
+FilePosition token_union::begin() const {
   return std::visit([](const auto &token) { return token.begin(); }, data_);
 }
 
-size_t token_union::end() const {
+FilePosition token_union::end() const {
   return std::visit([](const auto &token) { return token.end(); }, data_);
 }
 

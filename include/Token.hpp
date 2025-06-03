@@ -1,6 +1,7 @@
 #ifndef TOKEN_HPP_
 #define TOKEN_HPP_
 
+#include "FilePosition.hpp"
 #include "trie.hpp"
 #include <cstddef>
 #include <string>
@@ -11,17 +12,16 @@ enum class Type { NAME, KEYWORD, OPERATOR };
 class Token {
   static size_t currentId;
   size_t id_;
-  size_t begin_;
-  size_t end_;
+	FilePosition begin_, end_;
   Type type_;
 
 protected:
-  Token(size_t begin, size_t end, Type type);
+  Token(const FilePosition & begin, const FilePosition & end, Type type);
 
 public:
   virtual std::string toString() const = 0;
-  virtual size_t begin() const { return begin_; }
-  virtual size_t end() const { return end_; }
+  virtual const FilePosition & begin() const { return begin_; }
+  virtual const FilePosition & end() const { return end_; }
 };
 
 inline size_t Token::currentId = 0;
@@ -30,7 +30,7 @@ class Name : public Token {
   std::string name_;
 
 public:
-  Name(std::string name, size_t begin, size_t end)
+  Name(std::string name, const FilePosition & begin, const FilePosition & end)
       : Token(begin, end, Type::NAME), name_(name) {}
 
   std::string toString() const override {
@@ -59,7 +59,7 @@ class Keyword : public Token {
   KwType kwtype_;
 
 public:
-  Keyword(KwType type, size_t begin, size_t end)
+  Keyword(KwType type, const FilePosition & begin, const FilePosition & end)
       : Token(begin, end, Type::NAME), kwtype_(type) {}
 
   std::string toString() const override;
@@ -82,7 +82,7 @@ class Operation : public Token {
   OpType optype_;
 
 public:
-  Operation(OpType type, size_t begin, size_t end)
+  Operation(OpType type, const FilePosition & begin, const FilePosition & end)
       : Token(begin, end, Type::NAME), optype_(type) {}
 
   std::string toString() const override;
