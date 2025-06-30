@@ -17,7 +17,7 @@ const char *preview =
     "input: 'step -n [number]' to do 'n' steps and show file state\n"
     "input: 'go' to start stepping loop until program's end or breakpoint "
     "occured\n"
-    "input: 'b -q <state number>' to set breakpoint on 'q' state\n"
+    "input: 'b -q <state number>' to set breakpoint on <state number> state\n"
     "(Experimental)input: 'b --name <string without spaces>' to set breakpoint "
     "on 'name' prefix of command field of view\n"
     "input: 'help' show this message\n";
@@ -89,8 +89,13 @@ int main(int argc, char *argw[]) {
   std::cout << preview;
   std::string line;
   tu4run::Tu4Runner<size_t, char> *runner = nullptr;
+	tu4run::Tu4RunnerBreakpoints breakpoints;
+	std::tuple<tu4run::Tu4Runner<size_t, char> *, tu4run::Tu4RunnerBreakpoints> runnerInitData;
+
   std::string fileName;
   size_t n = 1;
+
+	std::set<size_t> stateBreakpoints, linesBreakpoints;
   while (!std::cin.eof()) {
     std::getline(std::cin, line);
     auto words = split(line);
@@ -121,7 +126,9 @@ int main(int argc, char *argw[]) {
       fileName = *(++word);
       std::cout << "Input line: ";
       std::getline(std::cin, line);
-      runner = tu4run::initRunner(fileName, line);
+      runnerInitData = tu4run::initRunnerWithBreakpoints(fileName, line);
+			runner = std::get<0>(runnerInitData);
+			breakpoints = std::get<1>(runnerInitData);
       break;
     case Command::STEP:
       if (words.size() > 2 && *(++word) == "-n") {
@@ -134,12 +141,15 @@ int main(int argc, char *argw[]) {
       break;
     case Command::GO:
       runner->loop();
-      std::cout << runner->line() << std::endl;
+			if(runner->terminated()) 
+				std::cout << "End" << std::endl;
+			else
+				std::cout << "Stop at breakpoint" << std::endl;
       break;
     default:
       std::cout << "Warning: command not supported: " << *word << std::endl;
     }
-    if (runner && !runner->terminated()) {
+    if (runner) {
       std::cout << runner->line();
       printState(*runner);
     }
