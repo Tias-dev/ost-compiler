@@ -1,3 +1,4 @@
+**/*.tu4
 **/.cache/
 **/build/
 # Prerequisites
