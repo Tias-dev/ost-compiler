@@ -2,23 +2,22 @@
 #include "FilePosition.hpp"
 #include "utils.hpp"
 #include <cstdlib>
-#include <memory>
-#include <sstream>
-#include <stdexcept>
 
 void FileBreakpointer::onEnter(const FilePosition &beginPos,
                                const FilePosition &endPos) {
   states_.push({.begin = beginPos, .end = endPos});
+	lastState_ = states_.top();
 }
 void FileBreakpointer::onExit() {
   if (states_.empty())
-    throw std::logic_error("FileBreakpointer: exit before enter");
+		return;
+	lastState_ = states_.top();
   states_.pop();
 }
 
 std::string FileBreakpointer::getCurrentPosition() {
   if (states_.empty())
-    throw std::logic_error("No states found");
+    return State::dump(lastState_);
   return State::dump(states_.top());
 }
 

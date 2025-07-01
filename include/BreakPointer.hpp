@@ -23,14 +23,13 @@ public:
   };
 
 private:
-  std::string fileName_;
   std::shared_ptr<std::string> fileNamePtr_;
   std::stack<State> states_;
+	State lastState_;
 
 public:
   FileBreakpointer(std::string fileName)
-      : fileName_(fileName),
-        fileNamePtr_(std::make_shared<std::string>(fileName)) {}
+      : fileNamePtr_(std::make_shared<std::string>(fileName)) {}
 
   void onEnter(const FilePosition &beginPos,
                const FilePosition &endPos) override;

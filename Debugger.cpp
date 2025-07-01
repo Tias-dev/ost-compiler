@@ -17,7 +17,8 @@ const char *preview =
     "input: 'step -n [number]' to do 'n' steps and show file state\n"
     "input: 'go' to start stepping loop until program's end or breakpoint "
     "occured\n"
-    "input: 'b -q <state number>' to set breakpoint on <state number> state\n"
+    "input: 'b -q <state number>' to set breakpoint on <state number>(from 0) state\n"
+    "input: 'b -l <line number>' to set breakpoint on <line number>(from 1) line\n"
     "(Experimental)input: 'b --name <string without spaces>' to set breakpoint "
     "on 'name' prefix of command field of view\n"
     "input: 'help' show this message\n";
@@ -41,9 +42,6 @@ void printState(const tu4run::Tu4Runner<size_t, char> &runner) {
   static size_t nLine = 1e18;
 
   auto command = runner.nextCommand();
-  if (command.isTerm())
-    return;
-
   auto comment = command.comment();
   if (comment.empty()) {
     std::cout << "No debug information in line: " << command << std::endl;
@@ -54,7 +52,11 @@ void printState(const tu4run::Tu4Runner<size_t, char> &runner) {
   const FilePosition &begin = state.begin, &end = state.end;
   std::string line;
 
-  if (nLine > begin.row()) {
+	const FilePosition * position = &begin;
+	if(runner.terminated()) 
+		position = &end;
+
+	if (nLine > position->row()) {
     if (!file.is_open())
       file.open(fileName);
     else {
@@ -64,7 +66,7 @@ void printState(const tu4run::Tu4Runner<size_t, char> &runner) {
     nLine = 1;
   }
 
-  while (!file.eof() && nLine <= begin.row()) {
+  while (!file.eof() && nLine <= position->row()) {
     std::getline(file, line);
     ++nLine;
   }
@@ -75,10 +77,11 @@ void printState(const tu4run::Tu4Runner<size_t, char> &runner) {
 
   std::cout << nLine << " :" << line << std::endl;
   std::cout << nLine << " :";
-  for (size_t i = 0; i+1 < begin.column(); ++i)
-    std::cout << " ";
-  size_t endIndex = (begin.row() == end.row() ? end.column() : line.size());
-  for (size_t i = begin.column(); i < endIndex; ++i)
+	if(!runner.terminated()) 
+		for (size_t i = 0; i+1 < position->column(); ++i)
+			std::cout << " ";
+	size_t endIndex = (begin.row() == end.row() ? end.column() : line.size());
+  for (size_t i = position->column(); i < endIndex; ++i)
     std::cout << "^";
   std::cout << std::endl;
 }
@@ -103,10 +106,10 @@ int main(int argc, char *argw[]) {
     if (words.size() == 0) {
 			if(runner && !runner->terminated()) 
 				runner->step();
-				if (!runner->terminated()) {
-					std::cout << runner->line();
-					printState(*runner);
-				}
+			if (!runner->terminated()) {
+				std::cout << runner->line();
+				printState(*runner);
+			}
 				
       continue;
     }
@@ -132,7 +135,7 @@ int main(int argc, char *argw[]) {
       break;
     case Command::STEP:
       if (words.size() > 2 && *(++word) == "-n") {
-        n = atoll(word->c_str());
+        n = atoll(std::next(word)->c_str());
       }
       for (size_t i = 0; i < n && !runner->step(); ++i) {
       }
@@ -146,6 +149,23 @@ int main(int argc, char *argw[]) {
 			else
 				std::cout << "Stop at breakpoint" << std::endl;
       break;
+		case Command::B:
+			++word;
+			if(word == std::end(words)) {
+				std::cout << "Add -q or -l flag to set type of breakpoint" << std::endl;
+				break;
+			}
+			if(*word == "-q") {
+				size_t b = atoll(std::next(word)->c_str());
+				breakpoints.stateBreakpoints->add(b);
+			} else if(*word == "-l") {
+				size_t b = atoll(std::next(word)->c_str());
+				if(b > 1) 
+					breakpoints.lineBreakpoints->add(b);
+			} else {
+				std::cout << "Warning: unrecognized breakpoints type. Awaited -q or -l. Given: " << *word << std::endl;
+			}
+			break;
     default:
       std::cout << "Warning: command not supported: " << *word << std::endl;
     }
