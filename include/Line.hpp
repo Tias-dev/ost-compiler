@@ -3,7 +3,6 @@
 
 #include "exception.hpp"
 #include <cctype>
-#include <stdexcept>
 #include <string>
 namespace tu4run {
 template <typename CharT = char>
@@ -19,6 +18,9 @@ public:
 				c = lambda_;
 		
 		data_ += lambda_;
+		if(data_[0] != lambda_) 
+			data_.insert(std::begin(data_), lambda_);
+			
 		if(data_.size() == 1) {
 			cursor_ = 0;
 			return;

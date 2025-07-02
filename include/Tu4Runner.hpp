@@ -114,7 +114,7 @@ public:
   }
 };
 
-Tu4Runner<size_t, char> *initRunner(const std::string &fileName,
+std::unique_ptr<Tu4Runner<size_t, char>> initRunner(const std::string &fileName,
                                     const std::string &line);
 
 struct Tu4RunnerBreakpoints {
@@ -122,7 +122,7 @@ struct Tu4RunnerBreakpoints {
 	std::shared_ptr<BreakpointStorage<size_t>> lineBreakpoints;
 };
 
-std::tuple<Tu4Runner<size_t, char>*, Tu4RunnerBreakpoints> initRunnerWithBreakpoints(const std::string &fileName,
+std::tuple<std::unique_ptr<Tu4Runner<size_t, char>>, Tu4RunnerBreakpoints> initRunnerWithBreakpoints(const std::string &fileName,
                                     const std::string &line);
 } // namespace tu4run
 #endif // !TU4_RUNNER_HPP_

@@ -22,12 +22,6 @@ int main(int argc, char * argw[]) {
 	auto runner = tu4run::initRunner(fileName, s);
 		
 	size_t steps = runner->loop();
-	// while(true) {
-	// 	std::cin.get();
-	// 	steps += 1;
-	// 	if(runner->step()) break;
-	// 	std::cout << runner->line() << std::endl;
-	// }
 
 	std::cout << "Steps: " << steps << " Out line:" << std::endl;
 	std::cout << runner->line() << std::endl;

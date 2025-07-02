@@ -51,7 +51,7 @@ int main(int argc, char *argw[]) {
 	try {
 		tokens = tokenizer.parse(stream, roller);
 	} catch (error::PositionErrorBase & e) {
-    std::cout << "Error: " << e.what() << std::endl;
+		logger::error() << e.what() << std::endl;
 		fileRollAround(argw[1], e.position(), 60);
 		return 1;
 	}

@@ -4,11 +4,13 @@
 #include <string>
 namespace globals {
 
-inline std::string foutName = "./out.tu4";
 inline std::string libDir = "./";
+inline std::string outDir = "./";
 
-inline bool printDebugInfo = true;
-inline bool enableBreakpoints = true;
+inline bool printDebugInfo = false;
+inline bool enableBreakpoints = false;
 inline IBreakpointer * breakpointer = new DummyBreakpointer{};
+
+inline std::string debugFirstLine = "// Compiled with breakpoints enabled\n";
 } // namespace globals
 #endif // !GLOBALS_HPP_

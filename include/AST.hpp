@@ -164,7 +164,7 @@ public:
   MT(token::tokens_list &tokens);
 
   static void printNamesTable(std::ostream &os = std::cout) {
-    namesTable_.print();
+    namesTable_.print(os);
   }
 
   static bool isMTName(const std::string &name) {

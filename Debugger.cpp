@@ -91,9 +91,9 @@ int main(int argc, char *argw[]) {
 
   std::cout << preview;
   std::string line;
-  tu4run::Tu4Runner<size_t, char> *runner = nullptr;
+	std::unique_ptr<tu4run::Tu4Runner<size_t, char>> runner = nullptr;
 	tu4run::Tu4RunnerBreakpoints breakpoints;
-	std::tuple<tu4run::Tu4Runner<size_t, char> *, tu4run::Tu4RunnerBreakpoints> runnerInitData;
+	std::tuple<std::unique_ptr<tu4run::Tu4Runner<size_t, char>>, tu4run::Tu4RunnerBreakpoints> runnerInitData;
 
   std::string fileName;
   size_t n = 1;
@@ -130,7 +130,7 @@ int main(int argc, char *argw[]) {
       std::cout << "Input line: ";
       std::getline(std::cin, line);
       runnerInitData = tu4run::initRunnerWithBreakpoints(fileName, line);
-			runner = std::get<0>(runnerInitData);
+			runner = std::move(std::get<0>(runnerInitData));
 			breakpoints = std::get<1>(runnerInitData);
       break;
     case Command::STEP:
