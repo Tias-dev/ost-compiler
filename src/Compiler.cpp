@@ -2,7 +2,6 @@
 #include "AST.hpp"
 #include "FilePosition.hpp"
 #include "Tu4Command.hpp"
-#include "exception.hpp"
 #include "globals.hpp"
 #include "utils.hpp"
 #include <fstream>
@@ -39,17 +38,15 @@ commands_type MT::Lib::to4_impl(const compiler::Alphabet<char> &alphabet) {
 		commands = *cache_;
 	} else {
 		std::ifstream file(strfast()
-											 << globals::libDir << "/" << namesTable_[id_] << ".tu4");
-		if (!file.good())
+											 << globals::libDir << namesTable_[id_] << ".tu4");
+		if (!file.is_open())
 			throw std::invalid_argument(strfast()
-																	<< globals::libDir << "/" << namesTable_[id_]
+																	<< globals::libDir << namesTable_[id_]
 																	<< ".tu4" << " not found!");
-		try {
-			while (!file.eof()) {
-				commands.push_back(load<size_t>(file));
-			}
-		} catch (error::UnexpectedFileEnd) {
-		}
+		auto commandsList = loadMultiple<size_t>(file);
+		for(auto& command : commandsList) 
+			commands.push_back(command);
+		
 
 		for (auto it = std::begin(commands), itNext = std::next(it);
 				 it != std::end(commands); ++it, ++itNext) {
@@ -147,7 +144,7 @@ commands_type IfFi::to4_impl(const compiler::Alphabet<char> &alphabet) {
     return result;
   }
 
-  compiler::Alphabet<char> used;
+  compiler::Alphabet<char> used{' ', false};
 	std::list<size_t> endStates;
   for (auto &branch : branches_) {
     result.push_back({tu4::Tu4SetLetter<size_t>{qBegin, branch->letterToCheck(),
@@ -197,7 +194,7 @@ commands_type DoOd::to4_impl(const compiler::Alphabet<char> &alphabet) {
     return result;
   }
 
-  compiler::Alphabet<char> used;
+  compiler::Alphabet<char> used{'_', false};
   for (auto &branch : branches_) {
     used.insert(branch->letterToCheck());
     result.push_back({tu4::Tu4SetLetter<size_t>(qBegin, branch->letterToCheck(),
@@ -271,6 +268,13 @@ public:
 		size_t qBegin = currentState++;
     for (auto &letter : alphabet)
       result.push_back({tu4::Tu4Move<size_t>{qBegin, letter, dir_, currentState}});
+
+		{
+			logger::debug out; 
+			out << "MT: " << toString() << " Alphabet: ";
+			for (auto &letter : alphabet)
+				out << '[' << letter << "], ";
+		}
 
     return result;
   }

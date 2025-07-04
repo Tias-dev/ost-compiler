@@ -196,10 +196,11 @@ tu4::tu4_union<TQ, TLetter> load(std::istream &is) {
 			return false;
 		size_t commandEnd = 1, commaCount = 0;
 		for(commandEnd = 1; commandEnd < s.size(); ++commandEnd) {
-			if(s[commandEnd == '/'] && s[commandEnd - 1] == '/') {
+			if(s[commandEnd] == '/' && s[commandEnd - 1] == '/') {
 				--commandEnd;
 				break;
-			} else if(s[commandEnd] == ',') {
+			}
+			if(s[commandEnd] == ',') {
 				++commaCount;
 			}
 		}
@@ -210,10 +211,11 @@ tu4::tu4_union<TQ, TLetter> load(std::istream &is) {
 
   std::string line, comment = "";
 
-  do {
-		logger::debug() << "Skipped not valid line [" << line << ']';
+	std::getline(is, line);
+  while (is && !(isValidLine(line))) {
+		logger::debug() << "Skipped not valid line [" << line << ']' << isValidLine(line);
     std::getline(is, line);
-  } while (is && !(isValidLine(line)));
+  }
   if (!isValidLine(line))
     throw error::UnexpectedFileEnd();
 

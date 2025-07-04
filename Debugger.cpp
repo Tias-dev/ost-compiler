@@ -84,6 +84,8 @@ void printState(const tu4run::Tu4Runner<size_t, char> &runner) {
   for (size_t i = position->column(); i < endIndex; ++i)
     std::cout << "^";
   std::cout << std::endl;
+	std::cout << command << std::endl;
+	std::cout << "current q: " << runner.q() << std::endl;
 }
 
 int main(int argc, char *argw[]) {

@@ -30,8 +30,9 @@ std::tuple<std::unique_ptr<tu4run::Tu4Runner<size_t, char>>, tu4run::Tu4RunnerBr
     throw std::invalid_argument("Bad file name");
 	std::string templine;
 	std::getline(file, templine);
-	if(templine != globals::debugFirstLine) 
+	if(templine != globals::debugFirstLine) {
 		throw std::invalid_argument(strfast() << "Given program not compiled with -g (debug) flag");
+	}
 
 	auto commandsRaw = loadMultiple<size_t, char>(file);
   compiler::Commands<size_t, char> commands;

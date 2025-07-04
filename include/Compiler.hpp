@@ -9,9 +9,11 @@ template <typename TLetter> class Alphabet : public std::set<TLetter> {
   using parent = std::set<TLetter>;
 	TLetter lambda_;
 public:
-  Alphabet(const TLetter lambda = '_'): lambda_(lambda) {
-		this->insert(lambda);
+  Alphabet(const TLetter lambda = '_', bool insertLambda = true): lambda_(lambda) {
+		if(insertLambda) 
+			this->insert(lambda);
 	};
+
 	Alphabet(const std::set<TLetter> & letters) {
 		this->insert(std::begin(letters), std::end(letters));
 	}
@@ -29,7 +31,7 @@ public:
   }
 
 	Alphabet<char> operator/(const Alphabet<TLetter> & other) const {
-		Alphabet<TLetter> res{this->lambda_};
+		Alphabet<TLetter> res{this->lambda_, false};
 		for(auto& letter : *this) {
 			if(other.contains(letter)) 
 				continue;

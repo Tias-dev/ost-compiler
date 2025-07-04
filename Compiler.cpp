@@ -38,8 +38,8 @@ void parseCommandArgs(int argc, char *argw[]) {
       logger::info() << "Used library directory: " << optarg;
       break;
     case 'o':
-      globals::libDir = optarg;
-      logger::info() << "Used library directory: " << optarg;
+      globals::outDir = optarg;
+      logger::info() << "Used output directory: " << optarg;
       break;
     case 'g':
       globals::enableBreakpoints = true;
@@ -108,7 +108,7 @@ int main(int argc, char *argw[]) {
 
   std::ofstream fout(foutName);
 	if(globals::enableBreakpoints) 
-		fout << globals::debugFirstLine << "// Please not modify comment in program below\n";
+		fout << globals::debugFirstLine << "\n// Please not modify comment in program below\n";
 		
 	compiler::commands_type commands = astTree.to4();
   for (auto &command : commands)

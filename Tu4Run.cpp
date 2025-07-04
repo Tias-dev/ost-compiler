@@ -23,6 +23,7 @@ int main(int argc, char * argw[]) {
 		
 	size_t steps = runner->loop();
 
+
 	std::cout << "Steps: " << steps << " Out line:" << std::endl;
 	std::cout << runner->line() << std::endl;
 
