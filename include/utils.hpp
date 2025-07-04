@@ -9,6 +9,7 @@
 #include <map>
 #include <ostream>
 #include <sstream>
+#include <string_view>
 template <typename A, typename B> class bimap {
   std::map<A, B> forward_;
   std::map<B, A> backward_;
@@ -37,14 +38,14 @@ public:
   size_t size() { return forward_.size(); }
 
   void print(std::ostream &os = std::cout) {
-    os << "-----------------" << std::endl;
+    os << "-----------------" << '\n';
     for (auto &[k, v] : forward_)
-      os << k << ": " << v << std::endl;
+      os << k << ": " << v << '\n';
 
-    os << "~~~~~~~~~~~~~~~~~" << std::endl;
+    os << "~~~~~~~~~~~~~~~~~" << '\n';
     for (auto &[k, v] : backward_)
-      os << k << ": " << v << std::endl;
-    os << "-----------------" << std::endl;
+      os << k << ": " << v << '\n';
+    os << "-----------------" << '\n';
   }
 };
 
@@ -75,28 +76,39 @@ enum class LogLevel : char {
 
 struct log : public std::stringstream {
   LogLevel level_;
+	std::string prefix_ = "[NONE]";
+	std::ostream * os_;
   bool canceled_ = false;
-  log(LogLevel level = LogLevel::INFO) : level_(level) {}
-  ~log() {
-    if (canceled_)
-      return;
+  log(LogLevel level = LogLevel::INFO) : level_(level) {
     switch (level_) {
     case LogLevel::INFO:
-      std::cout << "[INFO] " << str() << std::endl;
+      prefix_ = "[INFO] ";
+			os_ = &std::cout;
       break;
     case LogLevel::WARNING:
-      std::cerr << "[WARNING] " << str() << std::endl;
+      prefix_ = "[WARNING] ";
+			os_ = &std::cerr;
       break;
     case LogLevel::ERROR:
-      std::cerr << "[ERROR] " << str() << std::endl;
+      prefix_ = "[ERROR] ";
+			os_ = &std::cerr;
       break;
     case LogLevel::DEBUG:
-      std::cout << "[DEBUG] " << str() << std::endl;
+      prefix_  = "[DEBUG] ";
+			os_ = &std::cout;
 			break;
     default:
       std::cerr << "[WARNING] " << "Log level [" << char(level_)
                 << "] not supported" << std::endl;
     }
+
+	}
+  ~log() {
+    if (canceled_)
+      return;
+		auto lines = split(str(), '\n');
+		for(const auto & line : lines) 
+			*os_ << prefix_ << line << '\n';
   }
 };
 

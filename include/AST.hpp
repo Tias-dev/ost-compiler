@@ -168,6 +168,7 @@ public:
   }
 
   static bool isMTName(const std::string &name) {
+		logger::debug out;
     return namesTable_.contains(name);
   }
   std::string toString() override;

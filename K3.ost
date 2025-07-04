@@ -4,7 +4,7 @@ MT K3;
 		MT R;
 		BEGIN
 			ALPHABET: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9;
-			r; DO () != _ ? r OD;
+			r; IF () != _ ? R FI;
 		END R;
 
 		MT L;

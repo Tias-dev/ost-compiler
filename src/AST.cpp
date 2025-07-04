@@ -19,9 +19,9 @@ Tree::Tree(token::tokens_list &tokens, const std::string &fileName) {
   try {
     root_ = new MT::Definition{tokens};
   } catch (error::PositionErrorBase &e) {
-		logger::error() << "Error: " << e.what() << std::endl;
+		logger::error()  << e.what() << std::endl;
     auto& position = e.position(); size_t width = 60;
-		fileRollAround(fileName, position, width);
+		fileRollAround(position.fileName(), position, width);
 		throw &e;
   }
   if (!tokens.empty())
@@ -91,6 +91,8 @@ void throwMismatch(const std::string &expected,
 }
 
 void throwSemantic(const std::string &what, const FilePosition & position) {
+	logger::debug out;
+	ast::MT::printNamesTable(out);
   throw error::SemanticError(position, what);
 }
 
@@ -178,7 +180,7 @@ void MT::init(token::tokens_list &tokens) {
 			end_ = node_->end();
       return;
     }
-    throwSemantic("Expected already defined mt name", token.begin());
+    throwSemantic(strfast() << "Expected already defined mt name but given: [" << token.getName() << "]", token.begin());
   }
 
   token = session.popFrontAndReturn();
