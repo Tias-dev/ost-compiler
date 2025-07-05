@@ -1,44 +1,69 @@
 #ifndef CHAR_STREAM_HPP_
 #define CHAR_STREAM_HPP_
 
-#include "event.hpp"
-#include <istream>
-#include <list>
+#include <cstddef>
+#include <iostream>
 #include <stack>
-#include <string>
 
 class ICharStream {
-public:
-  ICharStream(IEvent<char> &onGetCh, IEvent<char> &onReturnCh)
-      : onGetChar(onGetCh), onReturnChar(onReturnCh) {}
-  virtual ~ICharStream() {}
-
-  IEvent<char> &onGetChar;
-  IEvent<char> &onReturnChar;
-
-  virtual ICharStream &operator>>(char &c) = 0;
-  virtual ICharStream &operator<<(char c) = 0;
-  virtual ICharStream &operator<<(const std::string &s) = 0;
+	public:
+		virtual size_t position() = 0;
+		virtual ICharStream & operator>>(char &) = 0;
+		virtual ICharStream & operator<<(char) = 0;
+		virtual bool eof() = 0;
+		virtual size_t column() = 0;
+		virtual size_t row() = 0;
 };
 
 class CharStream : public ICharStream {
-private:
-  std::istream &is_;
-  std::stack<char> buffer_;
-  Event<char> onGetChar_;
-  Event<char> onReturnChar_;
+	std::stack<char> buffer_ = {};
+	std::stack<size_t> linesLen_ = {};
+	size_t position_ = 0;
+	size_t row_ = 1, column_ = 1;
+	std::istream & is_;
+	public:
+	CharStream(std::istream & is) : is_(is) {}
+	
+	size_t position() override {return position_;}
+	ICharStream & operator>>(char &c) override {
+		++position_;
+		if(!buffer_.empty()) {
+			c = buffer_.top();
+			buffer_.pop();
+		} else {
+			c = is_.get();
+		}
 
-public:
-  CharStream(std::istream &is, std::stack<char> buffer = {})
-      : ICharStream(onGetChar_, onReturnChar_), is_(is), buffer_(buffer) {}
+		if(c == '\n') {
+			++row_;
+			linesLen_.push(column_);
+			column_ = 1;
+		} else
+			++column_;
+		return *this;
+	}
 
-  char getchar();
-  void ungetchar(char c);
-  void ungetstr(const std::string &s);
+	ICharStream & operator<<(char c) override {
+		if(position_) 
+			--position_;
+		buffer_.push(c);
+		if(c == '\n' && row_ > 0) {
+			--row_;
+			column_ = linesLen_.top();
+			linesLen_.pop();
+		}
+		return *this;
+	}
 
-  ICharStream &operator>>(char &c) override;
-  ICharStream &operator<<(char c) override;
-  ICharStream &operator<<(const std::string &s) override;
+	bool eof() override {
+		return buffer_.empty() && is_.eof();
+	}
+	size_t row() override {
+		return row_;
+	}
+	size_t column() override {
+		return column_;
+	}
 };
 
 #endif // !CHAR_STREAM_HPP_

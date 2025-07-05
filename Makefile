@@ -1,7 +1,12 @@
 all:
 	mkdir -p build
 	cmake -S . -B ./build -DCMAKE_EXPORT_COMPILE_COMMANDS=1
-	cmake --build ./build
+	mv ./build/compile_commands.json .
+	cmake --build ./build -- -j4
 
-run:
-	./build/main
+verbose:
+	mkdir -p build
+	cmake -S . -B ./build -DCMAKE_EXPORT_COMPILE_COMMANDS=1 --log-level=VERBOSE
+	mv ./build/compile_commands.json .
+	cmake --build  ./build --verbose -- -j4
+
