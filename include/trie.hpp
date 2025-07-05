@@ -116,6 +116,9 @@ public:
 
   void add(const std::string &s, TData data);
   const std::optional<TData>& find(const std::string &s) const;
+	bool contains(const std::string &s) const {
+		return find(s).has_value();
+	}
 
   using point_type = std::shared_ptr<IActivePoint<TData>>;
 	using bimap_type = Bimap;

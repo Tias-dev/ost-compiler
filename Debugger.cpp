@@ -4,6 +4,7 @@
 #include "Tu4Command.hpp"
 #include "Tu4Runner.hpp"
 #include "trie.hpp"
+#include "utils.hpp"
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
@@ -17,8 +18,10 @@ const char *preview =
     "input: 'step -n [number]' to do 'n' steps and show file state\n"
     "input: 'go' to start stepping loop until program's end or breakpoint "
     "occured\n"
-    "input: 'b -q <state number>' to set breakpoint on <state number>(from 0) state\n"
-    "input: 'b -l <line number>' to set breakpoint on <line number>(from 1) line\n"
+    "input: 'b -q <state number>' to set breakpoint on <state number>(from 0) "
+    "state\n"
+    "input: 'b -l <line number>' to set breakpoint on <line number>(from 1) "
+    "line\n"
     "(Experimental)input: 'b --name <string without spaces>' to set breakpoint "
     "on 'name' prefix of command field of view\n"
     "input: 'help' show this message\n";
@@ -36,15 +39,19 @@ impl::Trie<Command> initCommands() {
   return trie;
 }
 
+struct FileData {
+  std::ifstream file;
+  size_t nColumn = 0;
+  size_t nLine = 1e18;
+};
 void printState(const tu4run::Tu4Runner<size_t, char> &runner) {
-  static std::ifstream file;
-  static size_t nColumn = 0;
-  static size_t nLine = 1e18;
+  static std::map<std::string, FileData> filesData;
 
   auto command = runner.nextCommand();
   auto comment = command.comment();
   if (comment.empty()) {
-    std::cout << "No debug information in line: " << command << std::endl;
+    logger::debug() << "No debug information in line: "
+                    << (strfast() << command).bump() << std::endl;
     return;
   }
   auto state = FileBreakpointer::State::load(comment);
@@ -52,129 +59,168 @@ void printState(const tu4run::Tu4Runner<size_t, char> &runner) {
   const FilePosition &begin = state.begin, &end = state.end;
   std::string line;
 
-	const FilePosition * position = &begin;
-	if(runner.terminated()) 
-		position = &end;
+  const FilePosition *position = &begin;
+  if (runner.terminated())
+    position = &end;
 
-	if (nLine > position->row()) {
-    if (!file.is_open())
-      file.open(fileName);
+  if (!filesData.contains(fileName))
+    filesData[fileName] = FileData{};
+  FileData &fdata = filesData[fileName];
+
+  if (fdata.nLine > position->row()) {
+    if (!fdata.file.is_open())
+      fdata.file.open(fileName);
     else {
-      file.clear();
-      file.seekg(0);
+      fdata.file.clear();
+      fdata.file.seekg(0);
     }
-    nLine = 1;
+    fdata.nLine = 1;
   }
 
-  while (!file.eof() && nLine <= position->row()) {
-    std::getline(file, line);
-    ++nLine;
+  while (!fdata.file.eof() && fdata.nLine <= position->row()) {
+    std::getline(fdata.file, line);
+    ++fdata.nLine;
   }
 
   for (auto &c : line)
     if (c == '\t')
       c = ' ';
 
-  std::cout << nLine << " :" << line << std::endl;
-  std::cout << nLine << " :";
-	if(!runner.terminated()) 
-		for (size_t i = 0; i+1 < position->column(); ++i)
-			std::cout << " ";
-	size_t endIndex = (begin.row() == end.row() ? end.column() : line.size());
+  std::cout << fdata.nLine - 1 << " :" << line << std::endl;
+  std::cout << fdata.nLine - 1<< " :";
+  if (!runner.terminated())
+    for (size_t i = 0; i + 1 < position->column(); ++i)
+      std::cout << " ";
+  size_t endIndex = (begin.row() == end.row() ? end.column() : line.size());
   for (size_t i = position->column(); i < endIndex; ++i)
     std::cout << "^";
   std::cout << std::endl;
-	std::cout << command << std::endl;
-	std::cout << "current q: " << runner.q() << std::endl;
+  std::cout << "command" << command << std::endl;
 }
 
-int main(int argc, char *argw[]) {
-  auto commands = initCommands();
+class Manager {
+  impl::Trie<Command> commands_;
+  std::unique_ptr<tu4run::Tu4Runner<size_t, char>> runner_ = nullptr;
+  tu4run::Tu4RunnerBreakpoints breakpoints_;
+  std::vector<std::string> usedFileNames_;
 
-  std::cout << preview;
-  std::string line;
-	std::unique_ptr<tu4run::Tu4Runner<size_t, char>> runner = nullptr;
-	tu4run::Tu4RunnerBreakpoints breakpoints;
-	std::tuple<std::unique_ptr<tu4run::Tu4Runner<size_t, char>>, tu4run::Tu4RunnerBreakpoints> runnerInitData;
-
-  std::string fileName;
-  size_t n = 1;
-
-	std::set<size_t> stateBreakpoints, linesBreakpoints;
-  while (!std::cin.eof()) {
+  void run(const std::string &fileName) {
+    std::string line;
+    std::cout << "Input line: ";
     std::getline(std::cin, line);
-    auto words = split(line);
+    auto runnerInitData = tu4run::initRunnerWithBreakpoints(fileName, line);
+    runner_ = std::move(runnerInitData.runner);
+    breakpoints_ = runnerInitData.breakpoints;
+    usedFileNames_ = runnerInitData.fileNames;
+  }
 
+  void step(size_t n = 1) {
+    while (n-- >= 1 && !runner_->terminated())
+      runner_->step();
+  }
+
+  void go() {
+    runner_->loop();
+    if (runner_->terminated())
+      std::cout << "End" << std::endl;
+    else
+      std::cout << "Stop at breakpoint" << std::endl;
+  }
+
+  void addBreakpointState(size_t q) { breakpoints_.stateBreakpoints->add(q); }
+
+  void addBreakpointLine(size_t nLine) {
+    std::cout << "Choose file name in which set line breakpoint:\n";
+    for (size_t i = 0; i < usedFileNames_.size(); ++i)
+      std::cout << i << ") " << usedFileNames_[i] << '\n';
+    size_t findex;
+    std::cout << "Enter file number: ";
+    std::cin >> findex;
+
+    if (!breakpoints_.lineBreakpoints->contains(usedFileNames_.at(findex)))
+      (*breakpoints_.lineBreakpoints)[usedFileNames_.at(findex)] = {};
+
+    if (nLine > 0)
+      (*breakpoints_.lineBreakpoints)[usedFileNames_[findex]].add(nLine);
+  }
+
+  void processLine_impl(const std::list<std::string> &words) {
     if (words.size() == 0) {
-			if(runner && !runner->terminated()) 
-				runner->step();
-			if (!runner->terminated()) {
-				std::cout << runner->line();
-				printState(*runner);
-			}
-				
-      continue;
+      if (!runner_)
+        return;
+      if (!runner_->terminated())
+        runner_->step();
+			return;
     }
 
+    std::string line;
     auto word = std::begin(words);
-    Command command = commands.find(*word).value_or(Command::NONE);
+    Command command = commands_.find(*word).value_or(Command::NONE);
+
     switch (command) {
     case Command::NONE:
       std::cout << "Error: undefined command: " << *word << std::endl;
-      continue;
       break;
     case Command::RUN:
       if (words.size() < 2) {
-        std::cout << "Error: file name to run not given";
-        continue;
+        logger::warning() << "Error: file name to run not given";
+        return;
       }
-      fileName = *(++word);
-      std::cout << "Input line: ";
-      std::getline(std::cin, line);
-      runnerInitData = tu4run::initRunnerWithBreakpoints(fileName, line);
-			runner = std::move(std::get<0>(runnerInitData));
-			breakpoints = std::get<1>(runnerInitData);
+      run(*(++word));
       break;
     case Command::STEP:
-      if (words.size() > 2 && *(++word) == "-n") {
-        n = atoll(std::next(word)->c_str());
-      }
-      for (size_t i = 0; i < n && !runner->step(); ++i) {
-      }
-
-      n = 1;
+      if (words.size() > 2 && *(++word) == "-n")
+        step(atoll(std::next(word)->c_str()));
+      else
+        step(1);
       break;
     case Command::GO:
-      runner->loop();
-			if(runner->terminated()) 
-				std::cout << "End" << std::endl;
-			else
-				std::cout << "Stop at breakpoint" << std::endl;
+      go();
       break;
-		case Command::B:
-			++word;
-			if(word == std::end(words)) {
-				std::cout << "Add -q or -l flag to set type of breakpoint" << std::endl;
-				break;
-			}
-			if(*word == "-q") {
-				size_t b = atoll(std::next(word)->c_str());
-				breakpoints.stateBreakpoints->add(b);
-			} else if(*word == "-l") {
-				size_t b = atoll(std::next(word)->c_str());
-				if(b > 1) 
-					breakpoints.lineBreakpoints->add(b);
-			} else {
-				std::cout << "Warning: unrecognized breakpoints type. Awaited -q or -l. Given: " << *word << std::endl;
-			}
-			break;
+    case Command::B:
+      ++word;
+      if (word == std::end(words)) {
+        std::cout << "Add -q or -l flag to set type of breakpoint" << std::endl;
+        break;
+      }
+      if (*word == "-q") {
+        addBreakpointState(atoll(std::next(word)->c_str()));
+      } else if (*word == "-l") {
+        size_t nLine = atoll(std::next(word)->c_str());
+        addBreakpointLine(nLine);
+      } else {
+        std::cout << "Warning: unrecognized breakpoints type. Awaited -q or "
+                     "-l. Given: "
+                  << *word << std::endl;
+      }
+      break;
     default:
       std::cout << "Warning: command not supported: " << *word << std::endl;
     }
-    if (runner) {
-      std::cout << runner->line();
-      printState(*runner);
+  }
+
+public:
+  Manager() : commands_(initCommands()) {}
+
+  void processLine(const std::string &commandLine) {
+    auto words = split(commandLine);
+    processLine_impl(words);
+
+    if (runner_) {
+      std::cout << runner_->line();
+      printState(*runner_);
     }
+  }
+};
+
+int main(int argc, char *argw[]) {
+  Manager manager;
+  std::cout << preview;
+  std::string line;
+
+  while (!std::cin.eof()) {
+    std::getline(std::cin, line);
+    manager.processLine(line);
   }
 
   return 0;

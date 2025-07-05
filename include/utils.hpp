@@ -9,7 +9,6 @@
 #include <map>
 #include <ostream>
 #include <sstream>
-#include <string_view>
 template <typename A, typename B> class bimap {
   std::map<A, B> forward_;
   std::map<B, A> backward_;

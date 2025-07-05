@@ -99,15 +99,16 @@ public:
    */
   size_t loop() {
     size_t steps = 0;
-    bool isTerm = false;
+    bool stopSteps = false;
     if (breakpointManager_)
-      breakpointManager_->process(nextCommand(), isTerm);
+      breakpointManager_->process(nextCommand(), stopSteps);
 
-    while (!isTerm) {
-      isTerm = step();
+    while (!stopSteps) {
+      step();
+			stopSteps = terminated();
       ++steps;
       if (breakpointManager_)
-        breakpointManager_->process(nextCommand(), isTerm);
+        breakpointManager_->process(nextCommand(), stopSteps);
     }
 
     return steps;
@@ -119,10 +120,17 @@ std::unique_ptr<Tu4Runner<size_t, char>> initRunner(const std::string &fileName,
 
 struct Tu4RunnerBreakpoints {
 	std::shared_ptr<BreakpointStorage<size_t>> stateBreakpoints;
-	std::shared_ptr<BreakpointStorage<size_t>> lineBreakpoints;
+	std::shared_ptr<std::map<std::string, BreakpointStorage<size_t>>> lineBreakpoints;
 };
 
-std::tuple<std::unique_ptr<Tu4Runner<size_t, char>>, Tu4RunnerBreakpoints> initRunnerWithBreakpoints(const std::string &fileName,
+
+struct RunnerDataWithBreakpoints {
+	std::unique_ptr<tu4run::Tu4Runner<size_t, char>> runner;
+	tu4run::Tu4RunnerBreakpoints breakpoints;
+	std::vector<std::string> fileNames;
+};
+
+RunnerDataWithBreakpoints initRunnerWithBreakpoints(const std::string &fileName,
                                     const std::string &line);
 } // namespace tu4run
 #endif // !TU4_RUNNER_HPP_
