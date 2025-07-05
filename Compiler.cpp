@@ -14,7 +14,25 @@
 #include <iostream>
 #include <memory>
 #include <stdexcept>
-const char * helpMessage = "";
+const char * helpMessage = 
+    "ost language compiler\n"
+    "usage: ost <program>.ost [OPTIONS]\n"
+		"Description:\n"
+		"Compiles <program>.ost program to Machine Turing's commands sequence\n"
+		"Name of output file is the name of first MT described in <program>.ost file\n"
+		"\n"
+		"Awailable options are shown below:\n"
+		"-l, --libdir : directory where precompiled libraries(.tu4, not source .ost files!) are stored\n"
+		"\t(requires argument, default: ./)\n"
+		"-o, --outputdir : directory where compiled <program>.ost program will be stored\n"
+		"\t(requires argument, default: ./)\n"
+		"-g, --enable-breakpoints : enabling breakpoints setting option. Program compiled with this flag can be debugged with ostdb utility\n"
+		"\t(default: disabled)\n"
+		"-d, --print-debug-info : enabling debug info\n"
+		"\t(default: disabled)\n"
+		"-h, --help : print this help message and quit\n"
+		"\n"
+;
 
 void parseCommandArgs(int argc, char *argw[]) {
   size_t nopts = 6;

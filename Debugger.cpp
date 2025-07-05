@@ -22,8 +22,6 @@ const char *preview =
     "state\n"
     "input: 'b -l <line number>' to set breakpoint on <line number>(from 1) "
     "line\n"
-    "(Experimental)input: 'b --name <string without spaces>' to set breakpoint "
-    "on 'name' prefix of command field of view\n"
     "input: 'help' show this message\n";
 
 enum class Command { NONE, RUN, STEP, GO, B, HELP };
@@ -220,6 +218,11 @@ int main(int argc, char *argw[]) {
 
   while (!std::cin.eof()) {
     std::getline(std::cin, line);
+		if(line == "help") {
+			std::cout << preview;
+			continue;
+		}
+			
     manager.processLine(line);
   }
 
