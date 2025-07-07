@@ -1,0 +1,10 @@
+MT TEST3IFELSE;
+	BEGIN
+	ALPHABET: 0,1,2,3;
+	l;
+	IF 
+		() != 0 ? a(0);
+		0 ? a(1);
+	FI;
+	r;
+END TEST3IFELSE

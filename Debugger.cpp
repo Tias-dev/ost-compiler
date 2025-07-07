@@ -93,7 +93,7 @@ void printState(const tu4run::Tu4Runner<size_t, char> &runner) {
   for (size_t i = position->column(); i < endIndex; ++i)
     std::cout << "^";
   std::cout << std::endl;
-  std::cout << "command" << command << std::endl;
+  std::cout << "command: " << command << std::endl;
 }
 
 class Manager {
