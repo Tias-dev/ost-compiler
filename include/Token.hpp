@@ -47,6 +47,7 @@ enum class KwType {
   END,
   ALPHABET,
   IF,
+	ELSE,
   FI,
   DO,
   OD,

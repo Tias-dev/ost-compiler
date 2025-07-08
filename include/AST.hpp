@@ -84,10 +84,19 @@ public:
   char letterToCheck() const { return letterToCheck_; }
 };
 
+class ElseBranch : public NodeBase {
+	void init(token::tokens_list &tokens) override;
+	public:
+		ElseBranch(token::tokens_list & tokens);
+		std::string toString() override;
+		commands_type to4_impl(const compiler::Alphabet<char> &alphabet) override;
+};
+
 class IfFi : public NodeBase {
   void init(token::tokens_list &tokens) override;
 
-  std::list<Branch *> branches_;
+  std::list<Branch *> ifBranches_;
+	ElseBranch * elseBranch_ = nullptr;
 
 public:
   IfFi(token::tokens_list &tokens);

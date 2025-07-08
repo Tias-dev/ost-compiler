@@ -134,7 +134,7 @@ commands_type IfFi::to4_impl(const compiler::Alphabet<char> &alphabet) {
   compiler::Alphabet<char> used{' ', false};
   std::list<size_t> endStates;
 
-  for (auto &branch : branches_) {
+  for (auto &branch : ifBranches_) {
     if (branch->isAnyChar()) {
       for (auto &letter : alphabet) { // Set condition check
         if (letter == branch->letterToCheck())
@@ -156,13 +156,25 @@ commands_type IfFi::to4_impl(const compiler::Alphabet<char> &alphabet) {
                                      branch->letterToCheck(), currentState}});
     }
 		// Set branch actions
-		auto subCommands = branch->to4_impl(alphabet);
+		auto subCommands = branch->to4(alphabet);
 		endStates.push_back(currentState++);
 		result.extend(subCommands);
   }
 
-	// Set exiting after IF ... FI statement
   auto notUsed = alphabet / used; 
+	if(elseBranch_) {
+		for(auto& letter : notUsed) {
+			result.push_back({tu4::Tu4SetLetter<size_t>(qBegin, letter, letter, currentState)});
+		}
+		notUsed.clear();
+
+		auto subCommands = elseBranch_->to4(alphabet);
+		endStates.push_back(currentState++);
+		result.extend(subCommands);
+	} 
+		
+
+	// Set exiting after IF ... FI statement
   for (auto &letter : alphabet) {
     for (auto &endState : endStates)
       result.push_back(
@@ -222,6 +234,17 @@ commands_type DoOd::to4_impl(const compiler::Alphabet<char> &alphabet) {
 }
 
 commands_type Branch::to4_impl(const compiler::Alphabet<char> &alphabet) {
+  commands_type result;
+
+  for (auto &child : childs_) {
+    auto subCommands = child->to4(alphabet);
+    result.extend(subCommands);
+  }
+
+  return result;
+}
+
+commands_type ElseBranch::to4_impl(const compiler::Alphabet<char> & alphabet) {
   commands_type result;
 
   for (auto &child : childs_) {

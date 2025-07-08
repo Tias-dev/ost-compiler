@@ -25,7 +25,7 @@ const char *help =
 		"TEST is the plaintext file with pairs of 2/(3) lines:\n"
     "1. first line is given line state\n"
     "2. second line is expected line state\n"
-		"3. OPTIONAL: cursor position at the end of program(if not specified it will be after last non space cell)\n"
+		"3. OPTIONAL: cursor position(counting from 0) at the end of program(if not specified it will be after last non space cell)\n"
 		"4. Tests delimeter: line of any number of '-' symbols\n"
     "\n"
     "Output:\n"

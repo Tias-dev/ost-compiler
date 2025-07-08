@@ -64,7 +64,7 @@ public:
 
   const char *what() const noexcept override {
     static std::string message;
-    message = (strfast() << "Semantic error: expected [" << expected_
+    message = (strfast() << "Expected mismatch error: expected [" << expected_
                          << "], but given: [" << given_ << "]");
 
     return message.c_str();
