@@ -67,13 +67,22 @@ commands_type MT::Call::to4_impl(const compiler::Alphabet<char> &alphabet) {
   NodeBase *definition = definitions_[id_];
   definition->begin_ = begin();
   definition->end_ = end();
+	if(globals::enableBreakpoints) {
+		globals::breakpointer->onEnter(begin(), end());
+		size_t qBegin = currentState++; // Dummy state for register mt's call by debugger
+		for(auto& letter : alphabet)  
+			result.push_back({tu4::Tu4SetLetter<size_t>{qBegin, letter, letter, currentState}});
+	} 
+		
 
   for (size_t i = 0; i < pow_; ++i) {
     auto subCommands = definition->to4(alphabet);
     result.extend(subCommands);
   }
+	if(globals::enableBreakpoints) 
+		globals::breakpointer->onExit();
 
-  return result;
+	return result;
 }
 
 commands_type
