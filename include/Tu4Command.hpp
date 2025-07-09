@@ -213,7 +213,8 @@ tu4::tu4_union<TQ, TLetter> load(std::istream &is) {
 
 	std::getline(is, line);
   while (is && !(isValidLine(line))) {
-		logger::debug() << "Skipped not valid line [" << line << ']' << isValidLine(line);
+		if(line != "") 
+			logger::debug() << "Skipped not valid line [" << line << ']';
     std::getline(is, line);
   }
   if (!isValidLine(line))

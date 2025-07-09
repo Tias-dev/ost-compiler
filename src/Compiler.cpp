@@ -282,8 +282,7 @@ commands_type Tree::to4() {
   for (auto &c : commands)
     alphabet.insert(c.letterToCheck());
 
-  if (globals::printDebugInfo)
-    std::cout << "Terminal state: " << currentState << std::endl;
+	logger::debug() << "Terminal state: " << currentState;
 
   for (auto &letter : alphabet)
     commands.push_back({tu4::Tu4SetLetter<size_t>(currentState, letter, letter,
@@ -311,13 +310,6 @@ public:
     for (auto &letter : alphabet)
       result.push_back(
           {tu4::Tu4Move<size_t>{qBegin, letter, dir_, currentState}});
-
-    {
-      logger::debug out;
-      out << "MT: " << toString() << " Alphabet: ";
-      for (auto &letter : alphabet)
-        out << '[' << letter << "], ";
-    }
 
     return result;
   }

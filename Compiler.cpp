@@ -8,10 +8,12 @@
 #include "utils.hpp"
 #include <bits/getopt_core.h>
 #include <cctype>
+#include <chrono>
 #include <cstring>
 #include <fstream>
 #include <getopt.h>
 #include <iostream>
+#include <iterator>
 #include <memory>
 #include <stdexcept>
 const char * helpMessage = 
@@ -78,6 +80,8 @@ void parseCommandArgs(int argc, char *argw[]) {
   }
   delete[] options;
 }
+using duration_t = std::chrono::milliseconds;
+const char * durationSuffix = "ms";
 
 int main(int argc, char *argw[]) {
   if (argc < 2)
@@ -98,6 +102,7 @@ int main(int argc, char *argw[]) {
   if (!file.is_open())
     throw std::invalid_argument(strfast() << "Can't open file: " << fileName);
 
+	auto start_ts = std::chrono::system_clock::now();
   CharStream stream(file);
 
   auto tokenizer = token::Tokenizer{};
@@ -106,32 +111,45 @@ int main(int argc, char *argw[]) {
   file.close();
 
   {
+		auto start = std::chrono::system_clock::now();
 		logger::debug out;
     out << "Tokenizer output:" << std::endl;
     for (auto &token : tokens)
       out << token.toString() << std::endl;
     out << "-----------------------------" << std::endl << std::endl;
+		auto end = std::chrono::system_clock::now();
+		out << "Tokenizing time:" << std::chrono::duration_cast<duration_t>(end - start).count() << durationSuffix;
   }
 
   ast::Tree astTree{tokens, fileName};
   {
+		auto start = std::chrono::system_clock::now();
 		logger::debug out;
     out << "Created AST tree:" << std::endl;
     astTree.print(out);
     out << "-----------------------------" << std::endl << std::endl;
     out << "Names table:" << std::endl;
     ast::MT::printNamesTable(out);
+		auto end = std::chrono::system_clock::now();
+		out << "AST creating time:" << std::chrono::duration_cast<duration_t>(end - start).count() << durationSuffix;
   }
 	std::string foutName = strfast() << globals::outDir << astTree.getTreeName() << ".tu4";
 
   std::ofstream fout(foutName);
 	if(globals::enableBreakpoints) 
 		fout << globals::debugFirstLine << "\n// Please not modify comment in program below\n";
-		
-	compiler::commands_type commands = astTree.to4();
+	compiler::commands_type  commands;
+	{
+		auto start = std::chrono::system_clock::now();
+		commands = astTree.to4();
+		auto end = std::chrono::system_clock::now();
+		logger::debug() << "Compiling from AST to mt4 form time: " << std::chrono::duration_cast<duration_t>(end - start).count() << durationSuffix;
+	}
   for (auto &command : commands)
     fout << command << '\n';
 
+	auto end_ts = std::chrono::system_clock::now();
+	logger::debug() << "Total compiling time: " << std::chrono::duration_cast<duration_t>(end_ts - start_ts).count() << durationSuffix;
 	logger::info() << "Command written to file: " << foutName;
 
   return 0;
