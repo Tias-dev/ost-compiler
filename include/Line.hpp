@@ -93,10 +93,15 @@ std::ostream & operator<<(std::ostream & os, const tu4run::Line<CharT> & line) {
 	auto strline = line.line();
 	auto begin = std::begin(strline);
 	auto end = std::prev(std::end(strline));
+	size_t cursorPos = strline.size() - 1;
 	while(end != begin && *end == '_') {
 		--end;
+		--cursorPos;
 	}
 	++end;
+	++cursorPos;
+	while(cursorPos <= line.cursor())
+		++end, ++cursorPos;
 
 	os << std::string_view(begin, end) << "_\n";
 	size_t cursor = line.cursor();
