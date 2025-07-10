@@ -38,6 +38,11 @@ public:
     }
   }
 
+	void reset(const Line<CharT> &newLine) {
+		q_ = 0;
+		line_ = newLine;
+	}
+
   TQ q() const { return q_; }
 
   void addBreakpointManager(

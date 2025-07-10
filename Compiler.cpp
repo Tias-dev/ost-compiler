@@ -137,7 +137,7 @@ int main(int argc, char *argw[]) {
 
   std::ofstream fout(foutName);
 	if(globals::enableBreakpoints) 
-		fout << globals::debugFirstLine << "\n// Please not modify comment in program below\n";
+		fout << globals::debugFirstLine << "\n// Please not modify comments in program below\n";
 	compiler::commands_type  commands;
 	{
 		auto start = std::chrono::system_clock::now();
@@ -150,7 +150,7 @@ int main(int argc, char *argw[]) {
 
 	auto end_ts = std::chrono::system_clock::now();
 	logger::debug() << "Total compiling time: " << std::chrono::duration_cast<duration_t>(end_ts - start_ts).count() << durationSuffix;
-	logger::info() << "Command written to file: " << foutName;
+	logger::info() << "Commands written to file: " << foutName;
 
   return 0;
 }

@@ -22,9 +22,10 @@ const char *preview =
     "state\n"
     "input: 'b -l <line number>' to set breakpoint on <line number>(from 1) "
     "line\n"
+		"input: 'restart' to restart current loadded program with new starting line"
     "input: 'help' show this message\n";
 
-enum class Command { NONE, RUN, STEP, GO, B, HELP };
+enum class Command { NONE, RUN, STEP, GO, B, HELP, RESTART };
 
 impl::Trie<Command> initCommands() {
   impl::Trie<Command> trie;
@@ -33,6 +34,7 @@ impl::Trie<Command> initCommands() {
   trie.add("go", Command::GO);
   trie.add("b", Command::B);
   trie.add("help", Command::HELP);
+	trie.add("restart", Command::RESTART);
 
   return trie;
 }
@@ -101,6 +103,18 @@ class Manager {
   std::unique_ptr<tu4run::Tu4Runner<size_t, char>> runner_ = nullptr;
   tu4run::Tu4RunnerBreakpoints breakpoints_;
   std::vector<std::string> usedFileNames_;
+
+	void restart() {
+		if(!runner_) {
+			logger::warning() << "Setup runner by 'run' command before reseting it";
+			return;
+		}
+			
+    std::string line;
+    std::cout << "Input line: ";
+    std::getline(std::cin, line);
+		(*runner_).reset(tu4run::Line<char>{line});
+	}
 
   void run(const std::string &fileName) {
     std::string line;
@@ -192,6 +206,9 @@ class Manager {
                   << *word << std::endl;
       }
       break;
+		case Command::RESTART:
+			restart();
+			break;
     default:
       std::cout << "Warning: command not supported: " << *word << std::endl;
     }
