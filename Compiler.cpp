@@ -13,7 +13,6 @@
 #include <fstream>
 #include <getopt.h>
 #include <iostream>
-#include <iterator>
 #include <memory>
 #include <stdexcept>
 const char * helpMessage = 
@@ -32,22 +31,25 @@ const char * helpMessage =
 		"\t(default: disabled)\n"
 		"-d, --print-debug-info : enabling debug info\n"
 		"\t(default: disabled)\n"
+		"-b, --use-binary-format : save compiled sequence of commands in binary format. Significant speed up to loading and saving\n"
+		"\t(default: disabled)\n"
 		"-h, --help : print this help message and quit\n"
 		"\n"
 ;
 
 void parseCommandArgs(int argc, char *argw[]) {
-  size_t nopts = 6;
+  size_t nopts = 7;
   option *options = new option[nopts]{
       {.name = "libdir", .has_arg = 1, .flag = NULL, .val = 'l'},
       {.name = "outputdir", .has_arg = 1, .flag = NULL, .val = 'o'},
       {.name = "enable-breakpoints", .has_arg = 0, .flag = NULL, .val = 'g'},
       {.name = "print-debug-info", .has_arg = 0, .flag = NULL, .val = 'd'},
+      {.name = "use-binary-format", .has_arg = 0, .flag = NULL, .val = 'b'},
       {.name = "help", .has_arg = 0, .flag = NULL, .val = 'h'}};
   memset(&options[nopts - 1], 0, sizeof(option));
 
   int arg, longindex;
-  while ((arg = getopt_long(argc, argw, "l:o:gdh", options, &longindex)) != -1) {
+  while ((arg = getopt_long(argc, argw, "l:o:gdbh", options, &longindex)) != -1) {
     switch (arg) {
     case '?':
       logger::warning()
@@ -68,6 +70,10 @@ void parseCommandArgs(int argc, char *argw[]) {
     case 'd':
       globals::printDebugInfo = true;
       logger::info() << "Printing debug info enabled";
+			break;
+    case 'b':
+      globals::useBinaryFormat = true;
+      logger::info() << "Binary format to saving enabled";
 			break;
 		case 'h':
 			std::cout << helpMessage << std::endl;
@@ -96,7 +102,7 @@ int main(int argc, char *argw[]) {
     globals::libDir.push_back('/');
 
   if (globals::enableBreakpoints)
-    globals::breakpointer = new FileBreakpointer{fileName};
+    globals::breakpointer = new FileBreakpointer{};
 
   std::fstream file(fileName);
   if (!file.is_open())
@@ -135,9 +141,6 @@ int main(int argc, char *argw[]) {
   }
 	std::string foutName = strfast() << globals::outDir << astTree.getTreeName() << ".tu4";
 
-  std::ofstream fout(foutName);
-	if(globals::enableBreakpoints) 
-		fout << globals::debugFirstLine << "\n// Please not modify comments in program below\n";
 	compiler::commands_type  commands;
 	{
 		auto start = std::chrono::system_clock::now();
@@ -145,9 +148,12 @@ int main(int argc, char *argw[]) {
 		auto end = std::chrono::system_clock::now();
 		logger::debug() << "Compiling from AST to mt4 form time: " << std::chrono::duration_cast<duration_t>(end - start).count() << durationSuffix;
 	}
-  for (auto &command : commands)
-    fout << command << '\n';
-
+	{
+		auto start = std::chrono::system_clock::now();
+		compiler::serializer::serialize(commands, FilePosition::fileCodesBimap(), foutName, globals::useBinaryFormat);
+		auto end = std::chrono::system_clock::now();
+		logger::debug() << "Serializing compiled program time: " << std::chrono::duration_cast<duration_t>(end - start).count() << durationSuffix;
+	}
 	auto end_ts = std::chrono::system_clock::now();
 	logger::debug() << "Total compiling time: " << std::chrono::duration_cast<duration_t>(end_ts - start_ts).count() << durationSuffix;
 	logger::info() << "Commands written to file: " << foutName;

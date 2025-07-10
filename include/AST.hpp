@@ -5,7 +5,6 @@
 #include "FilePosition.hpp"
 #include "Tokenizer.hpp"
 #include "globals.hpp"
-#include "utils.hpp"
 #include <iostream>
 #include <list>
 #include <optional>
@@ -32,7 +31,7 @@ public:
   virtual std::string toString() = 0;
   void print(std::ostream &os, size_t depth = 0);
   virtual commands_type to4(const compiler::Alphabet<char> &alphabet) {
-    globals::breakpointer->onEnter(begin(), end());
+    globals::breakpointer->onEnter(FileRange::fromPositions(begin(), end()));
     auto result = to4_impl(alphabet);
     globals::breakpointer->onExit();
 

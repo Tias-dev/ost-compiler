@@ -7,7 +7,6 @@
 #include <fstream>
 #include <iterator>
 #include <map>
-#include <memory>
 #include <stdexcept>
 
 using namespace ast;
@@ -37,15 +36,8 @@ commands_type MT::Lib::to4_impl(const compiler::Alphabet<char> &alphabet) {
   if (cache_.has_value()) {
     commands = *cache_;
   } else {
-    std::ifstream file(strfast()
-                       << globals::libDir << namesTable_[id_] << ".tu4");
-    if (!file.is_open())
-      throw std::invalid_argument(strfast()
-                                  << globals::libDir << namesTable_[id_]
-                                  << ".tu4" << " not found!");
-    auto commandsList = loadMultiple<size_t>(file);
-    for (auto &command : commandsList)
-      commands.push_back(command);
+		std::string filename = strfast() << globals::libDir << namesTable_[id_] << ".tu4";
+    commands = compiler::serializer::deserialize(filename, globals::useBinaryFormat);
 
     for (auto it = std::begin(commands), itNext = std::next(it);
          it != std::end(commands); ++it, ++itNext) {
@@ -54,9 +46,9 @@ commands_type MT::Lib::to4_impl(const compiler::Alphabet<char> &alphabet) {
         it = std::prev(itNext);
       }
     }
+		cache_ = commands;
   }
 
-  cache_ = commands;
   commands.shiftTo(currentState);
   currentState += commands.deltaQ();
   return commands;
@@ -68,7 +60,7 @@ commands_type MT::Call::to4_impl(const compiler::Alphabet<char> &alphabet) {
   definition->begin_ = begin();
   definition->end_ = end();
 	if(globals::enableBreakpoints) {
-		globals::breakpointer->onEnter(begin(), end());
+		globals::breakpointer->onEnter(FileRange::fromPositions(begin(), end()));
 		size_t qBegin = currentState++; // Dummy state for register mt's call by debugger
 		for(auto& letter : alphabet)  
 			result.push_back({tu4::Tu4SetLetter<size_t>{qBegin, letter, letter, currentState}});
@@ -295,11 +287,10 @@ class MoveMT : public NodeBase {
   tu4::MoveDirection dir_;
   void init(token::tokens_list &tokens) override {}
 
-  const static FilePosition defaultFpos;
 
 public:
   MoveMT(tu4::MoveDirection dir)
-      : NodeBase(ExprType::MT, defaultFpos, defaultFpos), dir_(dir) {}
+      : NodeBase(ExprType::MT), dir_(dir) {}
   std::string toString() override {
     return (dir_ == tu4::MoveDirection::LEFT ? "<" : ">");
   }
@@ -317,9 +308,6 @@ public:
     return to4_impl(alphabet);
   }
 };
-
-const FilePosition MoveMT::defaultFpos =
-    FilePosition(std::make_shared<std::string>("default fpos"), 0, 0);
 
 std::map<size_t, NodeBase *> MT::definitions_{
     {0, new MoveMT{tu4::MoveDirection::LEFT}},

@@ -124,8 +124,8 @@ std::unique_ptr<Tu4Runner<size_t, char>> initRunner(const std::string &fileName,
                                     const std::string &line);
 
 struct Tu4RunnerBreakpoints {
-	std::shared_ptr<BreakpointStorage<size_t>> stateBreakpoints;
-	std::shared_ptr<std::map<std::string, BreakpointStorage<size_t>>> lineBreakpoints;
+	std::shared_ptr<StateBreakpointManager<size_t>::breakpoints_t> stateBreakpoints;
+	std::shared_ptr<LineBreakpointManager<size_t>::breakpoints_t> lineBreakpoints;
 };
 
 

@@ -2,10 +2,10 @@
 #include "FilePosition.hpp"
 #include "utils.hpp"
 #include <cstdlib>
+#include <sstream>
 
-void FileBreakpointer::onEnter(const FilePosition &beginPos,
-                               const FilePosition &endPos) {
-  states_.push({.begin = beginPos, .end = endPos});
+void FileBreakpointer::onEnter(const FileRange & range) {
+  states_.push({.range = range});
 	lastState_ = states_.top();
 }
 void FileBreakpointer::onExit() {
@@ -15,21 +15,22 @@ void FileBreakpointer::onExit() {
   states_.pop();
 }
 
-std::string FileBreakpointer::getCurrentPosition() {
+FileRange FileBreakpointer::getCurrentPosition() {
   if (states_.empty())
-    return State::dump(lastState_);
-  return State::dump(states_.top());
+    return lastState_.range;
+  return states_.top().range;
 }
 
 std::string FileBreakpointer::State::dump(const State &state) {
-  return strfast() << state.begin.to_string() << ";" << state.end.to_string();
+  return strfast() << state.range;
 }
 
 FileBreakpointer::State FileBreakpointer::State::load(const std::string &s) {
-  size_t i = 0;
-  while (s[i] != ';')
-    ++i;
+  char temp;
+	size_t code;
+	std::pair<row_t, column_t> begin, end;
+	std::istringstream ss(s);
+	ss >> code >> temp >> begin.first >> temp >> begin.second >> temp >> end.first >> temp >> end.second;
 
-  return State{.begin = FilePosition::from_string(s.substr(0, i)),
-               .end = FilePosition::from_string(s.substr(i + 1))};
+  return State{FileRange{.fileCode = code, .begin = begin, .end = end}};
 }

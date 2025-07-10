@@ -1,5 +1,6 @@
 #include "Line.hpp"
 #include "Tu4Runner.hpp"
+#include "globals.hpp"
 #include "utils.hpp"
 #include <chrono>
 #include <iostream>
@@ -10,17 +11,22 @@
 
 void usage() {
 	std::cout << "Usage: tu4run <program name>.tu4 [OPTIONS]" << std::endl;
+	std::cout << "Options:" << std::endl;
+	std::cout << "-d, --print-debug-info : see ost -h" << std::endl;
+	std::cout << "-b, --use-binary-format : see ost -h" << std::endl;
+	std::cout << "-h, --help : write this message" << std::endl;
 }
 
 void parseCommandArgs(int argc, char *argw[]) {
-  size_t nopts = 3;
+  size_t nopts = 4;
   option *options = new option[nopts]{
       {.name = "print-debug-info", .has_arg = 0, .flag = NULL, .val = 'd'},
+      {.name = "use-binary-format", .has_arg = 0, .flag = NULL, .val = 'b'},
       {.name = "help", .has_arg = 0, .flag = NULL, .val = 'h'}};
   memset(&options[nopts - 1], 0, sizeof(option));
 
   int arg, longindex;
-  while ((arg = getopt_long(argc, argw, "dh", options, &longindex)) != -1) {
+  while ((arg = getopt_long(argc, argw, "dbh", options, &longindex)) != -1) {
     switch (arg) {
     case '?':
       logger::warning()
@@ -29,6 +35,10 @@ void parseCommandArgs(int argc, char *argw[]) {
     case 'd':
       globals::printDebugInfo = true;
       logger::info() << "Printing debug info enabled";
+			break;
+    case 'b':
+      globals::useBinaryFormat = true;
+      logger::info() << "Binary format to loading enabled";
 			break;
 		case 'h':
 			usage();
@@ -60,6 +70,8 @@ int main(int argc, char * argw[]) {
 	auto runner = tu4run::initRunner(fileName, s);
 	auto end_ts = std::chrono::system_clock::now();
 	logger::debug() << "Command loading: " << std::chrono::duration_cast<duration_t>(end_ts - start_ts).count() << durationSuffix;
+		
+	
 
 	start_ts = std::chrono::system_clock::now();
 	size_t steps = runner->loop();

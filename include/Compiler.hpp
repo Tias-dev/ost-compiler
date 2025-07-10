@@ -1,9 +1,15 @@
 #ifndef COMPILER_HPP_
 #define COMPILER_HPP_
 
+#include "Bimap.hpp"
+#include "FilePosition.hpp"
 #include "Tu4Command.hpp"
+#include "globals.hpp"
+#include <cstdint>
+#include <cstdio>
 #include <list>
 #include <set>
+#include <vector>
 namespace compiler {
 template <typename TLetter> class Alphabet : public std::set<TLetter> {
   using parent = std::set<TLetter>;
@@ -60,10 +66,7 @@ public:
 			TQ delta = state - minQ;
 			for (auto &command : *this)
 				command.shift(delta);
-
 		}
-		
-		
 	}
 
 	TQ minQ() const {
@@ -95,11 +98,16 @@ public:
 		for(auto& command : other) 
 			this->push_back(command);
 	}
+
 };
 
 // ------------------------
 // |  base commands type  |
 // ------------------------
 using commands_type = Commands<size_t, char>;
+namespace serializer {
+void serialize(const commands_type & commands, const bimap<std::string, size_t> & fileCodes, const std::string& outFileName, bool useBinaryFormat); 
+commands_type deserialize(const std::string& fileName, bool useBinaryFormat); 
+} // namespace serializer
 } // namespace compiler
 #endif // !COMPILER_HPP_

@@ -1,9 +1,11 @@
 #include "FilePosition.hpp"
+#include "Bimap.hpp"
 #include "utils.hpp"
 #include <cstdlib>
 #include <fstream>
 #include <memory>
 #include <stdexcept>
+#include <string>
 
 FileRoller::FileRoller(std::shared_ptr<std::string> fileName)
     : fileName_(fileName) {
@@ -29,11 +31,12 @@ FileRoller::Position FileRoller::convert(size_t index) const {
                   .column = (i > 0 ? index - newLines_[i - 1] : index)};
 }
 
-const std::shared_ptr<std::string> FilePosition::defaultFName_ =
-    std::make_shared<std::string>("Not set");
-
 std::string FilePosition::to_string() const {
-  return strfast() << *fileName_ << ":" << row_ << ":" << column_;
+  return strfast() << fileCodesBimap_[code_] << ":" << row_ << ":" << column_;
+}
+bimap<std::string, size_t> FilePosition::fileCodesBimap_ = {};
+bimap<std::string, size_t> &FilePosition::fileCodesBimap() {
+	return fileCodesBimap_;
 }
 
 FilePosition FilePosition::from_string(const std::string &s) {
@@ -61,3 +64,12 @@ FilePosition FilePosition::from_string(const std::string &s) {
 
   return FilePosition{std::make_shared<std::string>(fileName), row, col};
 }
+FileRange FileRange::fromString(const std::string &s) {
+		char temp;
+		size_t code;
+		std::pair<row_t, column_t> begin, end;
+		std::istringstream ss(s);
+		ss >> code >> temp >> begin.first >> temp >> begin.second >> temp >> end.first >> temp >> end.second;
+
+		return FileRange{.fileCode = code, .begin = begin, .end = end};
+	}

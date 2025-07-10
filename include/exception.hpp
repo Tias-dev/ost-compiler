@@ -65,7 +65,7 @@ public:
   const char *what() const noexcept override {
     static std::string message;
     message = (strfast() << "Expected mismatch error: expected [" << expected_
-                         << "], but given: [" << given_ << "]");
+                         << "], but given: [" << given_ << "]; " << position().to_string());
 
     return message.c_str();
   }
@@ -88,7 +88,7 @@ public:
       : PositionErrorBase(token.begin()), name_(token.getName()) {}
   const char *what() const noexcept override {
     static std::string message;
-    message = (strfast() << "Redefinition of mt: [" << name_ << "]").bump();
+    message = (strfast() << "Redefinition of mt: [" << name_ << "]; " << position().to_string()).bump();
 
     return message.c_str();
   }
