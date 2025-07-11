@@ -209,6 +209,7 @@ class DependencyCollector {
   impl::Trie<std::set<mt_name_t>> deps_;
   impl::Trie<bool> isresolved_;
   impl::Trie<std::string> mtNameFileNameMap_;
+	impl::Trie<bool> isbuilded_;
 
 public:
   DependencyCollector() = default;
@@ -251,24 +252,34 @@ public:
     return mtName;
   }
 
-  void resolve(const mt_name_t &mt, bool useLibDirAsOutputDir = true) {
+  bool resolve(const mt_name_t &mt, bool useLibDirAsOutputDir = true) {
+		if(isbuilded_.contains(mt)) 
+			return false;
+		
+		bool childsChanged = false;
     // resolving depedencies first
     const auto &deps = getDepsFor(mt);
-    for (const auto &dep : deps)
-      resolve(dep);
+    for (const auto &dep : deps) {
+      childsChanged = resolve(dep) || childsChanged;
+		}
 
-    if (isresolved_.find(mt).value() && !forceRecompile) {
+    if (isresolved_.find(mt).value() && !childsChanged && !forceRecompile) {
       logger::info() << "MT [" << mt << "] is up to date. Skipping";
-      return; // Up to date, nothing to do
-    }
-    std::string fileName = getFileNameFor(mt);
-    logger::info() << "MT [" << mt << "] was changed after compilation\n\t"
-                   << "Following file will be recompiled: " << fileName;
-    compileProgram(fileName,
-                  globals::libDir,
-                  (useLibDirAsOutputDir ? globals::libDir : globals::outDir),
-                  globals::useBinaryFormat,
-                  globals::enableBreakpoints);
+			childsChanged = false;
+    } else {
+			std::string fileName = getFileNameFor(mt);
+			logger::info() << "MT [" << mt << "] was changed after compilation\n\t"
+										 << "Following file will be recompiled: " << fileName;
+			compileProgram(fileName,
+										globals::libDir,
+										(useLibDirAsOutputDir ? globals::libDir : globals::outDir),
+										globals::useBinaryFormat,
+										globals::enableBreakpoints);
+			*isresolved_.find(mt) = true;
+			childsChanged = true;
+		}
+		isbuilded_.add(mt, true);
+		return childsChanged;
   }
 };
 

@@ -116,7 +116,7 @@ public:
 
   void add(const std::string &s, TData data);
   std::optional<TData>& find(const std::string &s);
-	bool contains(const std::string &s) const {
+	bool contains(const std::string &s) {
 		return find(s).has_value();
 	}
 
