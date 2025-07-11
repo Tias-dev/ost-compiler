@@ -1,80 +1,86 @@
 [
 {
   "directory": "/home/raison/git/ost-compiler/build",
-  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -g -std=c++20 -o CMakeFiles/src_lib.dir/src/AST.cpp.o -c /home/raison/git/ost-compiler/src/AST.cpp",
+  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -O2 -std=c++20 -o CMakeFiles/src_lib.dir/src/AST.cpp.o -c /home/raison/git/ost-compiler/src/AST.cpp",
   "file": "/home/raison/git/ost-compiler/src/AST.cpp",
   "output": "CMakeFiles/src_lib.dir/src/AST.cpp.o"
 },
 {
   "directory": "/home/raison/git/ost-compiler/build",
-  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -g -std=c++20 -o CMakeFiles/src_lib.dir/src/BreakPointer.cpp.o -c /home/raison/git/ost-compiler/src/BreakPointer.cpp",
+  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -O2 -std=c++20 -o CMakeFiles/src_lib.dir/src/BreakPointer.cpp.o -c /home/raison/git/ost-compiler/src/BreakPointer.cpp",
   "file": "/home/raison/git/ost-compiler/src/BreakPointer.cpp",
   "output": "CMakeFiles/src_lib.dir/src/BreakPointer.cpp.o"
 },
 {
   "directory": "/home/raison/git/ost-compiler/build",
-  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -g -std=c++20 -o CMakeFiles/src_lib.dir/src/CommandsSerializer.cpp.o -c /home/raison/git/ost-compiler/src/CommandsSerializer.cpp",
+  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -O2 -std=c++20 -o CMakeFiles/src_lib.dir/src/CommandsSerializer.cpp.o -c /home/raison/git/ost-compiler/src/CommandsSerializer.cpp",
   "file": "/home/raison/git/ost-compiler/src/CommandsSerializer.cpp",
   "output": "CMakeFiles/src_lib.dir/src/CommandsSerializer.cpp.o"
 },
 {
   "directory": "/home/raison/git/ost-compiler/build",
-  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -g -std=c++20 -o CMakeFiles/src_lib.dir/src/Compiler.cpp.o -c /home/raison/git/ost-compiler/src/Compiler.cpp",
+  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -O2 -std=c++20 -o CMakeFiles/src_lib.dir/src/Compiler.cpp.o -c /home/raison/git/ost-compiler/src/Compiler.cpp",
   "file": "/home/raison/git/ost-compiler/src/Compiler.cpp",
   "output": "CMakeFiles/src_lib.dir/src/Compiler.cpp.o"
 },
 {
   "directory": "/home/raison/git/ost-compiler/build",
-  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -g -std=c++20 -o CMakeFiles/src_lib.dir/src/FilePosition.cpp.o -c /home/raison/git/ost-compiler/src/FilePosition.cpp",
+  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -O2 -std=c++20 -o CMakeFiles/src_lib.dir/src/FilePosition.cpp.o -c /home/raison/git/ost-compiler/src/FilePosition.cpp",
   "file": "/home/raison/git/ost-compiler/src/FilePosition.cpp",
   "output": "CMakeFiles/src_lib.dir/src/FilePosition.cpp.o"
 },
 {
   "directory": "/home/raison/git/ost-compiler/build",
-  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -g -std=c++20 -o CMakeFiles/src_lib.dir/src/Token.cpp.o -c /home/raison/git/ost-compiler/src/Token.cpp",
+  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -O2 -std=c++20 -o CMakeFiles/src_lib.dir/src/Token.cpp.o -c /home/raison/git/ost-compiler/src/Token.cpp",
   "file": "/home/raison/git/ost-compiler/src/Token.cpp",
   "output": "CMakeFiles/src_lib.dir/src/Token.cpp.o"
 },
 {
   "directory": "/home/raison/git/ost-compiler/build",
-  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -g -std=c++20 -o CMakeFiles/src_lib.dir/src/Tokenizer.cpp.o -c /home/raison/git/ost-compiler/src/Tokenizer.cpp",
+  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -O2 -std=c++20 -o CMakeFiles/src_lib.dir/src/Tokenizer.cpp.o -c /home/raison/git/ost-compiler/src/Tokenizer.cpp",
   "file": "/home/raison/git/ost-compiler/src/Tokenizer.cpp",
   "output": "CMakeFiles/src_lib.dir/src/Tokenizer.cpp.o"
 },
 {
   "directory": "/home/raison/git/ost-compiler/build",
-  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -g -std=c++20 -o CMakeFiles/src_lib.dir/src/Tu4Runner.cpp.o -c /home/raison/git/ost-compiler/src/Tu4Runner.cpp",
+  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -O2 -std=c++20 -o CMakeFiles/src_lib.dir/src/Tu4Runner.cpp.o -c /home/raison/git/ost-compiler/src/Tu4Runner.cpp",
   "file": "/home/raison/git/ost-compiler/src/Tu4Runner.cpp",
   "output": "CMakeFiles/src_lib.dir/src/Tu4Runner.cpp.o"
 },
 {
   "directory": "/home/raison/git/ost-compiler/build",
-  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -g -std=c++20 -o CMakeFiles/src_lib.dir/src/utils.cpp.o -c /home/raison/git/ost-compiler/src/utils.cpp",
+  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -O2 -std=c++20 -o CMakeFiles/src_lib.dir/src/utils.cpp.o -c /home/raison/git/ost-compiler/src/utils.cpp",
   "file": "/home/raison/git/ost-compiler/src/utils.cpp",
   "output": "CMakeFiles/src_lib.dir/src/utils.cpp.o"
 },
 {
   "directory": "/home/raison/git/ost-compiler/build",
-  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -g -std=c++20 -o CMakeFiles/ost.dir/Compiler.cpp.o -c /home/raison/git/ost-compiler/Compiler.cpp",
+  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -O2 -std=c++20 -o CMakeFiles/ost.dir/Compiler.cpp.o -c /home/raison/git/ost-compiler/Compiler.cpp",
   "file": "/home/raison/git/ost-compiler/Compiler.cpp",
   "output": "CMakeFiles/ost.dir/Compiler.cpp.o"
 },
 {
   "directory": "/home/raison/git/ost-compiler/build",
-  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -g -std=c++20 -o CMakeFiles/tu4run.dir/Tu4Run.cpp.o -c /home/raison/git/ost-compiler/Tu4Run.cpp",
+  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -O2 -std=c++20 -o CMakeFiles/tu4run.dir/Tu4Run.cpp.o -c /home/raison/git/ost-compiler/Tu4Run.cpp",
   "file": "/home/raison/git/ost-compiler/Tu4Run.cpp",
   "output": "CMakeFiles/tu4run.dir/Tu4Run.cpp.o"
 },
 {
   "directory": "/home/raison/git/ost-compiler/build",
-  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -g -std=c++20 -o CMakeFiles/osttest.dir/Tests.cpp.o -c /home/raison/git/ost-compiler/Tests.cpp",
+  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -O2 -std=c++20 -o CMakeFiles/osttest.dir/Tests.cpp.o -c /home/raison/git/ost-compiler/Tests.cpp",
   "file": "/home/raison/git/ost-compiler/Tests.cpp",
   "output": "CMakeFiles/osttest.dir/Tests.cpp.o"
 },
 {
   "directory": "/home/raison/git/ost-compiler/build",
-  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -g -std=c++20 -o CMakeFiles/ostdb.dir/Debugger.cpp.o -c /home/raison/git/ost-compiler/Debugger.cpp",
+  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -O2 -std=c++20 -o CMakeFiles/ostdb.dir/Debugger.cpp.o -c /home/raison/git/ost-compiler/Debugger.cpp",
   "file": "/home/raison/git/ost-compiler/Debugger.cpp",
   "output": "CMakeFiles/ostdb.dir/Debugger.cpp.o"
+},
+{
+  "directory": "/home/raison/git/ost-compiler/build",
+  "command": "/usr/bin/c++  -I/home/raison/git/ost-compiler/include -O2 -std=c++20 -o CMakeFiles/ostbuild.dir/Builder.cpp.o -c /home/raison/git/ost-compiler/Builder.cpp",
+  "file": "/home/raison/git/ost-compiler/Builder.cpp",
+  "output": "CMakeFiles/ostbuild.dir/Builder.cpp.o"
 }
 ]

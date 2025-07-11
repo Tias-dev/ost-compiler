@@ -199,8 +199,16 @@ public:
 
 class Tree {
   MT::Definition *root_ = nullptr;
+	std::list<std::string> libs_;
 
 public:
+	const std::list<std::string> & libs;
+	static void clearNamesTable() {
+		MT::namesTable_.clear();
+		MT::namesTable_.add("l", 0);
+		MT::namesTable_.add("r", 1);
+	}
+
   void print(std::ostream &os = std::cout);
   Tree(token::tokens_list &tokens, const std::string &fileName);
   commands_type to4();
@@ -208,6 +216,7 @@ public:
   const std::string &getTreeName() const {
     return MT::namesTable_[root_->id()];
   };
+	void addLib(MT::Lib & lib);
 };
 } // namespace ast
 

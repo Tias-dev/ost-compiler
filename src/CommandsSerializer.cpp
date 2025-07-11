@@ -4,6 +4,7 @@
 #include "FilePosition.hpp"
 #include "Tu4Command.hpp"
 #include "globals.hpp"
+#include "utils.hpp"
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
@@ -104,6 +105,7 @@ void serialize(const commands_type &commands,
     fwrite(commandEntries.data(), sizeof(CommandEntry), preambule.nCommands,
            fout);
   }
+	fclose(fout);
 }
 
 commands_type deserialize(const std::string &fileName, bool useBinaryFormat) {
@@ -182,18 +184,18 @@ commands_type deserialize(const std::string &fileName, bool useBinaryFormat) {
                                              tu4::MoveDirection::LEFT, entry.q,
                                              false};
           command.setBreakpoint(entry.range);
-          commands.push_back({command});
+          commands.emplace_back(command);
         } else if (entry.action == '>') {
           tu4::Tu4Move<size_t, char> command{entry.q0, entry.checkedLetter,
                                              tu4::MoveDirection::RIGHT, entry.q,
                                              false};
           command.setBreakpoint(entry.range);
-          commands.push_back({command});
+          commands.emplace_back(command);
         } else {
           tu4::Tu4SetLetter<size_t, char> command{entry.q0, entry.checkedLetter,
                                                   entry.action, entry.q, false};
           command.setBreakpoint(entry.range);
-          commands.push_back({command});
+          commands.emplace_back(command);
         }
       }
     } else {
@@ -220,6 +222,7 @@ commands_type deserialize(const std::string &fileName, bool useBinaryFormat) {
         }
       }
     }
+		fclose(fin);
   }
 
   if (std::begin(commands)->debugBreakpoint().has_value()) {

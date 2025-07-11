@@ -1,3 +1,4 @@
+#include <chrono>
 #include "Compiler.hpp"
 #include "AST.hpp"
 #include "FilePosition.hpp"
@@ -7,6 +8,7 @@
 #include <fstream>
 #include <iterator>
 #include <map>
+#include <memory>
 #include <stdexcept>
 
 using namespace ast;
@@ -268,6 +270,7 @@ commands_type SetLetter::to4_impl(const compiler::Alphabet<char> &alphabet) {
 }
 
 commands_type Tree::to4() {
+	currentState = 0;
   compiler::Alphabet<char> alphabet;
 
   auto commands = root_->to4_impl(alphabet);
@@ -312,3 +315,69 @@ public:
 std::map<size_t, NodeBase *> MT::definitions_{
     {0, new MoveMT{tu4::MoveDirection::LEFT}},
     {1, new MoveMT{tu4::MoveDirection::RIGHT}}};
+
+using duration_t = std::chrono::milliseconds;
+#define DURATION_SUFFIX "ms";
+
+void compileProgram(const std::string &fileName, const std::string &libDir,
+                    const std::string &outDir, bool useBinaryFormat,
+                    bool enableBreakpoints) {
+	logger::debug() << "Compiling: " << fileName;
+	if(enableBreakpoints) 
+		globals::breakpointer = std::make_shared<FileBreakpointer>();
+	ast::Tree::clearNamesTable();
+	FilePosition::fileCodesBimap().clear();
+  std::fstream file(fileName);
+  if (!file.is_open())
+    throw std::invalid_argument(strfast() << "Can't open file: " << fileName);
+
+	auto start_ts = std::chrono::system_clock::now();
+  CharStream stream(file);
+
+  auto tokenizer = token::Tokenizer{};
+  FileRoller roller{std::make_shared<std::string>(fileName)};
+  auto tokens = tokenizer.parse(stream, roller);
+  file.close();
+
+  {
+		auto start = std::chrono::system_clock::now();
+		logger::debug out;
+    out << "Tokenizer output:" << std::endl;
+    for (auto &token : tokens)
+      out << token.toString() << std::endl;
+    out << "-----------------------------" << std::endl << std::endl;
+		auto end = std::chrono::system_clock::now();
+		out << "Tokenizing time:" << std::chrono::duration_cast<duration_t>(end - start).count() << DURATION_SUFFIX;
+  }
+
+  ast::Tree astTree{tokens, fileName};
+  {
+		auto start = std::chrono::system_clock::now();
+		logger::debug out;
+    out << "Created AST tree:" << std::endl;
+    astTree.print(out);
+    out << "-----------------------------" << std::endl << std::endl;
+    out << "Names table:" << std::endl;
+    ast::MT::printNamesTable(out);
+		auto end = std::chrono::system_clock::now();
+		out << "AST creating time:" << std::chrono::duration_cast<duration_t>(end - start).count() << DURATION_SUFFIX;
+  }
+	std::string foutName = strfast() << outDir << astTree.getTreeName() << ".tu4";
+
+	compiler::commands_type  commands;
+	{
+		auto start = std::chrono::system_clock::now();
+		commands = astTree.to4();
+		auto end = std::chrono::system_clock::now();
+		logger::debug() << "Compiling from AST to mt4 form time: " << std::chrono::duration_cast<duration_t>(end - start).count() << DURATION_SUFFIX;
+	}
+	{
+		auto start = std::chrono::system_clock::now();
+		compiler::serializer::serialize(commands, FilePosition::fileCodesBimap(), foutName, useBinaryFormat);
+		auto end = std::chrono::system_clock::now();
+		logger::debug() << "Serializing compiled program time: " << std::chrono::duration_cast<duration_t>(end - start).count() << DURATION_SUFFIX;
+	}
+	auto end_ts = std::chrono::system_clock::now();
+	logger::debug() << "Total compiling time: " << std::chrono::duration_cast<duration_t>(end_ts - start_ts).count() << DURATION_SUFFIX;
+	logger::info() << "Commands written to file: " << foutName;
+}

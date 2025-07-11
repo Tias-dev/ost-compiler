@@ -12,11 +12,14 @@
 #include <string>
 
 using namespace ast;
+Tree * currentAST = nullptr;
 void throwMismatch(const std::string &expected,
                    const token::token_union &given);
 
-Tree::Tree(token::tokens_list &tokens, const std::string &fileName) {
+Tree::Tree(token::tokens_list &tokens, const std::string &fileName)
+: libs(libs_) {
   try {
+		currentAST = this;
     root_ = new MT::Definition{tokens};
   } catch (error::PositionErrorBase &e) {
     logger::error() << e.what() << std::endl;
@@ -64,6 +67,8 @@ MT::Lib::Lib(token::tokens_list &tokens)
     : NodeBase(ExprType::MT), id_(currentId_++) {
   init(tokens);
   definitions_[id_] = this;
+	if(currentAST) 
+		currentAST->addLib(*this);
 }
 
 MT::Definition::Definition(token::tokens_list &tokens)
@@ -675,3 +680,11 @@ std::string SetLetter::toString() {
 
   return ss.bump();
 }
+
+// -------------------
+// |  miscellations  |
+// -------------------
+void Tree::addLib(MT::Lib & lib) {
+	libs_.push_back(MT::namesTable_[lib.id()]);
+}
+

@@ -33,6 +33,10 @@ public:
   bool contains(const A &a) { return forward_.contains(a); }
   bool contains(const B &b) { return backward_.contains(b); }
   size_t size() const { return forward_.size(); }
+	void clear() {
+		forward_.clear();
+		backward_.clear();
+	}
 
   void print(std::ostream &os = std::cout) {
     os << "-----------------" << '\n';
