@@ -319,8 +319,8 @@ std::map<size_t, NodeBase *> MT::definitions_{
 using duration_t = std::chrono::milliseconds;
 #define DURATION_SUFFIX "ms";
 
-void compileProgram(const std::string &fileName, const std::string &libDir,
-                    const std::string &outDir, bool useBinaryFormat,
+
+std::pair<commands_type, compiler::mt_name_t> compiler::compileProgram(const std::string &fileName, const std::string &libDir, bool useBinaryFormat,
                     bool enableBreakpoints) {
 	logger::debug() << "Compiling: " << fileName;
 	if(enableBreakpoints) 
@@ -331,7 +331,6 @@ void compileProgram(const std::string &fileName, const std::string &libDir,
   if (!file.is_open())
     throw std::invalid_argument(strfast() << "Can't open file: " << fileName);
 
-	auto start_ts = std::chrono::system_clock::now();
   CharStream stream(file);
 
   auto tokenizer = token::Tokenizer{};
@@ -362,8 +361,6 @@ void compileProgram(const std::string &fileName, const std::string &libDir,
 		auto end = std::chrono::system_clock::now();
 		out << "AST creating time:" << std::chrono::duration_cast<duration_t>(end - start).count() << DURATION_SUFFIX;
   }
-	std::string foutName = strfast() << outDir << astTree.getTreeName() << ".tu4";
-
 	compiler::commands_type  commands;
 	{
 		auto start = std::chrono::system_clock::now();
@@ -371,6 +368,15 @@ void compileProgram(const std::string &fileName, const std::string &libDir,
 		auto end = std::chrono::system_clock::now();
 		logger::debug() << "Compiling from AST to mt4 form time: " << std::chrono::duration_cast<duration_t>(end - start).count() << DURATION_SUFFIX;
 	}
+	return {commands, astTree.getTreeName()};
+}
+
+void compileAndSaveProgram(const std::string &fileName, const std::string &libDir,
+                    const std::string &outDir, bool useBinaryFormat,
+                    bool enableBreakpoints) {
+	auto start_ts = std::chrono::system_clock::now();
+	auto [commands, mt_name] = compiler::compileProgram(fileName, libDir, useBinaryFormat, enableBreakpoints);
+	std::string foutName = strfast() << outDir << mt_name << ".tu4";
 	{
 		auto start = std::chrono::system_clock::now();
 		compiler::serializer::serialize(commands, FilePosition::fileCodesBimap(), foutName, useBinaryFormat);

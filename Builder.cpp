@@ -270,7 +270,7 @@ public:
 			std::string fileName = getFileNameFor(mt);
 			logger::info() << "MT [" << mt << "] was changed after compilation\n\t"
 										 << "Following file will be recompiled: " << fileName;
-			compileProgram(fileName,
+			compileAndSaveProgram(fileName,
 										globals::libDir,
 										(useLibDirAsOutputDir ? globals::libDir : globals::outDir),
 										globals::useBinaryFormat,

@@ -95,6 +95,6 @@ int main(int argc, char *argw[]) {
 
   if (globals::enableBreakpoints)
     globals::breakpointer = std::make_shared<FileBreakpointer>();
-	compileProgram(fileName, globals::libDir, globals::outDir, globals::useBinaryFormat, globals::enableBreakpoints);
+	compileAndSaveProgram(fileName, globals::libDir, globals::outDir, globals::useBinaryFormat, globals::enableBreakpoints);
   return 0;
 }

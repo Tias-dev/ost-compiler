@@ -1,28 +1,27 @@
-#include "AST.hpp"
-#include "CharStream.hpp"
-#include "FilePosition.hpp"
+#include "Compiler.hpp"
 #include "Line.hpp"
-#include "Tokenizer.hpp"
 #include "Tu4Runner.hpp"
 #include "exception.hpp"
+#include "globals.hpp"
 #include "utils.hpp"
 #include <cmath>
 #include <cstddef>
 #include <cstdlib>
+#include <cstring>
 #include <fstream>
 #include <iostream>
-#include <memory>
 #include <stdexcept>
 #include <string>
+#include <getopt.h>
 
 const char *help =
-    "osttest [PROGRAM .ost] [TESTS plaintext]\n"
+    "osttest [COMPILED PROGRAM .tu4] [TESTS plaintext] [OPTIONS]\n"
     "osttest -- ost toolkit testings utility\n"
     "Works in given -- expected format\n"
     "\n"
     "PROGRAM format:\n"
-    "PROGRAM is the usual .ost file\n"
-		"TEST is the plaintext file with pairs of 2/(3) lines:\n"
+    "PROGRAM is the compiled .tu4 program file\n"
+		"TEST is the plaintext file with pairs of 2 or 3 lines:\n"
     "1. first line is given line state\n"
     "2. second line is expected line state\n"
 		"3. OPTIONAL: cursor position(counting from 0) at the end of program(if not specified it will be after last non space cell)\n"
@@ -31,32 +30,52 @@ const char *help =
     "Output:\n"
     "Returns 0 if all tests are passed i.e. result line state equal expected line state for all tests \n"
     "including cursor position and non 0 otherwise\n"
-    "If any exceptions happens, print exception what() and return also non 0\n";
+    "If any exceptions happens, print exception what() and return also non 0\n"
+		"OPTIONS:\n"
+		"\n"
+		"-b, --use-binary-format : use binary format for loading program\n";
+
+void parseCommandArgs(int argc, char *argw[]) {
+  size_t nopts = 3;
+  option *options = new option[nopts]{
+      {.name = "use-binary-format", .has_arg = 0, .flag = NULL, .val = 'b'},
+      {.name = "help", .has_arg = 0, .flag = NULL, .val = 'h'}};
+  memset(&options[nopts - 1], 0, sizeof(option));
+
+  int arg, longindex;
+  while ((arg = getopt_long(argc, argw, "l:o:gdbh", options, &longindex)) != -1) {
+    switch (arg) {
+    case '?':
+      logger::warning()
+          << "Unrecognized option: " << optarg << std::endl;
+      break;
+    case 'b':
+      globals::useBinaryFormat = true;
+      logger::info() << "Binary format to saving enabled";
+			break;
+		case 'h':
+			std::cout << help << std::endl;
+			exit(0);
+			break;
+    default:
+      logger::warning()
+          << "Given option: [" << char(arg) << "] can't be processed";
+    }
+  }
+  delete[] options;
+}
 
 int main(int argc, char *argw[]) {
-  if (argc < 2) {
+  if (argc < 3) {
     std::cout << help << std::endl;
     return 1;
   }
 
   size_t cursorExpected;
 
-  std::ifstream programFile(argw[1]);
-  if (!programFile.good())
-    throw std::invalid_argument(strfast() << "Can't open file: " << argw[1]);
-	CharStream stream{programFile};
-	token::Tokenizer tokenizer{};
-	token::tokens_list tokens;
-	FileRoller roller{std::make_shared<std::string>(argw[1])};
-	try {
-		tokens = tokenizer.parse(stream, roller);
-	} catch (error::PositionErrorBase & e) {
-		logger::error() << e.what() << std::endl;
-		fileRollAround(argw[1], e.position(), 60);
-		return 1;
-	}
-	ast::Tree tree{tokens, argw[1]};
-	auto commands = tree.to4();
+	std::string fileName = argw[1], testFileName = argw[2];
+	parseCommandArgs(argc, argw);
+	auto commands = compiler::serializer::deserialize(fileName, globals::useBinaryFormat);
 
 	std::ifstream testsFile(argw[2]);
 	size_t i_test = 1;

@@ -7,7 +7,7 @@
 #include <list>
 #include <set>
 #include <vector>
-void compileProgram(const std::string &fileName, const std::string &libDir,
+void compileAndSaveProgram(const std::string &fileName, const std::string &libDir,
                     const std::string &outDir, bool useBinaryFormat,
                     bool enableBreakpoints);
 namespace compiler {
@@ -105,6 +105,9 @@ public:
 // |  base commands type  |
 // ------------------------
 using commands_type = Commands<size_t, char>;
+using mt_name_t = std::string;
+std::pair<commands_type, mt_name_t> compileProgram(const std::string &fileName, const std::string &libDir, bool useBinaryFormat,
+                    bool enableBreakpoints);
 namespace serializer {
 void serialize(const commands_type &commands,
                const bimap<std::string, size_t> &fileCodes,
