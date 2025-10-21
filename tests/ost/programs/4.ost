@@ -1,0 +1,10 @@
+MT TEST4IFELSE;
+	BEGIN
+	ALPHABET: 0,1,2,3;
+	l;
+	IF 
+		0 ? a(1);
+		() != 0 ? a(0);
+	FI;
+	r;
+END TEST4IFELSE

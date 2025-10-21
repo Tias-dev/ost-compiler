@@ -9,7 +9,8 @@ inline std::string outDir = "./";
 
 inline bool printDebugInfo = false;
 inline bool enableBreakpoints = false;
-inline IBreakpointer * breakpointer = new DummyBreakpointer{};
+inline bool useBinaryFormat = false;
+inline std::shared_ptr<IBreakpointer> breakpointer{new DummyBreakpointer{}};
 
 inline std::string debugFirstLine = "// Compiled with breakpoints enabled";
 } // namespace globals

@@ -43,7 +43,7 @@ template <typename TData> class Trie {
     bool isTerm() const;
     bool isLeaf() const;
     const TData &data() const;
-    const std::optional<TData> & data_opt() const;
+    std::optional<TData> & data_opt();
   };
 
   class NodeIterator : public IActivePoint<TData> {
@@ -88,7 +88,7 @@ template <typename TData> class Trie {
     }
     void setData(TData data) { node_->data_ = data; }
 
-		const Node * node() const {return node_;}
+		Node * node() {return node_;}
   };
 
   Node *root_ = new Node;
@@ -115,8 +115,8 @@ public:
   Trie() {};
 
   void add(const std::string &s, TData data);
-  const std::optional<TData>& find(const std::string &s) const;
-	bool contains(const std::string &s) const {
+  std::optional<TData>& find(const std::string &s);
+	bool contains(const std::string &s) {
 		return find(s).has_value();
 	}
 
@@ -142,7 +142,7 @@ template <typename TData> bool Trie<TData>::Node::isLeaf() const {
 }
 
 template <typename TData>
-const std::optional<TData>& Trie<TData>::Node::data_opt() const {
+std::optional<TData>& Trie<TData>::Node::data_opt() {
   return data_;
 }
 
@@ -164,8 +164,8 @@ void Trie<TData>::add(const std::string &s, TData data) {
 }
 
 template <typename TData>
-const std::optional<TData>& Trie<TData>::find(const std::string &s) const {
-	static const std::optional<TData> nullopt = std::nullopt;
+std::optional<TData>& Trie<TData>::find(const std::string &s) {
+	static std::optional<TData> nullopt = std::nullopt;
   point_type_ activePoint = begin_();
   for (auto &c : s) {
     if (!activePoint->canGoTo(c))

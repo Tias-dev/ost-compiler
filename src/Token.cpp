@@ -19,6 +19,7 @@ std::pair<OpTrie, KwTrie> initTries() {
   kw.add("END", token::KwType::END);
   kw.add("ALPHABET", token::KwType::ALPHABET);
   kw.add("IF", token::KwType::IF);
+  kw.add("ELSE", token::KwType::ELSE);
   kw.add("FI", token::KwType::FI);
   kw.add("DO", token::KwType::DO);
   kw.add("OD", token::KwType::OD);

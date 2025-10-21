@@ -2,46 +2,41 @@
 #define BREAKPOINTER_HPP_
 
 #include "FilePosition.hpp"
-#include <memory>
 #include <stack>
 #include <string>
 class IBreakpointer {
 public:
-  virtual void onEnter(const FilePosition &beginPos,
-                       const FilePosition &endPos) = 0;
+  virtual void onEnter(const FileRange &) = 0;
   virtual void onExit() = 0;
-  virtual std::string getCurrentPosition() = 0;
+  virtual FileRange getCurrentPosition() = 0;
 };
 
 class FileBreakpointer : public IBreakpointer {
 public:
   struct State {
-		FilePosition begin, end;
+		FileRange range;
 
     static std::string dump(const State &state);
     static State load(const std::string &s);
   };
 
 private:
-  std::shared_ptr<std::string> fileNamePtr_;
   std::stack<State> states_;
 	State lastState_;
 
 public:
-  FileBreakpointer(std::string fileName)
-      : fileNamePtr_(std::make_shared<std::string>(fileName)) {}
+  FileBreakpointer() = default;
 
-  void onEnter(const FilePosition &beginPos,
-               const FilePosition &endPos) override;
+  void onEnter(const FileRange &) override;
   void onExit() override;
-  std::string getCurrentPosition() override;
+  FileRange getCurrentPosition() override;
 };
 
 class DummyBreakpointer : public IBreakpointer {
 public:
   void onExit() override {}
-  void onEnter(const FilePosition & beginPos, const FilePosition & endPos) override {}
-  std::string getCurrentPosition() override { return ""; }
+  void onEnter(const FileRange &) override {}
+  FileRange getCurrentPosition() override { return {}; }
 };
 
 #endif // !BREAKPOINTER_HPP_

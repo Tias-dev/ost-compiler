@@ -4,6 +4,7 @@
 #include "exception.hpp"
 #include <cctype>
 #include <string>
+#include <string_view>
 namespace tu4run {
 template <typename CharT = char>
 class Line {
@@ -89,7 +90,20 @@ public:
 template <typename CharT>
 std::ostream & operator<<(std::ostream & os, const tu4run::Line<CharT> & line) {
 	static const std::string space{' '}, cursorMark{"^\n"};
-	os << line.line() << '\n';
+	auto strline = line.line();
+	auto begin = std::begin(strline);
+	auto end = std::prev(std::end(strline));
+	size_t cursorPos = strline.size() - 1;
+	while(end != begin && *end == '_') {
+		--end;
+		--cursorPos;
+	}
+	++end;
+	++cursorPos;
+	while(cursorPos <= line.cursor())
+		++end, ++cursorPos;
+
+	os << std::string_view(begin, end) << "_\n";
 	size_t cursor = line.cursor();
 	for(size_t _ = 0; _ < cursor; ++_) 
 		os << space;

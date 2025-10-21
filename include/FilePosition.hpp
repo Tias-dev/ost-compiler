@@ -1,11 +1,14 @@
 #ifndef FILE_POSITION_HPP_
 #define FILE_POSITION_HPP_
 
+#include "Bimap.hpp"
+#include <cassert>
 #include <memory>
+#include <ostream>
 #include <vector>
 
 class IFileRoller {
-	public:
+public:
   struct Position {
     size_t row;
     size_t column;
@@ -27,38 +30,70 @@ public:
 
 class FilePosition {
 protected:
-  std::shared_ptr<std::string> fileName_;
+  size_t code_;
   size_t row_;
   size_t column_;
-	const static std::shared_ptr<std::string> defaultFName_;
-public:
+  static bimap<std::string, size_t> fileCodesBimap_;
 
-  FilePosition(): fileName_(defaultFName_) {}
-	FilePosition(std::shared_ptr<std::string> fileName, size_t row, size_t column)
-      : fileName_(fileName), row_(row), column_(column) {};
+public:
+	FilePosition() = default;
+  FilePosition(const std::string &fileName) {
+    if (fileCodesBimap_.contains(fileName)) {
+      code_ = fileCodesBimap_[fileName];
+    } else {
+      code_ = fileCodesBimap_.size();
+			fileCodesBimap_.add(fileName, code_);
+    }
+  }
+  FilePosition(std::shared_ptr<std::string> fileName, size_t row, size_t column)
+      : FilePosition(*fileName) {
+    row_ = row, column_ = column;
+  };
 
   FilePosition(const IFileRoller &roller, size_t index)
-      : fileName_(roller.fileName()) {
+      : FilePosition(*roller.fileName()) {
     auto pos = roller.convert(index);
     row_ = pos.row;
     column_ = pos.column;
   }
 
   std::string to_string() const;
-	static FilePosition from_string(const std::string & s);
-  const std::string &fileName() const { return *fileName_; }
+  size_t code() const { return code_; }
+  static FilePosition from_string(const std::string &s);
+  static bimap<std::string, size_t> &fileCodesBimap();
+	const std::string &fileName() const { return fileCodesBimap_[code_]; }
 
   size_t row() const { return row_; }
 
   size_t column() const { return column_; }
 
-	bool operator<(const FilePosition & other) const {
-		if(row_ == other.row_)
-			return column_ < other.column_;
-		return row_ < other.row_;
-	}
+  bool operator<(const FilePosition &other) const {
+    if (row_ == other.row_)
+      return column_ < other.column_;
+    return row_ < other.row_;
+  }
 };
 
-using filepos_t = FilePosition;
+// ---------------------------
+// |  2 positions in 1 file  |
+// ---------------------------
+using row_t = size_t;
+using column_t = size_t;
+struct FileRange {
+	size_t fileCode;
+	std::pair<row_t, column_t> begin, end;
 
+	static FileRange fromPositions(const FilePosition &begin, const FilePosition & end) {
+		assert(("Positions must point on the same file", begin.code() == end.code()));
+
+		return {.fileCode = begin.code(), .begin = {begin.row(), begin.column()}, .end = {end.row(), end.column()}};
+	}
+
+	static FileRange fromString(const std::string &s);
+};
+
+inline std::ostream & operator<<(std::ostream & os, const FileRange & range) {
+	os << range.fileCode << ',' << range.begin.first << ',' << range.begin.second << ';' << range.end.first << ',' << range.end.second;
+	return os;
+}
 #endif // !FILE_POSITION_HPP_

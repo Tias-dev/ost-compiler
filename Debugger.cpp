@@ -1,8 +1,11 @@
-#include "BreakPointer.hpp"
 #include "FilePosition.hpp"
 #include "Line.hpp"
+#include <getopt.h>
+#include <string.h>
 #include "Tu4Command.hpp"
 #include "Tu4Runner.hpp"
+#include "exception.hpp"
+#include "globals.hpp"
 #include "trie.hpp"
 #include "utils.hpp"
 #include <cstdlib>
@@ -22,9 +25,11 @@ const char *preview =
     "state\n"
     "input: 'b -l <line number>' to set breakpoint on <line number>(from 1) "
     "line\n"
+    "input: 'restart' to restart current loadded program with new starting "
+    "line\n"
     "input: 'help' show this message\n";
 
-enum class Command { NONE, RUN, STEP, GO, B, HELP };
+enum class Command { NONE, RUN, STEP, GO, B, HELP, RESTART };
 
 impl::Trie<Command> initCommands() {
   impl::Trie<Command> trie;
@@ -33,6 +38,7 @@ impl::Trie<Command> initCommands() {
   trie.add("go", Command::GO);
   trie.add("b", Command::B);
   trie.add("help", Command::HELP);
+  trie.add("restart", Command::RESTART);
 
   return trie;
 }
@@ -46,18 +52,19 @@ void printState(const tu4run::Tu4Runner<size_t, char> &runner) {
   static std::map<std::string, FileData> filesData;
 
   auto command = runner.nextCommand();
-  auto comment = command.comment();
-  if (comment.empty()) {
+  auto debugInfo = command.debugBreakpoint();
+  if (!debugInfo.has_value()) {
     logger::debug() << "No debug information in line: "
                     << (strfast() << command).bump() << std::endl;
     return;
   }
-  auto state = FileBreakpointer::State::load(comment);
-  const std::string &fileName = state.begin.fileName();
-  const FilePosition &begin = state.begin, &end = state.end;
+  const std::string &fileName =
+      FilePosition::fileCodesBimap()[debugInfo.value().fileCode];
   std::string line;
 
-  const FilePosition *position = &begin;
+  const std::pair<row_t, column_t> begin = debugInfo.value().begin,
+                                   end = debugInfo.value().end,
+                                   *position = &begin;
   if (runner.terminated())
     position = &end;
 
@@ -65,7 +72,7 @@ void printState(const tu4run::Tu4Runner<size_t, char> &runner) {
     filesData[fileName] = FileData{};
   FileData &fdata = filesData[fileName];
 
-  if (fdata.nLine > position->row()) {
+  if (fdata.nLine > position->first) {
     if (!fdata.file.is_open())
       fdata.file.open(fileName);
     else {
@@ -75,7 +82,7 @@ void printState(const tu4run::Tu4Runner<size_t, char> &runner) {
     fdata.nLine = 1;
   }
 
-  while (!fdata.file.eof() && fdata.nLine <= position->row()) {
+  while (!fdata.file.eof() && fdata.nLine <= position->first) {
     std::getline(fdata.file, line);
     ++fdata.nLine;
   }
@@ -85,15 +92,16 @@ void printState(const tu4run::Tu4Runner<size_t, char> &runner) {
       c = ' ';
 
   std::cout << fdata.nLine - 1 << " :" << line << std::endl;
-  std::cout << fdata.nLine - 1<< " :";
+  std::cout << fdata.nLine - 1 << " :";
   if (!runner.terminated())
-    for (size_t i = 0; i + 1 < position->column(); ++i)
+    for (size_t i = 0; i + 1 < position->second; ++i)
       std::cout << " ";
-  size_t endIndex = (begin.row() == end.row() ? end.column() : line.size());
-  for (size_t i = position->column(); i < endIndex; ++i)
+  size_t endIndex =
+      (begin.first == end.first ? end.second : line.size());
+  for (size_t i = position->second; i < endIndex; ++i)
     std::cout << "^";
   std::cout << std::endl;
-  std::cout << "command" << command << std::endl;
+  std::cout << "command: " << command << std::endl;
 }
 
 class Manager {
@@ -101,6 +109,18 @@ class Manager {
   std::unique_ptr<tu4run::Tu4Runner<size_t, char>> runner_ = nullptr;
   tu4run::Tu4RunnerBreakpoints breakpoints_;
   std::vector<std::string> usedFileNames_;
+
+  void restart() {
+    if (!runner_) {
+      logger::warning() << "Setup runner by 'run' command before reseting it";
+      return;
+    }
+
+    std::string line;
+    std::cout << "Input line: ";
+    std::getline(std::cin, line);
+    (*runner_).reset(tu4run::Line<char>{line});
+  }
 
   void run(const std::string &fileName) {
     std::string line;
@@ -118,11 +138,17 @@ class Manager {
   }
 
   void go() {
-    runner_->loop();
-    if (runner_->terminated())
-      std::cout << "End" << std::endl;
-    else
-      std::cout << "Stop at breakpoint" << std::endl;
+    try {
+      runner_->loop();
+      if (runner_->terminated())
+        std::cout << "End" << std::endl;
+      else
+        std::cout << "Stop at breakpoint" << std::endl;
+    } catch (error::Tu4RunError<> &e) {
+      logger::error() << e.what();
+      std::cout << "Forsing restart via error while executing\n";
+      restart();
+    }
   }
 
   void addBreakpointState(size_t q) { breakpoints_.stateBreakpoints->add(q); }
@@ -135,11 +161,13 @@ class Manager {
     std::cout << "Enter file number: ";
     std::cin >> findex;
 
-    if (!breakpoints_.lineBreakpoints->contains(usedFileNames_.at(findex)))
-      (*breakpoints_.lineBreakpoints)[usedFileNames_.at(findex)] = {};
+		size_t fileCode = FilePosition::fileCodesBimap()[usedFileNames_.at(findex)];
+
+    if (!breakpoints_.lineBreakpoints->contains(fileCode))
+      (*breakpoints_.lineBreakpoints)[fileCode] = {};
 
     if (nLine > 0)
-      (*breakpoints_.lineBreakpoints)[usedFileNames_[findex]].add(nLine);
+      (*breakpoints_.lineBreakpoints)[fileCode].add(nLine);
   }
 
   void processLine_impl(const std::list<std::string> &words) {
@@ -148,7 +176,7 @@ class Manager {
         return;
       if (!runner_->terminated())
         runner_->step();
-			return;
+      return;
     }
 
     std::string line;
@@ -192,6 +220,9 @@ class Manager {
                   << *word << std::endl;
       }
       break;
+    case Command::RESTART:
+      restart();
+      break;
     default:
       std::cout << "Warning: command not supported: " << *word << std::endl;
     }
@@ -211,18 +242,50 @@ public:
   }
 };
 
+void parseCommandArgs(int argc, char *argw[]) {
+  size_t nopts = 3;
+  option *options = new option[nopts]{
+      {.name = "use-binary-format", .has_arg = 0, .flag = NULL, .val = 'b'},
+      {.name = "help", .has_arg = 0, .flag = NULL, .val = 'h'}};
+  memset(&options[nopts - 1], 0, sizeof(option));
+
+  int arg, longindex;
+  while ((arg = getopt_long(argc, argw, "bh", options, &longindex)) != -1) {
+    switch (arg) {
+    case '?':
+      logger::warning()
+          << "Unrecognized option: " << optarg << std::endl;
+      break;
+    case 'b':
+      globals::useBinaryFormat = true;
+      logger::info() << "Binary format to loading enabled";
+			break;
+		case 'h':
+			std::cout << "flags b and h. see ost -h for details"<< '\n';
+			exit(0);
+			break;
+    default:
+      logger::warning()
+          << "Given option: [" << char(arg) << "] can't be processed";
+    }
+  }
+  delete[] options;
+}
+
 int main(int argc, char *argw[]) {
+	globals::enableBreakpoints = true;
+	parseCommandArgs(argc, argw);
   Manager manager;
   std::cout << preview;
   std::string line;
 
   while (!std::cin.eof()) {
     std::getline(std::cin, line);
-		if(line == "help") {
-			std::cout << preview;
-			continue;
-		}
-			
+    if (line == "help") {
+      std::cout << preview;
+      continue;
+    }
+
     manager.processLine(line);
   }
 

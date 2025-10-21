@@ -5,7 +5,6 @@
 #include "FilePosition.hpp"
 #include "Tokenizer.hpp"
 #include "globals.hpp"
-#include "utils.hpp"
 #include <iostream>
 #include <list>
 #include <optional>
@@ -32,7 +31,7 @@ public:
   virtual std::string toString() = 0;
   void print(std::ostream &os, size_t depth = 0);
   virtual commands_type to4(const compiler::Alphabet<char> &alphabet) {
-    globals::breakpointer->onEnter(begin(), end());
+    globals::breakpointer->onEnter(FileRange::fromPositions(begin(), end()));
     auto result = to4_impl(alphabet);
     globals::breakpointer->onExit();
 
@@ -84,10 +83,19 @@ public:
   char letterToCheck() const { return letterToCheck_; }
 };
 
+class ElseBranch : public NodeBase {
+	void init(token::tokens_list &tokens) override;
+	public:
+		ElseBranch(token::tokens_list & tokens);
+		std::string toString() override;
+		commands_type to4_impl(const compiler::Alphabet<char> &alphabet) override;
+};
+
 class IfFi : public NodeBase {
   void init(token::tokens_list &tokens) override;
 
-  std::list<Branch *> branches_;
+  std::list<Branch *> ifBranches_;
+	ElseBranch * elseBranch_ = nullptr;
 
 public:
   IfFi(token::tokens_list &tokens);
@@ -191,8 +199,16 @@ public:
 
 class Tree {
   MT::Definition *root_ = nullptr;
+	std::list<std::string> libs_;
 
 public:
+	const std::list<std::string> & libs;
+	static void clearNamesTable() {
+		MT::namesTable_.clear();
+		MT::namesTable_.add("l", 0);
+		MT::namesTable_.add("r", 1);
+	}
+
   void print(std::ostream &os = std::cout);
   Tree(token::tokens_list &tokens, const std::string &fileName);
   commands_type to4();
@@ -200,6 +216,7 @@ public:
   const std::string &getTreeName() const {
     return MT::namesTable_[root_->id()];
   };
+	void addLib(MT::Lib & lib);
 };
 } // namespace ast
 

@@ -1,6 +1,7 @@
 #ifndef TU_4_COMMAND_HPP_
 #define TU_4_COMMAND_HPP_
 
+#include "FilePosition.hpp"
 #include "exception.hpp"
 #include "globals.hpp"
 #include "utils.hpp"
@@ -16,19 +17,23 @@ enum class MoveDirection { LEFT, RIGHT };
 template <typename TQ, typename TLetter = char> class Tu4Command {
   TQ q0_, q_;
   TLetter letterToCheck_;
-  std::string comment_;
+  std::optional<FileRange> debugBreakpoint_ = std::nullopt;
 
 public:
-  Tu4Command(TQ q0, TQ q, TLetter letterToCheck, const std::string &comment)
-      : q0_(q0), q_(q), letterToCheck_(letterToCheck), comment_(comment) {
-    if (globals::enableBreakpoints && comment == "")
-      comment_ = globals::breakpointer->getCurrentPosition();
+  Tu4Command(TQ q0, TQ q, TLetter letterToCheck, bool loadBreakpoint = true)
+      : q0_(q0), q_(q), letterToCheck_(letterToCheck) {
+    if (globals::enableBreakpoints && loadBreakpoint)
+      debugBreakpoint_ = globals::breakpointer->getCurrentPosition();
   }
+
+  void setBreakpoint(const FileRange &range) { debugBreakpoint_ = {range}; }
 
   TQ q0() const { return q0_; }
   TQ q() const { return q_; }
   TLetter letterToCheck() const { return letterToCheck_; }
-  const std::string &comment() const { return comment_; }
+  const std::optional<FileRange> &debugBreakpoint() const {
+    return debugBreakpoint_;
+  }
 
   void shift(TQ shiftSize) {
     q0_ += shiftSize;
@@ -50,15 +55,15 @@ class Tu4SetLetter : public Tu4Command<TQ, TLetter> {
 
 public:
   Tu4SetLetter(TQ q0, TLetter letterToCheck, TLetter letterToSet, TQ q,
-               const std::string &comment = "")
-      : Tu4Command<TQ>(q0, q, letterToCheck, comment),
+               bool loadBreakpoint = true)
+      : Tu4Command<TQ>(q0, q, letterToCheck, loadBreakpoint),
         letterToSet_(letterToSet) {}
 
   void print(std::ostream &os) const override {
     os << this->q0() << ',' << this->letterToCheck() << ',' << letterToSet_
        << ',' << this->q();
-    if (this->comment().size() > 0)
-      os << " // " << this->comment();
+    if (this->debugBreakpoint().has_value() > 0)
+      os << " // " << this->debugBreakpoint().value();
   }
   bool isTerm() const override {
     return (this->letterToCheck() == letterToSet_) && (this->q0() == this->q());
@@ -73,14 +78,14 @@ class Tu4Move : public Tu4Command<TQ, TLetter> {
 
 public:
   Tu4Move(TQ q0, TLetter letterToCheck, MoveDirection dir, TQ q,
-          const std::string &comment = "")
-      : Tu4Command<TQ>(q0, q, letterToCheck, comment), dir_(dir) {}
+          bool loadBreakpoint = true)
+      : Tu4Command<TQ>(q0, q, letterToCheck, loadBreakpoint), dir_(dir) {}
 
   void print(std::ostream &os) const override {
     os << this->q0() << ',' << this->letterToCheck() << ','
        << (dir_ == MoveDirection::LEFT ? "<" : ">") << ',' << this->q();
-    if (this->comment().size() > 0)
-      os << " // " << this->comment();
+    if (this->debugBreakpoint().has_value() > 0)
+      os << " // " << this->debugBreakpoint().value();
   }
 
   bool isTerm() const override { return false; }
@@ -128,11 +133,6 @@ public:
         [](const auto &command) { return command.letterToCheck(); }, *data_);
   }
 
-  std::string comment() const {
-    return std::visit([](const auto &command) { return command.comment(); },
-                      *data_);
-  }
-
   void print(std::ostream &os) const {
     std::visit([&os](const auto &command) { command.print(os); }, *data_);
   }
@@ -147,6 +147,14 @@ public:
                                 [](const Tu4Move<TQ> &) { return true; }},
                       *data_);
   }
+  std::optional<FileRange> debugBreakpoint() const {
+    return std::visit(
+        [](const auto &command) { return command.debugBreakpoint(); }, *data_);
+  }
+
+	void setBreakpoint(const FileRange &range) {
+		std::visit([&range](auto & command){command.setBreakpoint(range);}, *data_);
+	}
 
   MoveDirection getMoveDirection() const {
     return std::visit(
@@ -191,29 +199,30 @@ std::ostream &operator<<(std::ostream &os,
 
 template <typename TQ, typename TLetter = char>
 tu4::tu4_union<TQ, TLetter> load(std::istream &is) {
-	static auto isValidLine = [](const std::string &s) {
-		if(s.empty())
-			return false;
-		size_t commandEnd = 1, commaCount = 0;
-		for(commandEnd = 1; commandEnd < s.size(); ++commandEnd) {
-			if(s[commandEnd] == '/' && s[commandEnd - 1] == '/') {
-				--commandEnd;
-				break;
-			}
-			if(s[commandEnd] == ',') {
-				++commaCount;
-			}
-		}
-		if(commaCount != 3)
-			return false;
-		return true;
-	};
+  static auto isValidLine = [](const std::string &s) {
+    if (s.empty())
+      return false;
+    size_t commandEnd = 1, commaCount = 0;
+    for (commandEnd = 1; commandEnd < s.size(); ++commandEnd) {
+      if (s[commandEnd] == '/' && s[commandEnd - 1] == '/') {
+        --commandEnd;
+        break;
+      }
+      if (s[commandEnd] == ',') {
+        ++commaCount;
+      }
+    }
+    if (commaCount != 3)
+      return false;
+    return true;
+  };
 
-  std::string line, comment = "";
+  std::string line;
 
-	std::getline(is, line);
+  std::getline(is, line);
   while (is && !(isValidLine(line))) {
-		logger::debug() << "Skipped not valid line [" << line << ']' << isValidLine(line);
+    if (line != "")
+      logger::debug() << "Skipped not valid line [" << line << ']';
     std::getline(is, line);
   }
   if (!isValidLine(line))
@@ -222,13 +231,14 @@ tu4::tu4_union<TQ, TLetter> load(std::istream &is) {
   std::istringstream iss(line);
   TQ q0, q;
   TLetter c1, c2, temp;
+  FileRange range;
   iss >> q0 >> temp >> c1 >> temp >> c2 >> temp >> q;
   size_t commentPos;
 
-  if ((commentPos = line.find("//")) != std::string::npos) {
+  if (globals::enableBreakpoints && (commentPos = line.find("//"))) {
     while (commentPos + 2 < line.size() && line[commentPos + 2] == ' ')
       ++commentPos;
-    comment = line.substr(commentPos + 2);
+    range = FileRange::fromString(line.substr(commentPos + 2));
   }
 
   if (c1 == TLetter(' '))
@@ -236,15 +246,19 @@ tu4::tu4_union<TQ, TLetter> load(std::istream &is) {
   if (c2 == TLetter(' '))
     c2 = TLetter('_');
 
-  switch (c2) {
-  case '>':
-  case '<':
-    return {tu4::Tu4Move<TQ, TLetter>{
+  if (c2 == '>' || c2 == '<') {
+    auto command = tu4::Tu4Move<TQ, TLetter>{
         q0, c1,
         (c2 == '<' ? tu4::MoveDirection::LEFT : tu4::MoveDirection::RIGHT), q,
-        comment}};
-  default:
-    return {tu4::Tu4SetLetter<TQ, TLetter>(q0, c1, c2, q, comment)};
+        false};
+    if (globals::enableBreakpoints)
+      command.setBreakpoint(range);
+    return {command};
+  } else {
+    auto command = tu4::Tu4SetLetter<TQ, TLetter>(q0, c1, c2, q, false);
+    if (globals::enableBreakpoints)
+      command.setBreakpoint(range);
+    return {command};
   }
 }
 
