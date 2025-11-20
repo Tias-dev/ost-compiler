@@ -11,26 +11,34 @@ It can be demonstrated by following simple example.
 Imagine you have alphabet A = { \_, 1, 0} and you should in the word before cursor shift left all zeros and ones by 1 tile before you meet lambda(\_).
 Recursion realization in C language may be following
 ```c
-void foo(const char * line, size_t* cursor) {
+void foo(char * line, size_t* cursor) {
   if(line[*cursor] == '0') { // if statement exists in OST
     *cursor = *cursor - 1; // Shift MT pointer left aka <
     foo(line, cursor); // Not tailed recursion!
+    *cursor = *cursor + 1; // Shift MT pointer right aka >
     line[*cursor] = '0'; // Setting 0 in current place, aka q,0,0,q1 ; q,1,0,q1 ; q,_,0,q1
-  }
-  else if(line[*cursor] == '1') {
+  } else if(line[*cursor] == '1') {
     *cursor = *cursor - 1; // Shift MT pointer left aka <
-    foo(line, *cursor); // Not tailed recursion!
+    foo(line, cursor); // Not tailed recursion!
+    *cursor = *cursor + 1; // Shift MT pointer right aka >
     line[*cursor] = '1'; // Setting 0 in current place, aka q,0,1,q1 ; q,1,1,q1 ; q,_,1,q1
-  }
+  } else if(line[*cursor] == '_')
+    *cursor = *cursor - 1; // Shift MT pointer left aka <
 }
 
 int main(int argc, const char * argw[]) {
   size_t cursor = atoll(argw[1]);
-  const char * line = argw[2];
+  char line[10000];
+  memcpy(line, argw[2], strlen(argw[2])+1);
 
   cursor = cursor - 1; // Shift MT pointer left aka < to first letter of the word
   foo(line, &cursor);
+
+  cursor = cursor + 1; // Shift MT pointer right aka >
   while(line[cursor] != '_') cursor = cursor + 1; // Shift MT pointer right aka >
+  cursor = cursor - 1; // Shift MT pointer left aka <
+  line[cursor] = '_';
+  printf("%s\n", line);
 }
 ```
 
@@ -46,16 +54,18 @@ BEGIN
   BEGIN
     ALPHABET: 0,1;
     IF
-      0 ? l ; FOO ; a(0)
-      1 ? l ; FOO ; a(1)
+      0 ? l ; FOO ; r ; a(0)
+      1 ? l ; FOO ; r ; a(1)
+      _ ? l 
     FI;
   END FOO;
 
-  l; FOO;
+  l; FOO; r;
   DO () != _ ? r; OD;
+  l; a(_);
 END MAIN
 ```
-This program on input [\_1010\_101\_] will produce output [\_1010\_101\_] which is nothing
+This program on input [\_1010\_101\_] will produce output [\_101\_\_101\_]
 
 This happen via no recursion stack in ost exists by default so if mt FOO starts from state `qsFOO` and ends by `qeFOO` then any recursion call will step to `qsFOO` state, but when any of recursions will successfully ends mt FOO i.e. it will point on lambda(\_) then it will step to `qeFOO` state that will ends all recursions at all and continue executing from where mt FOO was called at the first time(i.e. from mt MAIN)
 
