@@ -10,16 +10,17 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 using namespace ast;
-Tree * currentAST = nullptr;
+Tree *currentAST = nullptr;
 void throwMismatch(const std::string &expected,
                    const token::token_union &given);
 
 Tree::Tree(token::tokens_list &tokens, const std::string &fileName)
-: libs(libs_) {
+    : libs(libs_) {
   try {
-		currentAST = this;
+    currentAST = this;
     root_ = new MT::Definition{tokens};
   } catch (error::PositionErrorBase &e) {
     logger::error() << e.what() << std::endl;
@@ -67,8 +68,8 @@ MT::Lib::Lib(token::tokens_list &tokens)
     : NodeBase(ExprType::MT), id_(currentId_++) {
   init(tokens);
   definitions_[id_] = this;
-	if(currentAST) 
-		currentAST->addLib(*this);
+  if (currentAST)
+    currentAST->addLib(*this);
 }
 
 MT::Definition::Definition(token::tokens_list &tokens)
@@ -452,6 +453,18 @@ void BeginEnd::init(token::tokens_list &tokens) {
   session.commit();
 }
 
+void validateBranches(const std::list<Branch *> &branches) {
+	if(branches.size() == 1) {
+		auto branch = std::begin(branches);
+		if((*branch)->haveBranchSeparator())
+			throwSemantic("Unique branch expected to have no branch separator", (*branch)->begin());
+		return;
+	}
+	for(auto branch : branches)
+		if(!branch->haveBranchSeparator())
+			throwSemantic("Multiple branches expected to have branch separator but this not!", branch->begin());
+}
+
 void DoOd::init(token::tokens_list &tokens) {
   auto session = tokens.session();
 
@@ -476,6 +489,7 @@ void DoOd::init(token::tokens_list &tokens) {
   if (token != token::OpType::TERMINATOR)
     throwMismatch(";", token);
 
+	validateBranches(branches_);
   session.commit();
   for (auto &branch : branches_)
     childs_.push_back(branch);
@@ -485,6 +499,8 @@ void Branch::init(token::tokens_list &tokens) {
   auto session = tokens.session();
 
   auto token = session.popFrontAndReturn();
+  if (token == token::OpType::BRANCH_SEPARATOR)
+    haveBranchSeparator_ = true, token = session.popFrontAndReturn();
   begin_ = token.begin();
   if (token == token::OpType::LEFT_BRACKET) {
     token = session.popFrontAndReturn();
@@ -510,16 +526,15 @@ void Branch::init(token::tokens_list &tokens) {
   if (token != token::OpType::QUESTION)
     throwMismatch("?", token);
 
-  auto first = std::begin(tokens), second = std::next(first);
+  auto first = std::begin(tokens);
   while (tokens.size() > 2 &&
          !(*first == token::KwType::FI || *first == token::KwType::OD ||
-           *second == token::OpType::QUESTION ||
-           *second == token::OpType::RIGHT_BRACKET || *first == token::KwType::ELSE)) {
+           *first == token::OpType::BRANCH_SEPARATOR ||
+           *first == token::KwType::ELSE)) {
     childs_.push_back(new MT{tokens});
     end_ = (*std::prev(std::end(childs_)))->end();
 
     first = std::begin(tokens);
-    second = std::next(first);
   }
   session.commit();
 }
@@ -532,7 +547,10 @@ void ElseBranch::init(token::tokens_list &tokens) {
   begin_ = token->begin();
   session.popFront();
 
-	token = std::begin(tokens);
+  token = std::begin(tokens);
+  if (*token == token::OpType::BRANCH_SEPARATOR)
+    throwSemantic("Unique else branch must have no branch separator",
+                  token->begin());
   while (tokens.size() > 0 && *token != token::KwType::FI) {
     childs_.push_back(new MT{tokens});
     token = std::begin(tokens);
@@ -543,6 +561,7 @@ void ElseBranch::init(token::tokens_list &tokens) {
   end_ = (*std::prev(std::end(childs_)))->end();
   session.commit();
 }
+
 
 void IfFi::init(token::tokens_list &tokens) {
   auto session = tokens.session();
@@ -558,10 +577,10 @@ void IfFi::init(token::tokens_list &tokens) {
     if (token == token::KwType::ELSE) {
       elseBranch_ = new ElseBranch{tokens};
     } else {
-			auto branch = new Branch{tokens};
-			ifBranches_.push_back(branch);
-			childs_.push_back(branch);
-		}
+      auto branch = new Branch{tokens};
+      ifBranches_.push_back(branch);
+      childs_.push_back(branch);
+    }
     token = *std::begin(tokens);
   }
   if (tokens.size() == 0)
@@ -571,6 +590,8 @@ void IfFi::init(token::tokens_list &tokens) {
   session.popFront();
   if (tokens.size() > 0 && *std::begin(tokens) == token::OpType::TERMINATOR)
     session.popFront();
+
+	validateBranches(ifBranches_);
 
   session.commit();
 }
@@ -656,9 +677,7 @@ std::string Branch::toString() {
   return ss.bump();
 }
 
-std::string ElseBranch::toString() {
-	return "Else branch";
-}
+std::string ElseBranch::toString() { return "Else branch"; }
 
 std::string IfFi::toString() {
   strfast ss;
@@ -684,7 +703,4 @@ std::string SetLetter::toString() {
 // -------------------
 // |  miscellations  |
 // -------------------
-void Tree::addLib(MT::Lib & lib) {
-	libs_.push_back(MT::namesTable_[lib.id()]);
-}
-
+void Tree::addLib(MT::Lib &lib) { libs_.push_back(MT::namesTable_[lib.id()]); }

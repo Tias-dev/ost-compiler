@@ -36,6 +36,7 @@ std::pair<OpTrie, KwTrie> initTries() {
   op.add("**", token::OpType::POW);
   op.add("?", token::OpType::QUESTION);
   op.add("!=", token::OpType::NOT_EQUAL);
+	op.add("|", token::OpType::BRANCH_SEPARATOR);
 
   return {op, kw};
 }

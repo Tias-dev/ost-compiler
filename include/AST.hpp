@@ -73,7 +73,7 @@ class Branch : public NodeBase {
   char letterToCheck_ = 0;
   bool isAnyChar_ = false;
   void init(token::tokens_list &tokens) override;
-
+	bool haveBranchSeparator_ = false;
 public:
   Branch(token::tokens_list &tokens);
 
@@ -81,6 +81,7 @@ public:
   commands_type to4_impl(const compiler::Alphabet<char> &alphabet) override;
   bool isAnyChar() const { return isAnyChar_; }
   char letterToCheck() const { return letterToCheck_; }
+	bool haveBranchSeparator() const {return haveBranchSeparator_;}
 };
 
 class ElseBranch : public NodeBase {

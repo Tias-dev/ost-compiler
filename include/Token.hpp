@@ -76,7 +76,8 @@ enum class OpType {
   RIGHT_BRACKET,
   POW,
   QUESTION,
-  NOT_EQUAL
+  NOT_EQUAL,
+	BRANCH_SEPARATOR
 };
 
 class Operation : public Token {

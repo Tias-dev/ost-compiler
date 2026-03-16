@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-set(CMAKE_CXX_STANDART 20)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 project(
@@ -12,9 +12,6 @@ file(GLOB_RECURSE SRC_FILES LIST_DIRECTORIES FALSE ./src/*.cpp)
 file(GLOB_RECURSE TESTS_FILES LIST_DIRECTORIES FALSE ./tests/*.cpp)
 
 include_directories("include")
-add_compile_options(-O2 -std=c++20)
-# add_compile_options(-g -std=c++20)
-# add_compile_options(-pg -std=c++20)
 
 add_library(src_lib STATIC ${SRC_FILES})
 
