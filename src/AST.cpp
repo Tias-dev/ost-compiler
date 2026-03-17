@@ -23,7 +23,7 @@ Tree::Tree(token::tokens_list &tokens, const std::string &fileName)
     currentAST = this;
     root_ = new MT::Definition{tokens};
   } catch (error::PositionErrorBase &e) {
-    logger::error() << e.what() << std::endl;
+    logger::error() << "Error in file: " << e.position().to_string() << '\n' << e.what() << std::endl;
     auto &position = e.position();
     size_t width = 60;
     fileRollAround(position.fileName(), position, width);

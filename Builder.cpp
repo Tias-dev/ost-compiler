@@ -199,10 +199,10 @@ struct ThrowSourceNotFoundError {
 
 using mt_name_t = std::string;
 using is_resolved_policy_t = std::function<bool(const mt_name_t&)>;
-bool isSrcEditedAfterCompilation(const mt_name_t &mt,
+bool isSrcNotEditedAfterCompilation(const mt_name_t &mt,
                                  bool useOutputDirAsCompiledMTDir);
 static is_resolved_policy_t defaultPolicy = [](const mt_name_t &mt) {
-	return isSrcEditedAfterCompilation(mt, false);
+	return isSrcNotEditedAfterCompilation(mt, false);
 };
 
 class DependencyCollector {
@@ -237,6 +237,7 @@ public:
    */
   mt_name_t collect(const std::filesystem::path &path,
                     is_resolved_policy_t policy = defaultPolicy) {
+		logger::info() << "Parsing: " << path << '\n'; 
     auto ast = toAST(path);
     const auto &mtName = ast.getTreeName();
 
@@ -248,6 +249,7 @@ public:
       deps.insert(lib);
     deps_.add(mtName, deps);
     isresolved_.add(mtName, policy(mtName));
+		logger::log() << "Parsing: OK\n";
 
     return mtName;
   }
@@ -309,11 +311,11 @@ void fillSources(const std::string &s) {
 }
 
 void compileMainProgram(const std::string &fileName) {
-  mt_name_t mt = depsCollector.collect(fileName, [](const mt_name_t & mt) {return isSrcEditedAfterCompilation(mt, true);});
+  mt_name_t mt = depsCollector.collect(fileName, [](const mt_name_t & mt) {return isSrcNotEditedAfterCompilation(mt, true);});
   depsCollector.resolve(mt, false);
 }
 
-bool isSrcEditedAfterCompilation(const mt_name_t &mt,
+bool isSrcNotEditedAfterCompilation(const mt_name_t &mt,
                                  bool useOutputDirAsCompiledMTDir = false) {
   fs::path compiledMtPath;
   if (useOutputDirAsCompiledMTDir)
@@ -322,7 +324,7 @@ bool isSrcEditedAfterCompilation(const mt_name_t &mt,
     compiledMtPath = globals::libDir;
   compiledMtPath.append(mt + ".tu4");
   if (!fs::exists(compiledMtPath))
-    return true;
+    return false;
 
   std::string srcPath = depsCollector.getFileNameFor(mt);
   fs::file_time_type srcModifyTime = fs::last_write_time(srcPath),
