@@ -32,9 +32,11 @@ const char *helpMessage =
     "if compiled lib is older that actual lib source so lib is rebuilded"
     "\n"
     "Awailable options are shown below:\n"
+    "-h, --help : print this help message and quit\n"
+    "-v, --verbose : detailed output if --print-debug-info enabled\n"
     "-s, --sources : comma separated paths to places where sourse files(.ost) "
     "are stored\n"
-    "\t(requires argument, default: empty)\n"
+    "\t(requires argument, default: './')\n"
     "-f, --force : force recompile all"
     "\t(default: false)\n"
     "-l, --libdir : directory where precompiled libraries(.tu4, not source "
@@ -51,14 +53,13 @@ const char *helpMessage =
     "-b, --use-binary-format : save compiled sequence of commands in binary "
     "format. Significant speed up to loading and saving\n"
     "\t(default: disabled)\n"
-    "-h, --help : print this help message and quit\n"
     "\n";
 
 using duration_t = std::chrono::milliseconds;
 const char *durationSuffix = "ms";
 
 std::set<std::string> sourcePaths;
-std::string sources = "";
+std::string sources = "./";
 
 void fillSources(const std::string &s);
 void parseCommandArgs(int argc, char *argw[]);
@@ -97,7 +98,7 @@ int main(int argc, char *argw[]) {
 size_t nWorkers = 1;
 bool forceRecompile = false;
 void parseCommandArgs(int argc, char *argw[]) {
-  size_t nopts = 9;
+  size_t nopts = 11;
   option *options = new option[nopts]{
       {.name = "libdir", .has_arg = 1, .flag = NULL, .val = 'l'},
       {.name = "outputdir", .has_arg = 1, .flag = NULL, .val = 'o'},
@@ -107,11 +108,12 @@ void parseCommandArgs(int argc, char *argw[]) {
       {.name = "use-binary-format", .has_arg = 0, .flag = NULL, .val = 'b'},
       {.name = "sources", .has_arg = 1, .flag = NULL, .val = 's'},
       {.name = "jobs", .has_arg = 1, .flag = NULL, .val = 'j'},
+      {.name = "verbose", .has_arg = 0, .flag = NULL, .val = 'v'},
       {.name = "help", .has_arg = 0, .flag = NULL, .val = 'h'}};
   memset(&options[nopts - 1], 0, sizeof(option));
 
   int arg, longindex;
-  while ((arg = getopt_long(argc, argw, "l:o:gdbhs:j:f", options,
+  while ((arg = getopt_long(argc, argw, "l:o:gdbhs:j:fv", options,
                             &longindex)) != -1) {
     switch (arg) {
     case '?':
@@ -124,6 +126,10 @@ void parseCommandArgs(int argc, char *argw[]) {
     case 'o':
       globals::outDir = optarg;
       logger::info() << "Used output directory: " << optarg;
+      break;
+    case 'v':
+      globals::verboseOutput = true;
+      logger::info() << "Verbose output enabled";
       break;
     case 'g':
       globals::enableBreakpoints = true;
@@ -178,7 +184,7 @@ ast::Tree toAST(const std::string &fileName) {
   FileRoller roller(std::make_shared<std::string>(fileName));
   auto tokens = tokenizer.parse(stream, roller);
   ast::Tree ast{tokens, fileName};
-  {
+  if (globals::verboseOutput) {
     logger::debug out;
     out << "Detected libs for [" << fileName << "]:\n";
     for (const auto &lib : ast.libs)
@@ -198,27 +204,24 @@ struct ThrowSourceNotFoundError {
 };
 
 using mt_name_t = std::string;
-using is_resolved_policy_t = std::function<bool(const mt_name_t&)>;
+using is_resolved_policy_t = std::function<bool(const mt_name_t &)>;
 bool isSrcNotEditedAfterCompilation(const mt_name_t &mt,
-                                 bool useOutputDirAsCompiledMTDir);
+                                    bool useOutputDirAsCompiledMTDir);
 static is_resolved_policy_t defaultPolicy = [](const mt_name_t &mt) {
-	return isSrcNotEditedAfterCompilation(mt, false);
+  return isSrcNotEditedAfterCompilation(mt, false);
 };
 
 class DependencyCollector {
   impl::Trie<std::set<mt_name_t>> deps_;
   impl::Trie<bool> isresolved_;
   impl::Trie<std::string> mtNameFileNameMap_;
-	impl::Trie<bool> isbuilded_;
+  impl::Trie<bool> isbuilded_;
 
 public:
   DependencyCollector() = default;
 
   std::set<mt_name_t> getDepsFor(const mt_name_t &mt) {
-    const auto &value = deps_.find(mt);
-    if (!value.has_value())
-      return {};
-    return value.value();
+    return deps_.find(mt).value_or(std::set<mt_name_t>{});
   }
 
   std::string getFileNameFor(const mt_name_t &mt) {
@@ -237,7 +240,8 @@ public:
    */
   mt_name_t collect(const std::filesystem::path &path,
                     is_resolved_policy_t policy = defaultPolicy) {
-		logger::info() << "Parsing: " << path << '\n'; 
+    if (globals::verboseOutput)
+      logger::info() << "Parsing: " << path << '\n';
     auto ast = toAST(path);
     const auto &mtName = ast.getTreeName();
 
@@ -249,39 +253,46 @@ public:
       deps.insert(lib);
     deps_.add(mtName, deps);
     isresolved_.add(mtName, policy(mtName));
-		logger::log() << "Parsing: OK\n";
+    if (globals::verboseOutput)
+      logger::log() << "Parsing: OK\n";
 
     return mtName;
   }
 
   bool resolve(const mt_name_t &mt, bool useLibDirAsOutputDir = true) {
-		if(isbuilded_.contains(mt)) 
-			return false;
-		
-		bool childsChanged = false;
+    if (isbuilded_.contains(mt))
+      return false;
+
+    bool childsChanged = false;
     // resolving depedencies first
     const auto &deps = getDepsFor(mt);
     for (const auto &dep : deps) {
       childsChanged = resolve(dep) || childsChanged;
-		}
+    }
 
-    if (isresolved_.find(mt).value() && !childsChanged && !forceRecompile) {
+    if (isresolved_.find(mt).value_or(false) && !childsChanged &&
+        !forceRecompile) {
       logger::info() << "MT [" << mt << "] is up to date. Skipping";
-			childsChanged = false;
     } else {
-			std::string fileName = getFileNameFor(mt);
-			logger::info() << "MT [" << mt << "] was changed after compilation\n\t"
-										 << "Following file will be recompiled: " << fileName;
-			compileAndSaveProgram(fileName,
-										globals::libDir,
-										(useLibDirAsOutputDir ? globals::libDir : globals::outDir),
-										globals::useBinaryFormat,
-										globals::enableBreakpoints);
-			*isresolved_.find(mt) = true;
-			childsChanged = true;
-		}
-		isbuilded_.add(mt, true);
-		return childsChanged;
+      std::string fileName = getFileNameFor(mt);
+      {
+        logger::info out;
+        if (forceRecompile)
+          out << "MT [" << mt << "] is forced to recompile";
+        else
+          out << "MT [" << mt << "] was changed after compilation";
+        out << "\n\tFollowing file will be recompiled: " << fileName;
+      }
+      compileAndSaveProgram(
+          fileName, globals::libDir,
+          (useLibDirAsOutputDir ? globals::libDir : globals::outDir),
+          globals::useBinaryFormat, globals::enableBreakpoints,
+          globals::verboseOutput);
+      *isresolved_.find(mt) = true;
+      childsChanged = true;
+    }
+    isbuilded_.add(mt, true);
+    return childsChanged;
   }
 };
 
@@ -311,12 +322,14 @@ void fillSources(const std::string &s) {
 }
 
 void compileMainProgram(const std::string &fileName) {
-  mt_name_t mt = depsCollector.collect(fileName, [](const mt_name_t & mt) {return isSrcNotEditedAfterCompilation(mt, true);});
+  mt_name_t mt = depsCollector.collect(fileName, [](const mt_name_t &mt) {
+    return isSrcNotEditedAfterCompilation(mt, true);
+  });
   depsCollector.resolve(mt, false);
 }
 
 bool isSrcNotEditedAfterCompilation(const mt_name_t &mt,
-                                 bool useOutputDirAsCompiledMTDir = false) {
+                                    bool useOutputDirAsCompiledMTDir = false) {
   fs::path compiledMtPath;
   if (useOutputDirAsCompiledMTDir)
     compiledMtPath = globals::outDir;
@@ -329,7 +342,9 @@ bool isSrcNotEditedAfterCompilation(const mt_name_t &mt,
   std::string srcPath = depsCollector.getFileNameFor(mt);
   fs::file_time_type srcModifyTime = fs::last_write_time(srcPath),
                      compiledModifyTime = fs::last_write_time(compiledMtPath);
-  logger::debug() << "mt: " << mt << " src modify time " << srcModifyTime
-                  << " compiled modify time " << compiledModifyTime;
+
+  if (globals::verboseOutput)
+    logger::debug() << "mt: " << mt << " src modify time " << srcModifyTime
+                    << " compiled modify time " << compiledModifyTime;
   return srcModifyTime < compiledModifyTime;
 };

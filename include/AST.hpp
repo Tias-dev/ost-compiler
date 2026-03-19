@@ -23,9 +23,11 @@ protected:
   FilePosition begin_, end_;
 
   virtual commands_type to4_impl(const compiler::Alphabet<char> &alphabet) = 0;
-	friend class MT;
+  friend class MT;
+
 public:
-  NodeBase(ExprType type, FilePosition begin, FilePosition end) : type_(type), begin_(begin), end_(end) {}
+  NodeBase(ExprType type, FilePosition begin, FilePosition end)
+      : type_(type), begin_(begin), end_(end) {}
   NodeBase(ExprType type) : type_(type) {}
 
   virtual std::string toString() = 0;
@@ -38,8 +40,8 @@ public:
     return result;
   }
 
-  const FilePosition & begin() const { return begin_; }
-  const FilePosition & end() const { return end_; }
+  const FilePosition &begin() const { return begin_; }
+  const FilePosition &end() const { return end_; }
 };
 
 class Alphabet : public NodeBase {
@@ -73,7 +75,7 @@ class Branch : public NodeBase {
   char letterToCheck_ = 0;
   bool isAnyChar_ = false;
   void init(token::tokens_list &tokens) override;
-	bool haveBranchSeparator_ = false;
+  bool haveBranchSeparator_ = false;
 public:
   Branch(token::tokens_list &tokens);
 
@@ -81,22 +83,23 @@ public:
   commands_type to4_impl(const compiler::Alphabet<char> &alphabet) override;
   bool isAnyChar() const { return isAnyChar_; }
   char letterToCheck() const { return letterToCheck_; }
-	bool haveBranchSeparator() const {return haveBranchSeparator_;}
+  bool haveBranchSeparator() const { return haveBranchSeparator_; }
 };
 
 class ElseBranch : public NodeBase {
-	void init(token::tokens_list &tokens) override;
-	public:
-		ElseBranch(token::tokens_list & tokens);
-		std::string toString() override;
-		commands_type to4_impl(const compiler::Alphabet<char> &alphabet) override;
+  void init(token::tokens_list &tokens) override;
+
+public:
+  ElseBranch(token::tokens_list &tokens);
+  std::string toString() override;
+  commands_type to4_impl(const compiler::Alphabet<char> &alphabet) override;
 };
 
 class IfFi : public NodeBase {
   void init(token::tokens_list &tokens) override;
 
   std::list<Branch *> ifBranches_;
-	ElseBranch * elseBranch_ = nullptr;
+  ElseBranch *elseBranch_ = nullptr;
 
 public:
   IfFi(token::tokens_list &tokens);
@@ -200,15 +203,15 @@ public:
 
 class Tree {
   MT::Definition *root_ = nullptr;
-	std::list<std::string> libs_;
+  std::list<std::string> libs_;
 
 public:
-	const std::list<std::string> & libs;
-	static void clearNamesTable() {
-		MT::namesTable_.clear();
-		MT::namesTable_.add("l", 0);
-		MT::namesTable_.add("r", 1);
-	}
+  const std::list<std::string> &libs;
+  static void clearNamesTable() {
+    MT::namesTable_.clear();
+    MT::namesTable_.add("l", 0);
+    MT::namesTable_.add("r", 1);
+  }
 
   void print(std::ostream &os = std::cout);
   Tree(token::tokens_list &tokens, const std::string &fileName);
@@ -217,7 +220,7 @@ public:
   const std::string &getTreeName() const {
     return MT::namesTable_[root_->id()];
   };
-	void addLib(MT::Lib & lib);
+  void addLib(MT::Lib &lib);
 };
 } // namespace ast
 
