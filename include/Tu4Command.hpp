@@ -45,6 +45,8 @@ public:
     q_ -= shiftSize;
   }
 
+  void updateEndState(TQ newState) { q_ = newState; }
+
   virtual bool isTerm() const = 0;
   virtual void print(std::ostream &os) const = 0;
 };
@@ -127,6 +129,10 @@ public:
   TQ q() const {
     return std::visit([](const auto &command) { return command.q(); }, *data_);
   }
+  void updateEndState(TQ newState) {
+    std::visit(
+        [&newState](auto &command) { command.updateEndState(newState); }, *data_);
+  }
 
   TLetter letterToCheck() const {
     return std::visit(
@@ -152,9 +158,10 @@ public:
         [](const auto &command) { return command.debugBreakpoint(); }, *data_);
   }
 
-	void setBreakpoint(const FileRange &range) {
-		std::visit([&range](auto & command){command.setBreakpoint(range);}, *data_);
-	}
+  void setBreakpoint(const FileRange &range) {
+    std::visit([&range](auto &command) { command.setBreakpoint(range); },
+               *data_);
+  }
 
   MoveDirection getMoveDirection() const {
     return std::visit(

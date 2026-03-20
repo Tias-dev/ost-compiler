@@ -10,6 +10,7 @@ inline std::string outDir = "./";
 inline bool printDebugInfo = false;
 inline bool enableBreakpoints = false;
 inline bool useBinaryFormat = false;
+inline bool verboseOutput = false;
 inline std::shared_ptr<IBreakpointer> breakpointer{new DummyBreakpointer{}};
 
 inline std::string debugFirstLine = "// Compiled with breakpoints enabled";

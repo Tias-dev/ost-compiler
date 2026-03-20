@@ -6,10 +6,11 @@
 #include <cstdio>
 #include <list>
 #include <set>
+#include <unordered_map>
 #include <vector>
 void compileAndSaveProgram(const std::string &fileName, const std::string &libDir,
                     const std::string &outDir, bool useBinaryFormat,
-                    bool enableBreakpoints);
+                    bool enableBreakpoints, bool printDebugInfo = true);
 namespace compiler {
 template <typename TLetter> class Alphabet : public std::set<TLetter> {
   using parent = std::set<TLetter>;
@@ -51,6 +52,7 @@ public:
 
 template <typename TQ, typename TLetter = char>
 class Commands : public std::list<tu4::tu4_union<TQ, TLetter>> {
+	std::unordered_map<TQ, TQ> overridedEndStates_;
 public:
   void shift(TQ shiftSize) {
     for (auto &command : *this)
@@ -99,6 +101,26 @@ public:
     for (auto &command : other)
       this->push_back(command);
   }
+
+	// Add override request to cache
+	// Need to call executeOverrides() to do apply override requests
+	//
+	// @param oldState end state that will be overrided
+	// @param newState end state to override oldState
+	void overrideEndState(TQ oldState, TQ newState) {
+		if(overridedEndStates_.contains(oldState))
+			throw std::logic_error("Trying to override end state but it is already overrided!");
+		overridedEndStates_[oldState] = newState;
+	}
+
+	// After applying overrides all override requests clering
+	void executeOverrides() {
+		for(auto &command : *this)
+			if(overridedEndStates_.contains(command.q()))
+				command.updateEndState(overridedEndStates_[command.q()]);
+
+		overridedEndStates_.clear();
+	}
 };
 
 // ------------------------
@@ -107,7 +129,7 @@ public:
 using commands_type = Commands<size_t, char>;
 using mt_name_t = std::string;
 std::pair<commands_type, mt_name_t> compileProgram(const std::string &fileName, const std::string &libDir, bool useBinaryFormat,
-                    bool enableBreakpoints);
+                    bool enableBreakpoints, bool printDebugInfo = true);
 namespace serializer {
 void serialize(const commands_type &commands,
                const bimap<std::string, size_t> &fileCodes,

@@ -17,6 +17,8 @@ const char * helpMessage =
 		"Name of output file is the name of first MT described in <program>.ost file\n"
 		"\n"
 		"Awailable options are shown below:\n"
+		"-h, --help : print this help message and quit\n"
+		"-v, --verbose : detailed output if --print-debug-info enabled\n"
 		"-l, --libdir : directory where precompiled libraries(.tu4, not source .ost files!) are stored\n"
 		"\t(requires argument, default: ./)\n"
 		"-o, --outputdir : directory where compiled <program>.ost program will be stored\n"
@@ -27,27 +29,31 @@ const char * helpMessage =
 		"\t(default: disabled)\n"
 		"-b, --use-binary-format : save compiled sequence of commands in binary format. Significant speed up to loading and saving\n"
 		"\t(default: disabled)\n"
-		"-h, --help : print this help message and quit\n"
 		"\n"
 ;
 
 void parseCommandArgs(int argc, char *argw[]) {
-  size_t nopts = 7;
+  size_t nopts = 8;
   option *options = new option[nopts]{
       {.name = "libdir", .has_arg = 1, .flag = NULL, .val = 'l'},
       {.name = "outputdir", .has_arg = 1, .flag = NULL, .val = 'o'},
       {.name = "enable-breakpoints", .has_arg = 0, .flag = NULL, .val = 'g'},
       {.name = "print-debug-info", .has_arg = 0, .flag = NULL, .val = 'd'},
       {.name = "use-binary-format", .has_arg = 0, .flag = NULL, .val = 'b'},
+      {.name = "verbose", .has_arg = 0, .flag = NULL, .val = 'v'},
       {.name = "help", .has_arg = 0, .flag = NULL, .val = 'h'}};
   memset(&options[nopts - 1], 0, sizeof(option));
 
   int arg, longindex;
-  while ((arg = getopt_long(argc, argw, "l:o:gdbh", options, &longindex)) != -1) {
+  while ((arg = getopt_long(argc, argw, "l:o:gdbhv", options, &longindex)) != -1) {
     switch (arg) {
     case '?':
       logger::warning()
           << "Unrecognized option: " << optarg << std::endl;
+      break;
+    case 'v':
+      globals::verboseOutput = true;
+      logger::info() << "Verbose output enabled";
       break;
     case 'l':
       globals::libDir = optarg;
