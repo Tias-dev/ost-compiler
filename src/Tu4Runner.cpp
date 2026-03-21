@@ -8,12 +8,12 @@
 #include <string>
 
 
-std::unique_ptr<tu4run::Tu4Runner<size_t, char>> tu4run::initRunner(const std::string &fileName,
+std::unique_ptr<tu4run::Tu4Runner<SIZE_T, char>> tu4run::initRunner(const std::string &fileName,
                                     const std::string &line) {
-  compiler::Commands<size_t, char> commands = compiler::serializer::deserialize(fileName, globals::useBinaryFormat);
+  compiler::Commands<SIZE_T, char> commands = compiler::serializer::deserialize(fileName, globals::useBinaryFormat);
 
   tu4run::Line<char> line_{line.c_str()};
-  auto runner = std::make_unique<tu4run::Tu4Runner<size_t, char>>(line_, commands);
+  auto runner = std::make_unique<tu4run::Tu4Runner<SIZE_T, char>>(line_, commands);
 
   return runner;
 }
@@ -22,16 +22,16 @@ tu4run::RunnerDataWithBreakpoints tu4run::initRunnerWithBreakpoints(const std::s
                                     const std::string &line) {
 	tu4run::RunnerDataWithBreakpoints result;
 	impl::Trie<bool> usedFileNames;
-  compiler::Commands<size_t, char> commands = compiler::serializer::deserialize(fileName, globals::useBinaryFormat);
+  compiler::Commands<SIZE_T, char> commands = compiler::serializer::deserialize(fileName, globals::useBinaryFormat);
 	const auto & fileCodes = FilePosition::fileCodesBimap().forward();
 	for(const auto& entry : fileCodes) 
 		result.fileNames.push_back(entry.first);
 	
 
   tu4run::Line<char> line_{line.c_str()};
-  result.runner = std::make_unique<tu4run::Tu4Runner<size_t, char>>(line_, commands);
-	auto stateBreakpointer = std::make_unique<StateBreakpointManager<size_t>>();
-	auto lineBreakpointer = std::make_unique<LineBreakpointManager<size_t>>();
+  result.runner = std::make_unique<tu4run::Tu4Runner<SIZE_T, char>>(line_, commands);
+	auto stateBreakpointer = std::make_unique<StateBreakpointManager<SIZE_T>>();
+	auto lineBreakpointer = std::make_unique<LineBreakpointManager<SIZE_T>>();
 
 	result.breakpoints = {.stateBreakpoints = stateBreakpointer->breakpoints(), .lineBreakpoints = lineBreakpointer->breakpoints()};
 	result.runner->addBreakpointManager(std::move(stateBreakpointer));

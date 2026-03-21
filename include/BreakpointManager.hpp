@@ -46,7 +46,7 @@ public:
 template <typename TQ>
 class LineBreakpointManager : public deps::DI<tu4::tu4_union<TQ>, bool &> {
 public:
-  using breakpoints_t = std::map<size_t, BreakpointStorage<size_t>>;
+  using breakpoints_t = std::map<SIZE_T, BreakpointStorage<SIZE_T>>;
 
 private:
   using parent_t = deps::DI<tu4::tu4_union<TQ>, bool &>;
@@ -56,7 +56,7 @@ public:
   LineBreakpointManager()
       : parent_t([this](tu4::tu4_union<TQ> command, bool &isTerm) {
           FileRange range = command.debugBreakpoint().value();
-          size_t row = range.begin.first;
+          SIZE_T row = range.begin.first;
           if (this->breakpoints()->contains(range.fileCode) &&
               (*this->breakpoints())[range.fileCode].isBreakpoint(row))
             isTerm = true;
@@ -64,15 +64,15 @@ public:
 
   std::shared_ptr<breakpoints_t> breakpoints() const { return lines_; }
 
-  void setBreakpoint(std::pair<const std::string &, size_t> line) {
-    size_t fileCode = FilePosition::fileCodesBimap()[line.first];
+  void setBreakpoint(std::pair<const std::string &, SIZE_T> line) {
+    SIZE_T fileCode = FilePosition::fileCodesBimap()[line.first];
     if (!lines_->contains(fileCode))
       (*lines_)[fileCode] = {};
     (*lines_)[fileCode].add(line.second);
   }
 
-  void removeBreakpoints(std::pair<const std::string &, size_t> line) {
-    size_t fileCode = FilePosition::fileCodesBimap()[line.first];
+  void removeBreakpoints(std::pair<const std::string &, SIZE_T> line) {
+    SIZE_T fileCode = FilePosition::fileCodesBimap()[line.first];
     if (lines_->contains(fileCode))
       (*lines_)[fileCode].remove(line.second);
   }

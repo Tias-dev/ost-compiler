@@ -10,8 +10,8 @@ namespace token {
 enum class Type { NAME, KEYWORD, OPERATOR };
 
 class Token {
-  static size_t currentId;
-  size_t id_;
+  static SIZE_T currentId;
+  SIZE_T id_;
 	FilePosition begin_, end_;
   Type type_;
 
@@ -24,7 +24,7 @@ public:
   virtual const FilePosition & end() const { return end_; }
 };
 
-inline size_t Token::currentId = 0;
+inline SIZE_T Token::currentId = 0;
 
 class Name : public Token {
   std::string name_;

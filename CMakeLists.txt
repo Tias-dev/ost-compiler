@@ -13,6 +13,14 @@ file(GLOB_RECURSE TESTS_FILES LIST_DIRECTORIES FALSE ./tests/*.cpp)
 
 include_directories("include")
 
+if(EXTENDED_STATE_SIZE)
+  add_compile_definitions("SIZE_T=size_t")
+  message("Using extened state size, higher memory consumption expected")
+else()
+  add_compile_definitions("SIZE_T=unsigned int")
+  message("Using default state size, maximum state limited to 4294967295")
+endif()
+
 add_library(src_lib STATIC ${SRC_FILES})
 
 add_executable(ost Compiler.cpp)

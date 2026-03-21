@@ -11,7 +11,7 @@ It can be demonstrated by following simple example.
 Imagine you have alphabet A = { \_, 1, 0} and you should in the word before cursor shift left all zeros and ones by 1 tile before you meet lambda(\_).
 Recursion realization in C language may be following
 ```c
-void foo(char * line, size_t* cursor) {
+void foo(char * line, SIZE_T* cursor) {
   if(line[*cursor] == '0') { // if statement exists in OST
     *cursor = *cursor - 1; // Shift MT pointer left aka <
     foo(line, cursor); // Not tailed recursion!
@@ -27,7 +27,7 @@ void foo(char * line, size_t* cursor) {
 }
 
 int main(int argc, const char * argw[]) {
-  size_t cursor = atoll(argw[1]);
+  SIZE_T cursor = atoll(argw[1]);
   char line[10000];
   memcpy(line, argw[2], strlen(argw[2])+1);
 

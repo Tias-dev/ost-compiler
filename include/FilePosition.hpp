@@ -10,30 +10,30 @@
 class IFileRoller {
 public:
   struct Position {
-    size_t row;
-    size_t column;
+    SIZE_T row;
+    SIZE_T column;
   };
 
-  virtual Position convert(size_t index) const = 0;
+  virtual Position convert(SIZE_T index) const = 0;
   virtual std::shared_ptr<std::string> fileName() const = 0;
 };
 class FileRoller : public IFileRoller {
   std::shared_ptr<std::string> fileName_;
-  std::vector<size_t> newLines_;
+  std::vector<SIZE_T> newLines_;
 
 public:
   FileRoller(std::shared_ptr<std::string> fileName);
 
-  Position convert(size_t index) const override;
+  Position convert(SIZE_T index) const override;
   std::shared_ptr<std::string> fileName() const override { return fileName_; }
 };
 
 class FilePosition {
 protected:
-  size_t code_;
-  size_t row_;
-  size_t column_;
-  static bimap<std::string, size_t> fileCodesBimap_;
+  SIZE_T code_;
+  SIZE_T row_;
+  SIZE_T column_;
+  static bimap<std::string, SIZE_T> fileCodesBimap_;
 
 public:
 	FilePosition() = default;
@@ -45,12 +45,12 @@ public:
 			fileCodesBimap_.add(fileName, code_);
     }
   }
-  FilePosition(std::shared_ptr<std::string> fileName, size_t row, size_t column)
+  FilePosition(std::shared_ptr<std::string> fileName, SIZE_T row, SIZE_T column)
       : FilePosition(*fileName) {
     row_ = row, column_ = column;
   };
 
-  FilePosition(const IFileRoller &roller, size_t index)
+  FilePosition(const IFileRoller &roller, SIZE_T index)
       : FilePosition(*roller.fileName()) {
     auto pos = roller.convert(index);
     row_ = pos.row;
@@ -58,14 +58,14 @@ public:
   }
 
   std::string to_string() const;
-  size_t code() const { return code_; }
+  SIZE_T code() const { return code_; }
   static FilePosition from_string(const std::string &s);
-  static bimap<std::string, size_t> &fileCodesBimap();
+  static bimap<std::string, SIZE_T> &fileCodesBimap();
 	const std::string &fileName() const { return fileCodesBimap_[code_]; }
 
-  size_t row() const { return row_; }
+  SIZE_T row() const { return row_; }
 
-  size_t column() const { return column_; }
+  SIZE_T column() const { return column_; }
 
   bool operator<(const FilePosition &other) const {
     if (row_ == other.row_)
@@ -77,10 +77,10 @@ public:
 // ---------------------------
 // |  2 positions in 1 file  |
 // ---------------------------
-using row_t = size_t;
-using column_t = size_t;
+using row_t = SIZE_T;
+using column_t = SIZE_T;
 struct FileRange {
-	size_t fileCode;
+	SIZE_T fileCode;
 	std::pair<row_t, column_t> begin, end;
 
 	static FileRange fromPositions(const FilePosition &begin, const FilePosition & end) {

@@ -23,7 +23,7 @@ public:
 };
 
 class UndefinedOperatorError : public PositionErrorBase {
-  size_t position_;
+  SIZE_T position_;
   std::string message_;
 
 public:

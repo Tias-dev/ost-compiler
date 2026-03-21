@@ -18,7 +18,7 @@ void usage() {
 }
 
 void parseCommandArgs(int argc, char *argw[]) {
-  size_t nopts = 4;
+  SIZE_T nopts = 4;
   option *options = new option[nopts]{
       {.name = "print-debug-info", .has_arg = 0, .flag = NULL, .val = 'd'},
       {.name = "use-binary-format", .has_arg = 0, .flag = NULL, .val = 'b'},
@@ -74,7 +74,7 @@ int main(int argc, char * argw[]) {
 	
 
 	start_ts = std::chrono::system_clock::now();
-	size_t steps = runner->loop();
+	SIZE_T steps = runner->loop();
 	end_ts = std::chrono::system_clock::now();
 
 	logger::debug() << "Executing program:" << std::chrono::duration_cast<duration_t>(end_ts - start_ts).count() << durationSuffix;

@@ -27,7 +27,7 @@ std::string FileBreakpointer::State::dump(const State &state) {
 
 FileBreakpointer::State FileBreakpointer::State::load(const std::string &s) {
   char temp;
-	size_t code;
+	SIZE_T code;
 	std::pair<row_t, column_t> begin, end;
 	std::istringstream ss(s);
 	ss >> code >> temp >> begin.first >> temp >> begin.second >> temp >> end.first >> temp >> end.second;

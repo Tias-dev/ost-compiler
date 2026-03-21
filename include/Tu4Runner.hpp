@@ -14,7 +14,7 @@
 #include <memory>
 #include <vector>
 namespace tu4run {
-template <typename TQ = size_t, typename CharT = char> class Tu4Runner {
+template <typename TQ = SIZE_T, typename CharT = char> class Tu4Runner {
 private:
   Line<CharT> line_;
   std::vector<std::map<CharT, tu4::tu4_union<TQ, CharT>>> commands_;
@@ -28,7 +28,7 @@ public:
   Tu4Runner(const Line<CharT> &line,
             const compiler::Commands<TQ, CharT> &commands)
       : line_(line) {
-    size_t maxQ = 0;
+    SIZE_T maxQ = 0;
     for (auto &command : commands)
       maxQ = std::max(command.q(), maxQ);
 
@@ -102,8 +102,8 @@ public:
    *
    * @return Executing steps count
    */
-  size_t loop() {
-    size_t steps = 0;
+  SIZE_T loop() {
+    SIZE_T steps = 0;
     bool stopSteps = false;
     if (breakpointManager_)
       breakpointManager_->process(nextCommand(), stopSteps);
@@ -120,17 +120,17 @@ public:
   }
 };
 
-std::unique_ptr<Tu4Runner<size_t, char>> initRunner(const std::string &fileName,
+std::unique_ptr<Tu4Runner<SIZE_T, char>> initRunner(const std::string &fileName,
                                     const std::string &line);
 
 struct Tu4RunnerBreakpoints {
-	std::shared_ptr<StateBreakpointManager<size_t>::breakpoints_t> stateBreakpoints;
-	std::shared_ptr<LineBreakpointManager<size_t>::breakpoints_t> lineBreakpoints;
+	std::shared_ptr<StateBreakpointManager<SIZE_T>::breakpoints_t> stateBreakpoints;
+	std::shared_ptr<LineBreakpointManager<SIZE_T>::breakpoints_t> lineBreakpoints;
 };
 
 
 struct RunnerDataWithBreakpoints {
-	std::unique_ptr<tu4run::Tu4Runner<size_t, char>> runner;
+	std::unique_ptr<tu4run::Tu4Runner<SIZE_T, char>> runner;
 	tu4run::Tu4RunnerBreakpoints breakpoints;
 	std::vector<std::string> fileNames;
 };

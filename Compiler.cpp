@@ -33,7 +33,7 @@ const char * helpMessage =
 ;
 
 void parseCommandArgs(int argc, char *argw[]) {
-  size_t nopts = 8;
+  SIZE_T nopts = 8;
   option *options = new option[nopts]{
       {.name = "libdir", .has_arg = 1, .flag = NULL, .val = 'l'},
       {.name = "outputdir", .has_arg = 1, .flag = NULL, .val = 'o'},

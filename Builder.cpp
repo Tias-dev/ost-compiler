@@ -95,10 +95,10 @@ int main(int argc, char *argw[]) {
   return 0;
 }
 
-size_t nWorkers = 1;
+SIZE_T nWorkers = 1;
 bool forceRecompile = false;
 void parseCommandArgs(int argc, char *argw[]) {
-  size_t nopts = 11;
+  SIZE_T nopts = 11;
   option *options = new option[nopts]{
       {.name = "libdir", .has_arg = 1, .flag = NULL, .val = 'l'},
       {.name = "outputdir", .has_arg = 1, .flag = NULL, .val = 'o'},

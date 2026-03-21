@@ -126,13 +126,13 @@ public:
 // ------------------------
 // |  base commands type  |
 // ------------------------
-using commands_type = Commands<size_t, char>;
+using commands_type = Commands<SIZE_T, char>;
 using mt_name_t = std::string;
 std::pair<commands_type, mt_name_t> compileProgram(const std::string &fileName, const std::string &libDir, bool useBinaryFormat,
                     bool enableBreakpoints, bool printDebugInfo = true);
 namespace serializer {
 void serialize(const commands_type &commands,
-               const bimap<std::string, size_t> &fileCodes,
+               const bimap<std::string, SIZE_T> &fileCodes,
                const std::string &outFileName, bool useBinaryFormat);
 commands_type deserialize(const std::string &fileName, bool useBinaryFormat);
 } // namespace serializer

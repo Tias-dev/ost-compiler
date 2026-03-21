@@ -209,7 +209,7 @@ tu4::tu4_union<TQ, TLetter> load(std::istream &is) {
   static auto isValidLine = [](const std::string &s) {
     if (s.empty())
       return false;
-    size_t commandEnd = 1, commaCount = 0;
+    SIZE_T commandEnd = 1, commaCount = 0;
     for (commandEnd = 1; commandEnd < s.size(); ++commandEnd) {
       if (s[commandEnd] == '/' && s[commandEnd - 1] == '/') {
         --commandEnd;
@@ -240,7 +240,7 @@ tu4::tu4_union<TQ, TLetter> load(std::istream &is) {
   TLetter c1, c2, temp;
   FileRange range;
   iss >> q0 >> temp >> c1 >> temp >> c2 >> temp >> q;
-  size_t commentPos;
+  SIZE_T commentPos;
 
   if (globals::enableBreakpoints && (commentPos = line.find("//"))) {
     while (commentPos + 2 < line.size() && line[commentPos + 2] == ' ')
@@ -274,7 +274,7 @@ std::list<tu4::tu4_union<TQ, TLetter>> loadMultiple(std::istream &is) {
   std::list<tu4::tu4_union<TQ, TLetter>> commands;
   try {
     while (true) {
-      commands.push_back(load<size_t, char>(is));
+      commands.push_back(load<SIZE_T, char>(is));
     }
   } catch (error::UnexpectedFileEnd) {
   }

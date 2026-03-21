@@ -1,29 +1,36 @@
+#include <cstdlib>
+#include <fstream>
+#include <getopt.h>
+
+#include <iostream>
+#include <iterator>
+#include <limits.h>
+#include <string.h>
+#include <string>
+
 #include "FilePosition.hpp"
 #include "Line.hpp"
-#include <getopt.h>
-#include <string.h>
 #include "Tu4Command.hpp"
 #include "Tu4Runner.hpp"
 #include "exception.hpp"
 #include "globals.hpp"
 #include "trie.hpp"
 #include "utils.hpp"
-#include <cstdlib>
-#include <fstream>
-#include <iostream>
-#include <string>
 
 const char *preview =
     "ost programm debugger\n"
-    "input: 'run <program name .tu4>' to start debug(program must be compiled "
+    "input: 'run <program name .tu4>' to start debug(program must be "
+    "compiled "
     "with -g flag)\n"
     "input: 'step' or empty line to do step and show file state\n"
     "input: 'step -n [number]' to do 'n' steps and show file state\n"
     "input: 'go' to start stepping loop until program's end or breakpoint "
     "occured\n"
-    "input: 'b -q <state number>' to set breakpoint on <state number>(from 0) "
+    "input: 'b -q <state number>' to set breakpoint on <state number>(from "
+    "0) "
     "state\n"
-    "input: 'b -l <line number>' to set breakpoint on <line number>(from 1) "
+    "input: 'b -l <line number>' to set breakpoint on <line number>(from "
+    "1) "
     "line\n"
     "input: 'restart' to restart current loadded program with new starting "
     "line\n"
@@ -45,10 +52,10 @@ impl::Trie<Command> initCommands() {
 
 struct FileData {
   std::ifstream file;
-  size_t nColumn = 0;
-  size_t nLine = 1e18;
+  SIZE_T nColumn = 0;
+  SIZE_T nLine = std::numeric_limits<SIZE_T>::max();
 };
-void printState(const tu4run::Tu4Runner<size_t, char> &runner) {
+void printState(const tu4run::Tu4Runner<SIZE_T, char> &runner) {
   static std::map<std::string, FileData> filesData;
 
   auto command = runner.nextCommand();
@@ -94,11 +101,10 @@ void printState(const tu4run::Tu4Runner<size_t, char> &runner) {
   std::cout << fdata.nLine - 1 << " :" << line << std::endl;
   std::cout << fdata.nLine - 1 << " :";
   if (!runner.terminated())
-    for (size_t i = 0; i + 1 < position->second; ++i)
+    for (SIZE_T i = 0; i + 1 < position->second; ++i)
       std::cout << " ";
-  size_t endIndex =
-      (begin.first == end.first ? end.second : line.size());
-  for (size_t i = position->second; i < endIndex; ++i)
+  SIZE_T endIndex = (begin.first == end.first ? end.second : line.size());
+  for (SIZE_T i = position->second; i < endIndex; ++i)
     std::cout << "^";
   std::cout << std::endl;
   std::cout << "command: " << command << std::endl;
@@ -106,7 +112,7 @@ void printState(const tu4run::Tu4Runner<size_t, char> &runner) {
 
 class Manager {
   impl::Trie<Command> commands_;
-  std::unique_ptr<tu4run::Tu4Runner<size_t, char>> runner_ = nullptr;
+  std::unique_ptr<tu4run::Tu4Runner<SIZE_T, char>> runner_ = nullptr;
   tu4run::Tu4RunnerBreakpoints breakpoints_;
   std::vector<std::string> usedFileNames_;
 
@@ -132,7 +138,7 @@ class Manager {
     usedFileNames_ = runnerInitData.fileNames;
   }
 
-  void step(size_t n = 1) {
+  void step(SIZE_T n = 1) {
     while (n-- >= 1 && !runner_->terminated())
       runner_->step();
   }
@@ -151,17 +157,17 @@ class Manager {
     }
   }
 
-  void addBreakpointState(size_t q) { breakpoints_.stateBreakpoints->add(q); }
+  void addBreakpointState(SIZE_T q) { breakpoints_.stateBreakpoints->add(q); }
 
-  void addBreakpointLine(size_t nLine) {
+  void addBreakpointLine(SIZE_T nLine) {
     std::cout << "Choose file name in which set line breakpoint:\n";
-    for (size_t i = 0; i < usedFileNames_.size(); ++i)
+    for (SIZE_T i = 0; i < usedFileNames_.size(); ++i)
       std::cout << i << ") " << usedFileNames_[i] << '\n';
-    size_t findex;
+    SIZE_T findex;
     std::cout << "Enter file number: ";
     std::cin >> findex;
 
-		size_t fileCode = FilePosition::fileCodesBimap()[usedFileNames_.at(findex)];
+    SIZE_T fileCode = FilePosition::fileCodesBimap()[usedFileNames_.at(findex)];
 
     if (!breakpoints_.lineBreakpoints->contains(fileCode))
       (*breakpoints_.lineBreakpoints)[fileCode] = {};
@@ -212,7 +218,7 @@ class Manager {
       if (*word == "-q") {
         addBreakpointState(atoll(std::next(word)->c_str()));
       } else if (*word == "-l") {
-        size_t nLine = atoll(std::next(word)->c_str());
+        SIZE_T nLine = atoll(std::next(word)->c_str());
         addBreakpointLine(nLine);
       } else {
         std::cout << "Warning: unrecognized breakpoints type. Awaited -q or "
@@ -243,7 +249,7 @@ public:
 };
 
 void parseCommandArgs(int argc, char *argw[]) {
-  size_t nopts = 3;
+  SIZE_T nopts = 3;
   option *options = new option[nopts]{
       {.name = "use-binary-format", .has_arg = 0, .flag = NULL, .val = 'b'},
       {.name = "help", .has_arg = 0, .flag = NULL, .val = 'h'}};
@@ -253,28 +259,27 @@ void parseCommandArgs(int argc, char *argw[]) {
   while ((arg = getopt_long(argc, argw, "bh", options, &longindex)) != -1) {
     switch (arg) {
     case '?':
-      logger::warning()
-          << "Unrecognized option: " << optarg << std::endl;
+      logger::warning() << "Unrecognized option: " << optarg << std::endl;
       break;
     case 'b':
       globals::useBinaryFormat = true;
       logger::info() << "Binary format to loading enabled";
-			break;
-		case 'h':
-			std::cout << "flags b and h. see ost -h for details"<< '\n';
-			exit(0);
-			break;
+      break;
+    case 'h':
+      std::cout << "flags b and h. see ost -h for details" << '\n';
+      exit(0);
+      break;
     default:
-      logger::warning()
-          << "Given option: [" << char(arg) << "] can't be processed";
+      logger::warning() << "Given option: [" << char(arg)
+                        << "] can't be processed";
     }
   }
   delete[] options;
 }
 
 int main(int argc, char *argw[]) {
-	globals::enableBreakpoints = true;
-	parseCommandArgs(argc, argw);
+  globals::enableBreakpoints = true;
+  parseCommandArgs(argc, argw);
   Manager manager;
   std::cout << preview;
   std::string line;

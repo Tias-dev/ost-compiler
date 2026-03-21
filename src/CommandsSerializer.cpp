@@ -1,17 +1,18 @@
 #ifndef COMMANDS_SERIALIZER_HPP_
 #define COMMANDS_SERIALIZER_HPP_
 #include "Compiler.hpp"
-#include "FilePosition.hpp"
-#include "Tu4Command.hpp"
-#include "globals.hpp"
-#include "utils.hpp"
-#include <cstddef>
+
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
+
+#include "FilePosition.hpp"
+#include "Tu4Command.hpp"
+#include "globals.hpp"
+#include "utils.hpp"
 
 namespace compiler::serializer {
 struct SerializePreambule {
@@ -27,7 +28,7 @@ struct FileNameEntry {
 };
 
 struct CommandEntry {
-  size_t q0, q;
+  SIZE_T q0, q;
   char checkedLetter, action;
 };
 
@@ -35,7 +36,7 @@ struct DebugCommandEntry : public CommandEntry {
   FileRange range;
 };
 
-CommandEntry toEntry(const tu4::tu4_union<size_t, char> &command) {
+CommandEntry toEntry(const tu4::tu4_union<SIZE_T, char> &command) {
   CommandEntry result{.q0 = command.q0(),
                       .q = command.q(),
                       .checkedLetter = command.letterToCheck()};
@@ -49,7 +50,7 @@ CommandEntry toEntry(const tu4::tu4_union<size_t, char> &command) {
 }
 
 void serialize(const commands_type &commands,
-               const bimap<std::string, size_t> &fileCodes,
+               const bimap<std::string, SIZE_T> &fileCodes,
                const std::string &outFileName, bool useBinaryFormat) {
   if (!useBinaryFormat) {
     std::ofstream fout(outFileName);
@@ -105,24 +106,27 @@ void serialize(const commands_type &commands,
     fwrite(commandEntries.data(), sizeof(CommandEntry), preambule.nCommands,
            fout);
   }
-	fclose(fout);
+  fclose(fout);
 }
 
 commands_type deserialize(const std::string &fileName, bool useBinaryFormat) {
   commands_type commands;
   auto &globalFileCodesBimap = FilePosition::fileCodesBimap();
-	bimap<std::string, size_t> fileCodesBimap;
-  std::map<size_t, size_t> newToOldFileCodes;
+  bimap<std::string, SIZE_T> fileCodesBimap;
+  std::map<SIZE_T, SIZE_T> newToOldFileCodes;
 
   if (!useBinaryFormat) {
     {
       std::ifstream fin(fileName);
       std::string line, temp;
-      size_t code, indexBegin = 0, indexEnd;
+      SIZE_T code, indexBegin = 0, indexEnd;
       std::getline(fin, line);
-			if(globals::enableBreakpoints && line != globals::debugFirstLine) 
-				throw std::logic_error(strfast() << "Trying to load file [" << fileName << "] compiled without debug support(-g) to program that needs debug support!");
-				
+      if (globals::enableBreakpoints && line != globals::debugFirstLine)
+        throw std::logic_error(strfast()
+                               << "Trying to load file [" << fileName
+                               << "] compiled without debug support(-g) to "
+                                  "program that needs debug support!");
+
       if (line == globals::debugFirstLine)
         globals::enableBreakpoints = true;
       std::getline(fin, line);
@@ -138,14 +142,14 @@ commands_type deserialize(const std::string &fileName, bool useBinaryFormat) {
         }
 
         auto fileName = line.substr(indexEnd);
-				fileCodesBimap.add(fileName, code);
+        fileCodesBimap.add(fileName, code);
       }
     }
     std::ifstream fin(fileName);
     if (!fin.is_open())
       throw std::invalid_argument(strfast()
                                   << "Can't open file [" << fileName << "]");
-    auto commandsRaw = loadMultiple<size_t, char>(fin);
+    auto commandsRaw = loadMultiple<SIZE_T, char>(fin);
     for (const auto &command : commandsRaw)
       commands.push_back(command);
   } else {
@@ -157,9 +161,9 @@ commands_type deserialize(const std::string &fileName, bool useBinaryFormat) {
       throw std::invalid_argument(strfast()
                                   << "Can't open file [" << fileName << "]");
     fread(&preambule, sizeof(preambule), 1, fin);
-    size_t buffsize = 100;
+    SIZE_T buffsize = 100;
     char *buffer = (char *)malloc(sizeof(char) * buffsize);
-    for (size_t i = 0; i < preambule.nUsedFiles; ++i) {
+    for (SIZE_T i = 0; i < preambule.nUsedFiles; ++i) {
       fread(&fileNameEntry.code, sizeof(fileNameEntry.code), 1, fin);
       fread(&fileNameEntry.strlen, sizeof(fileNameEntry.strlen), 1, fin);
 
@@ -171,7 +175,7 @@ commands_type deserialize(const std::string &fileName, bool useBinaryFormat) {
       fread(buffer, sizeof(char), fileNameEntry.strlen, fin);
       buffer[fileNameEntry.strlen] = 0;
       std::string fileName{buffer};
-			fileCodesBimap.add(fileName, fileNameEntry.code);
+      fileCodesBimap.add(fileName, fileNameEntry.code);
     }
     free(buffer);
     if (preambule.isBreakpointsEnabled) {
@@ -180,59 +184,63 @@ commands_type deserialize(const std::string &fileName, bool useBinaryFormat) {
             preambule.nCommands, fin);
       for (const auto &entry : commandEntries) {
         if (entry.action == '<') {
-          tu4::Tu4Move<size_t, char> command{entry.q0, entry.checkedLetter,
+          tu4::Tu4Move<SIZE_T, char> command{entry.q0, entry.checkedLetter,
                                              tu4::MoveDirection::LEFT, entry.q,
                                              false};
           command.setBreakpoint(entry.range);
           commands.emplace_back(command);
         } else if (entry.action == '>') {
-          tu4::Tu4Move<size_t, char> command{entry.q0, entry.checkedLetter,
+          tu4::Tu4Move<SIZE_T, char> command{entry.q0, entry.checkedLetter,
                                              tu4::MoveDirection::RIGHT, entry.q,
                                              false};
           command.setBreakpoint(entry.range);
           commands.emplace_back(command);
         } else {
-          tu4::Tu4SetLetter<size_t, char> command{entry.q0, entry.checkedLetter,
+          tu4::Tu4SetLetter<SIZE_T, char> command{entry.q0, entry.checkedLetter,
                                                   entry.action, entry.q, false};
           command.setBreakpoint(entry.range);
           commands.emplace_back(command);
         }
       }
     } else {
-			if(globals::enableBreakpoints) 
-				throw std::logic_error(strfast() << "Trying to load file [" << fileName << "] compiled without debug support(-g) to program that needs debug support!");
+      if (globals::enableBreakpoints)
+        throw std::logic_error(strfast()
+                               << "Trying to load file [" << fileName
+                               << "] compiled without debug support(-g) to "
+                                  "program that needs debug support!");
       std::vector<CommandEntry> commandEntries(preambule.nCommands);
       fread(commandEntries.data(), sizeof(CommandEntry), preambule.nCommands,
             fin);
       for (const auto &entry : commandEntries) {
         if (entry.action == '<') {
-          tu4::Tu4Move<size_t, char> command{entry.q0, entry.checkedLetter,
+          tu4::Tu4Move<SIZE_T, char> command{entry.q0, entry.checkedLetter,
                                              tu4::MoveDirection::LEFT, entry.q,
                                              false};
           commands.push_back({command});
         } else if (entry.action == '>') {
-          tu4::Tu4Move<size_t, char> command{entry.q0, entry.checkedLetter,
+          tu4::Tu4Move<SIZE_T, char> command{entry.q0, entry.checkedLetter,
                                              tu4::MoveDirection::RIGHT, entry.q,
                                              false};
           commands.push_back({command});
         } else {
-          tu4::Tu4SetLetter<size_t, char> command{entry.q0, entry.checkedLetter,
+          tu4::Tu4SetLetter<SIZE_T, char> command{entry.q0, entry.checkedLetter,
                                                   entry.action, entry.q, false};
           commands.push_back({command});
         }
       }
     }
-		fclose(fin);
+    fclose(fin);
   }
 
   if (std::begin(commands)->debugBreakpoint().has_value()) {
-		const auto & fileEntries = fileCodesBimap.forward();
-		for(const auto & fileEntry : fileEntries) {
-			if(!globalFileCodesBimap.contains(fileEntry.first)) 
-				globalFileCodesBimap.add(fileEntry.first, globalFileCodesBimap.size());
-			newToOldFileCodes[fileEntry.second] = globalFileCodesBimap[fileEntry.first];
-		}
-		
+    const auto &fileEntries = fileCodesBimap.forward();
+    for (const auto &fileEntry : fileEntries) {
+      if (!globalFileCodesBimap.contains(fileEntry.first))
+        globalFileCodesBimap.add(fileEntry.first, globalFileCodesBimap.size());
+      newToOldFileCodes[fileEntry.second] =
+          globalFileCodesBimap[fileEntry.first];
+    }
+
     for (auto &command : commands) {
       auto debugBreakpoint = *command.debugBreakpoint();
       debugBreakpoint.fileCode = newToOldFileCodes[debugBreakpoint.fileCode];

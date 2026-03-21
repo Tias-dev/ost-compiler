@@ -36,7 +36,7 @@ const char *help =
 		"-b, --use-binary-format : use binary format for loading program\n";
 
 void parseCommandArgs(int argc, char *argw[]) {
-  size_t nopts = 3;
+  SIZE_T nopts = 3;
   option *options = new option[nopts]{
       {.name = "use-binary-format", .has_arg = 0, .flag = NULL, .val = 'b'},
       {.name = "help", .has_arg = 0, .flag = NULL, .val = 'h'}};
@@ -71,14 +71,14 @@ int main(int argc, char *argw[]) {
     return 1;
   }
 
-  size_t cursorExpected;
+  SIZE_T cursorExpected;
 
 	std::string fileName = argw[1], testFileName = argw[2];
 	parseCommandArgs(argc, argw);
 	auto commands = compiler::serializer::deserialize(fileName, globals::useBinaryFormat);
 
 	std::ifstream testsFile(argw[2]);
-	size_t i_test = 1;
+	SIZE_T i_test = 1;
 	std::string given = "", expected, delimeter;
 
 	bool wasErrors = false;
@@ -111,7 +111,7 @@ int main(int argc, char *argw[]) {
 				expectedLine.shiftLeft();
 		}
 			
-		tu4run::Tu4Runner<size_t, char> runner{tu4run::Line<char>(given), commands};
+		tu4run::Tu4Runner<SIZE_T, char> runner{tu4run::Line<char>(given), commands};
 		runner.loop();
 		if(runner.line() != expectedLine) {
 			std::cout << i_test<< ") Error:" << std::endl;

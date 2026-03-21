@@ -13,7 +13,7 @@ FileRoller::FileRoller(std::shared_ptr<std::string> fileName)
   if (!file.is_open())
     throw std::runtime_error("Given file name can't be opened");
 
-  size_t index = 0;
+  SIZE_T index = 0;
   while (!file.eof()) {
     char c = file.get();
     if (c == '\n')
@@ -22,8 +22,8 @@ FileRoller::FileRoller(std::shared_ptr<std::string> fileName)
   }
 }
 
-FileRoller::Position FileRoller::convert(size_t index) const {
-  size_t i = 0;
+FileRoller::Position FileRoller::convert(SIZE_T index) const {
+  SIZE_T i = 0;
   while (newLines_[i] < index)
     ++i;
 
@@ -34,15 +34,15 @@ FileRoller::Position FileRoller::convert(size_t index) const {
 std::string FilePosition::to_string() const {
   return strfast() << fileCodesBimap_[code_] << ":" << row_ << ":" << column_;
 }
-bimap<std::string, size_t> FilePosition::fileCodesBimap_ = {};
-bimap<std::string, size_t> &FilePosition::fileCodesBimap() {
+bimap<std::string, SIZE_T> FilePosition::fileCodesBimap_ = {};
+bimap<std::string, SIZE_T> &FilePosition::fileCodesBimap() {
 	return fileCodesBimap_;
 }
 
 FilePosition FilePosition::from_string(const std::string &s) {
   std::string fileName;
-  size_t row, col;
-  size_t i = 0, j = 0;
+  SIZE_T row, col;
+  SIZE_T i = 0, j = 0;
   while (i < s.size() && s[i] != ':')
     ++i;
   if (i == s.size())
@@ -66,7 +66,7 @@ FilePosition FilePosition::from_string(const std::string &s) {
 }
 FileRange FileRange::fromString(const std::string &s) {
 		char temp;
-		size_t code;
+		SIZE_T code;
 		std::pair<row_t, column_t> begin, end;
 		std::istringstream ss(s);
 		ss >> code >> temp >> begin.first >> temp >> begin.second >> temp >> end.first >> temp >> end.second;

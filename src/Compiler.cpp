@@ -15,17 +15,17 @@
 using namespace ast;
 
 class StateManager {
-  size_t currentState_ = 0;
+  SIZE_T currentState_ = 0;
 
 public:
   void reset() { currentState_ = 0; };
   // if first call or after reset() return 0
   // else return value returned by last nextState() function call
-  size_t currentState() const { return currentState_; }
+  SIZE_T currentState() const { return currentState_; }
 
   // if nextState not locked return new uniq state
   // else return locked nextState and unlock it
-  size_t nextState() { return ++currentState_; }
+  SIZE_T nextState() { return ++currentState_; }
 
   void shift(long amount) { currentState_ += amount; }
 };
@@ -82,14 +82,14 @@ commands_type MT::Call::to4_impl(const compiler::Alphabet<char> &alphabet) {
   definition->end_ = end();
   if (globals::enableBreakpoints) {
     globals::breakpointer->onEnter(FileRange::fromPositions(begin(), end()));
-    size_t qCurrent = states.currentState(), qNext = states.nextState();
+    SIZE_T qCurrent = states.currentState(), qNext = states.nextState();
     for (auto &letter :
          alphabet) // Dummy state for register mt's call by debugger
       result.push_back(
-          {tu4::Tu4SetLetter<size_t>{qCurrent, letter, letter, qNext}});
+          {tu4::Tu4SetLetter<SIZE_T>{qCurrent, letter, letter, qNext}});
   }
 
-  for (size_t i = 0; i < pow_; ++i) {
+  for (SIZE_T i = 0; i < pow_; ++i) {
     auto subCommands = definition->to4(alphabet);
     result.extend(subCommands);
   }
@@ -102,13 +102,13 @@ commands_type MT::Call::to4_impl(const compiler::Alphabet<char> &alphabet) {
 
 commands_type
 MT::Definition::to4_impl(const compiler::Alphabet<char> &alphabet0) {
-  static std::map<size_t, size_t> definedMT;
+  static std::map<SIZE_T, SIZE_T> definedMT;
   commands_type result;
 
   if (definedMT.contains(id_)) {
-    size_t outQ = definedMT[id_];
+    SIZE_T outQ = definedMT[id_];
     for (auto &letter : alphabet0)
-      result.push_back({tu4::Tu4SetLetter<size_t>{states.currentState(), letter,
+      result.push_back({tu4::Tu4SetLetter<SIZE_T>{states.currentState(), letter,
                                                   letter, outQ}});
     states.nextState();
     return result;
@@ -154,12 +154,12 @@ void throwBranchRedifinitionError(Branch *branch, NodeBase *statement,
 
 commands_type IfFi::to4_impl(const compiler::Alphabet<char> &alphabet) {
   commands_type result;
-  size_t qBegin = states.currentState();
+  SIZE_T qBegin = states.currentState();
   compiler::Alphabet<char> used{' ', false};
-  std::list<size_t> endStates;
+  std::list<SIZE_T> endStates;
 
   for (auto &branch : ifBranches_) {
-    size_t qBranchBegin = states.nextState();
+    SIZE_T qBranchBegin = states.nextState();
     if (branch->isAnyChar()) {
       for (auto &letter : alphabet) { // Set condition check
         if (letter == branch->letterToCheck())
@@ -168,7 +168,7 @@ commands_type IfFi::to4_impl(const compiler::Alphabet<char> &alphabet) {
           throwBranchRedifinitionError(branch, this, letter);
 
         result.push_back(
-            {tu4::Tu4SetLetter<size_t>{qBegin, letter, letter, qBranchBegin}});
+            {tu4::Tu4SetLetter<SIZE_T>{qBegin, letter, letter, qBranchBegin}});
         used.insert(letter);
       }
     } else { // Set condition check
@@ -177,7 +177,7 @@ commands_type IfFi::to4_impl(const compiler::Alphabet<char> &alphabet) {
       used.insert(branch->letterToCheck());
 
       result.push_back(
-          {tu4::Tu4SetLetter<size_t>{qBegin, branch->letterToCheck(),
+          {tu4::Tu4SetLetter<SIZE_T>{qBegin, branch->letterToCheck(),
                                      branch->letterToCheck(), qBranchBegin}});
     }
     // Set branch actions
@@ -188,10 +188,10 @@ commands_type IfFi::to4_impl(const compiler::Alphabet<char> &alphabet) {
 
   auto notUsed = alphabet / used;
   if (elseBranch_) {
-    size_t qBranchBegin = states.nextState();
+    SIZE_T qBranchBegin = states.nextState();
     for (auto &letter : notUsed) 
       result.push_back(
-          {tu4::Tu4SetLetter<size_t>(qBegin, letter, letter, qBranchBegin)});
+          {tu4::Tu4SetLetter<SIZE_T>(qBegin, letter, letter, qBranchBegin)});
     notUsed.clear();
 
     auto subCommands = elseBranch_->to4(alphabet);
@@ -199,7 +199,7 @@ commands_type IfFi::to4_impl(const compiler::Alphabet<char> &alphabet) {
     result.extend(subCommands);
   }
 
-  size_t qEnd = states.nextState();
+  SIZE_T qEnd = states.nextState();
   // Set exiting after IF ... FI statement
   for (const auto &endState : endStates)
 		result.overrideEndState(endState, qEnd);
@@ -207,18 +207,18 @@ commands_type IfFi::to4_impl(const compiler::Alphabet<char> &alphabet) {
 
 	// handle other letters
   for (const auto &letter : notUsed)
-    result.push_back({tu4::Tu4SetLetter<size_t>(qBegin, letter, letter, qEnd)});
+    result.push_back({tu4::Tu4SetLetter<SIZE_T>(qBegin, letter, letter, qEnd)});
 
   return result;
 }
 
 commands_type DoOd::to4_impl(const compiler::Alphabet<char> &alphabet) {
   commands_type result;
-  size_t qBegin = states.currentState();
+  SIZE_T qBegin = states.currentState();
   compiler::Alphabet<char> used{'_', false};
 
   for (auto &branch : branches_) {
-    size_t qBranchBegin = states.nextState();
+    SIZE_T qBranchBegin = states.nextState();
     if (branch->isAnyChar()) { // Set condition check
       for (auto &letter : alphabet) {
         if (letter == branch->letterToCheck())
@@ -229,7 +229,7 @@ commands_type DoOd::to4_impl(const compiler::Alphabet<char> &alphabet) {
         used.insert(letter);
 
         result.push_back(
-            {tu4::Tu4SetLetter<size_t>(qBegin, letter, letter, qBranchBegin)});
+            {tu4::Tu4SetLetter<SIZE_T>(qBegin, letter, letter, qBranchBegin)});
       }
     } else { // Set condition check
       if (used.contains(branch->letterToCheck()))
@@ -237,7 +237,7 @@ commands_type DoOd::to4_impl(const compiler::Alphabet<char> &alphabet) {
       used.insert(branch->letterToCheck());
 
       result.push_back(
-          {tu4::Tu4SetLetter<size_t>(qBegin, branch->letterToCheck(),
+          {tu4::Tu4SetLetter<SIZE_T>(qBegin, branch->letterToCheck(),
                                      branch->letterToCheck(), qBranchBegin)});
     }
     // Set branch actions
@@ -246,12 +246,12 @@ commands_type DoOd::to4_impl(const compiler::Alphabet<char> &alphabet) {
 		result.overrideEndState(states.currentState(), qBegin);
   }
 
-  size_t qEnd = states.nextState();
+  SIZE_T qEnd = states.nextState();
 	result.executeOverrides();
 	
   auto notUsed = alphabet / used; // Set exit for other letters
   for (auto &letter : notUsed)
-    result.push_back({tu4::Tu4SetLetter<size_t>(qBegin, letter, letter, qEnd)});
+    result.push_back({tu4::Tu4SetLetter<SIZE_T>(qBegin, letter, letter, qEnd)});
 
   if (notUsed.empty())
     logger::warning()
@@ -288,11 +288,11 @@ commands_type ElseBranch::to4_impl(const compiler::Alphabet<char> &alphabet) {
 
 commands_type SetLetter::to4_impl(const compiler::Alphabet<char> &alphabet) {
   commands_type result;
-  size_t qBegin = states.currentState(), qEnd = states.nextState();
+  SIZE_T qBegin = states.currentState(), qEnd = states.nextState();
 
   for (auto &letter : alphabet)
     result.push_back(
-        {tu4::Tu4SetLetter<size_t>{qBegin, letter, letter_, qEnd}});
+        {tu4::Tu4SetLetter<SIZE_T>{qBegin, letter, letter_, qEnd}});
 
   return result;
 }
@@ -305,12 +305,12 @@ commands_type Tree::to4() {
   for (auto &c : commands)
     alphabet.insert(c.letterToCheck());
 
-  size_t qTerm = states.currentState();
+  SIZE_T qTerm = states.currentState();
   logger::debug() << "Terminal state: " << qTerm;
 
   for (auto &letter : alphabet)
     commands.push_back(
-        {tu4::Tu4SetLetter<size_t>(qTerm, letter, letter, qTerm)});
+        {tu4::Tu4SetLetter<SIZE_T>(qTerm, letter, letter, qTerm)});
 
   return commands;
 }
@@ -327,9 +327,9 @@ public:
 
   commands_type to4_impl(const compiler::Alphabet<char> &alphabet) override {
     commands_type result;
-    size_t qBegin = states.currentState(), qEnd = states.nextState();
+    SIZE_T qBegin = states.currentState(), qEnd = states.nextState();
     for (auto &letter : alphabet)
-      result.push_back({tu4::Tu4Move<size_t>{qBegin, letter, dir_, qEnd}});
+      result.push_back({tu4::Tu4Move<SIZE_T>{qBegin, letter, dir_, qEnd}});
 
     return result;
   }
@@ -338,7 +338,7 @@ public:
   }
 };
 
-std::map<size_t, NodeBase *> MT::definitions_{
+std::map<SIZE_T, NodeBase *> MT::definitions_{
     {0, new MoveMT{tu4::MoveDirection::LEFT}},
     {1, new MoveMT{tu4::MoveDirection::RIGHT}}};
 

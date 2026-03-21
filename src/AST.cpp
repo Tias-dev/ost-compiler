@@ -25,7 +25,7 @@ Tree::Tree(token::tokens_list &tokens, const std::string &fileName)
   } catch (error::PositionErrorBase &e) {
     logger::error() << "Error in file: " << e.position().to_string() << '\n' << e.what() << std::endl;
     auto &position = e.position();
-    size_t width = 60;
+    SIZE_T width = 60;
     fileRollAround(position.fileName(), position, width);
     throw &e;
   }
@@ -33,8 +33,8 @@ Tree::Tree(token::tokens_list &tokens, const std::string &fileName)
     throwMismatch("End of file", *std::begin(tokens));
 }
 
-bimap<std::string, size_t> MT::namesTable_{{{"l", 0}, {"r", 1}}};
-size_t MT::currentId_ = MT::namesTable_.size();
+bimap<std::string, SIZE_T> MT::namesTable_{{{"l", 0}, {"r", 1}}};
+SIZE_T MT::currentId_ = MT::namesTable_.size();
 
 MT::MT(token::tokens_list &tokens) : NodeBase(ExprType::MT) {
   init(tokens);
@@ -223,8 +223,8 @@ void MT::init(token::tokens_list &tokens) {
   end_ = node_->end();
 }
 
-std::optional<size_t> toNumber(const std::string &s) {
-  size_t buffer = 0;
+std::optional<SIZE_T> toNumber(const std::string &s) {
+  SIZE_T buffer = 0;
   for (auto &c : s) {
     if (c < '0' || c > '9')
       return std::nullopt;
@@ -602,8 +602,8 @@ void IfFi::init(token::tokens_list &tokens) {
 
 void Tree::print(std::ostream &os) { root_->print(os, 0); }
 
-void NodeBase::print(std::ostream &os, size_t depth) {
-  for (size_t i = 0; i < depth; ++i)
+void NodeBase::print(std::ostream &os, SIZE_T depth) {
+  for (SIZE_T i = 0; i < depth; ++i)
     os << "  ";
   os << toString() << " begin: " << begin_.to_string()
      << " end: " << end_.to_string() << std::endl;

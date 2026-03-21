@@ -31,7 +31,7 @@ public:
   NodeBase(ExprType type) : type_(type) {}
 
   virtual std::string toString() = 0;
-  void print(std::ostream &os, size_t depth = 0);
+  void print(std::ostream &os, SIZE_T depth = 0);
   virtual commands_type to4(const compiler::Alphabet<char> &alphabet) {
     globals::breakpointer->onEnter(FileRange::fromPositions(begin(), end()));
     auto result = to4_impl(alphabet);
@@ -124,20 +124,20 @@ class MT : public NodeBase {
   enum class Usage { OTHER, DEFINITION, LIB, CALL };
 
   class Call : public NodeBase {
-    size_t id_;
-    size_t pow_ = 1;
+    SIZE_T id_;
+    SIZE_T pow_ = 1;
     void init(token::tokens_list &tokens) override;
 
   public:
     Call(token::tokens_list &tokens);
 
     std::string toString() override;
-    size_t id() { return id_; }
+    SIZE_T id() { return id_; }
     commands_type to4_impl(const compiler::Alphabet<char> &alphabet) override;
   };
 
   class Lib : public NodeBase {
-    size_t id_;
+    SIZE_T id_;
     void init(token::tokens_list &tokens) override;
     std::optional<commands_type> cache_ = std::nullopt;
 
@@ -145,12 +145,12 @@ class MT : public NodeBase {
     Lib(token::tokens_list &tokens);
 
     std::string toString() override;
-    size_t id() { return id_; }
+    SIZE_T id() { return id_; }
     commands_type to4_impl(const compiler::Alphabet<char> &alphabet) override;
   };
 
   class Definition : public NodeBase {
-    size_t id_;
+    SIZE_T id_;
     void init(token::tokens_list &tokens) override;
     Alphabet *alphabet_;
     std::optional<commands_type> cache_ = std::nullopt;
@@ -158,7 +158,7 @@ class MT : public NodeBase {
   public:
     Definition(token::tokens_list &tokens);
 
-    size_t id() { return id_; }
+    SIZE_T id() { return id_; }
     std::string toString() override;
     commands_type to4_impl(const compiler::Alphabet<char> &alphabet) override;
   };
@@ -166,9 +166,9 @@ class MT : public NodeBase {
   Usage usage_;
   NodeBase *node_;
   void init(token::tokens_list &tokens) override;
-  static bimap<std::string, size_t> namesTable_;
-  static std::map<size_t, NodeBase *> definitions_;
-  static size_t currentId_;
+  static bimap<std::string, SIZE_T> namesTable_;
+  static std::map<SIZE_T, NodeBase *> definitions_;
+  static SIZE_T currentId_;
 
   friend class Tree;
 

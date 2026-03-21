@@ -7,24 +7,24 @@
 
 class ICharStream {
 	public:
-		virtual size_t position() = 0;
+		virtual SIZE_T position() = 0;
 		virtual ICharStream & operator>>(char &) = 0;
 		virtual ICharStream & operator<<(char) = 0;
 		virtual bool eof() = 0;
-		virtual size_t column() = 0;
-		virtual size_t row() = 0;
+		virtual SIZE_T column() = 0;
+		virtual SIZE_T row() = 0;
 };
 
 class CharStream : public ICharStream {
 	std::stack<char> buffer_ = {};
-	std::stack<size_t> linesLen_ = {};
-	size_t position_ = 0;
-	size_t row_ = 1, column_ = 1;
+	std::stack<SIZE_T> linesLen_ = {};
+	SIZE_T position_ = 0;
+	SIZE_T row_ = 1, column_ = 1;
 	std::istream & is_;
 	public:
 	CharStream(std::istream & is) : is_(is) {}
 	
-	size_t position() override {return position_;}
+	SIZE_T position() override {return position_;}
 	ICharStream & operator>>(char &c) override {
 		++position_;
 		if(!buffer_.empty()) {
@@ -58,10 +58,10 @@ class CharStream : public ICharStream {
 	bool eof() override {
 		return buffer_.empty() && is_.eof();
 	}
-	size_t row() override {
+	SIZE_T row() override {
 		return row_;
 	}
-	size_t column() override {
+	SIZE_T column() override {
 		return column_;
 	}
 };

@@ -20,7 +20,7 @@ template <class... TS> struct overloads : TS... {
 };
 
 void fileRollAround(const std::string &fileName, const FilePosition &position,
-                    size_t width);
+                    SIZE_T width);
 
 std::string strip(const std::string &s);
 std::list<std::string> split(const std::string &s, char sep = ' ',

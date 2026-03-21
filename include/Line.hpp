@@ -9,7 +9,7 @@ namespace tu4run {
 template <typename CharT = char>
 class Line {
 	std::string data_;
-	size_t cursor_;
+	SIZE_T cursor_;
 	CharT lambda_;
 public:
 	Line(const std::string & data, CharT lambda =  CharT('_'))
@@ -56,7 +56,7 @@ public:
 		return data_;
 	}
 
-	size_t cursor() const {
+	SIZE_T cursor() const {
 		return cursor_;
 	}
 
@@ -66,14 +66,14 @@ public:
 
 	bool operator==(const Line<CharT> & other) const {
 		auto & line1 = line(), &line2 = other.line();
-		size_t minLen = std::min(line1.size(), line2.size());
-		for(size_t i = 0; i < minLen; ++i) 
+		SIZE_T minLen = std::min(line1.size(), line2.size());
+		for(SIZE_T i = 0; i < minLen; ++i) 
 			if(line1[i] != line2[i]) 
 				return false;
-		for(size_t i = minLen; i < line1.size(); ++i) 
+		for(SIZE_T i = minLen; i < line1.size(); ++i) 
 			if(line1[i] != lambda_) 
 				return false;	
-		for(size_t i = minLen; i < line2.size(); ++i) 
+		for(SIZE_T i = minLen; i < line2.size(); ++i) 
 			if(line2[i] != other.lambda_) 
 				return false;	
 			
@@ -93,7 +93,7 @@ std::ostream & operator<<(std::ostream & os, const tu4run::Line<CharT> & line) {
 	auto strline = line.line();
 	auto begin = std::begin(strline);
 	auto end = std::prev(std::end(strline));
-	size_t cursorPos = strline.size() - 1;
+	SIZE_T cursorPos = strline.size() - 1;
 	while(end != begin && *end == '_') {
 		--end;
 		--cursorPos;
@@ -104,8 +104,8 @@ std::ostream & operator<<(std::ostream & os, const tu4run::Line<CharT> & line) {
 		++end, ++cursorPos;
 
 	os << std::string_view(begin, end) << "_\n";
-	size_t cursor = line.cursor();
-	for(size_t _ = 0; _ < cursor; ++_) 
+	SIZE_T cursor = line.cursor();
+	for(SIZE_T _ = 0; _ < cursor; ++_) 
 		os << space;
 	os << cursorMark;
 

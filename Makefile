@@ -9,9 +9,11 @@ release debug: %: cmake-%
 
 cmake-debug: build-debug
 	cmake -S . -B $< -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_EXPORT_COMPILE_COMMANDS=1
+	cp ./build-debug/compile_commands.json ./
 
 cmake-release: build-release
 		cmake -S . -B $< -DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_EXPORT_COMPILE_COMMANDS=1
+	cp ./build-release/compile_commands.json ./
 
 build-debug build-release:
 	mkdir $@

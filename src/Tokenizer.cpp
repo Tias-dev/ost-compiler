@@ -48,7 +48,7 @@ token::token_union read_token(ICharStream &stream, const IFileRoller & roller) {
   if (!stream.eof())
     stream << c;
 
-  size_t i;
+  SIZE_T i;
   for (i = 0; i < buffer.size(); ++i)
     if (kwPoint->canGoTo(buffer[i]))
       kwPoint->goTo(buffer[i]);
