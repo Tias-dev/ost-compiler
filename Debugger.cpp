@@ -1,11 +1,11 @@
-#include <cstdlib>
-#include <fstream>
 #include <getopt.h>
-
-#include <iostream>
-#include <iterator>
 #include <limits.h>
 #include <string.h>
+
+#include <cstdlib>
+#include <fstream>
+#include <iostream>
+#include <iterator>
 #include <string>
 
 #include "FilePosition.hpp"
@@ -17,7 +17,7 @@
 #include "trie.hpp"
 #include "utils.hpp"
 
-const char *preview =
+const char* preview =
     "ost programm debugger\n"
     "input: 'run <program name .tu4>' to start debug(program must be "
     "compiled "
@@ -55,7 +55,7 @@ struct FileData {
   SIZE_T nColumn = 0;
   SIZE_T nLine = std::numeric_limits<SIZE_T>::max();
 };
-void printState(const tu4run::Tu4Runner<SIZE_T, char> &runner) {
+void printState(const tu4run::Tu4Runner<SIZE_T, char>& runner) {
   static std::map<std::string, FileData> filesData;
 
   auto command = runner.nextCommand();
@@ -65,19 +65,17 @@ void printState(const tu4run::Tu4Runner<SIZE_T, char> &runner) {
                     << (strfast() << command).bump() << std::endl;
     return;
   }
-  const std::string &fileName =
+  const std::string& fileName =
       FilePosition::fileCodesBimap()[debugInfo.value().fileCode];
   std::string line;
 
   const std::pair<row_t, column_t> begin = debugInfo.value().begin,
                                    end = debugInfo.value().end,
                                    *position = &begin;
-  if (runner.terminated())
-    position = &end;
+  if (runner.terminated()) position = &end;
 
-  if (!filesData.contains(fileName))
-    filesData[fileName] = FileData{};
-  FileData &fdata = filesData[fileName];
+  if (!filesData.contains(fileName)) filesData[fileName] = FileData{};
+  FileData& fdata = filesData[fileName];
 
   if (fdata.nLine > position->first) {
     if (!fdata.file.is_open())
@@ -94,18 +92,15 @@ void printState(const tu4run::Tu4Runner<SIZE_T, char> &runner) {
     ++fdata.nLine;
   }
 
-  for (auto &c : line)
-    if (c == '\t')
-      c = ' ';
+  for (auto& c : line)
+    if (c == '\t') c = ' ';
 
   std::cout << fdata.nLine - 1 << " :" << line << std::endl;
   std::cout << fdata.nLine - 1 << " :";
   if (!runner.terminated())
-    for (SIZE_T i = 0; i + 1 < position->second; ++i)
-      std::cout << " ";
+    for (SIZE_T i = 0; i + 1 < position->second; ++i) std::cout << " ";
   SIZE_T endIndex = (begin.first == end.first ? end.second : line.size());
-  for (SIZE_T i = position->second; i < endIndex; ++i)
-    std::cout << "^";
+  for (SIZE_T i = position->second; i < endIndex; ++i) std::cout << "^";
   std::cout << std::endl;
   std::cout << "command: " << command << std::endl;
 }
@@ -128,7 +123,7 @@ class Manager {
     (*runner_).reset(tu4run::Line<char>{line});
   }
 
-  void run(const std::string &fileName) {
+  void run(const std::string& fileName) {
     std::string line;
     std::cout << "Input line: ";
     std::getline(std::cin, line);
@@ -139,8 +134,7 @@ class Manager {
   }
 
   void step(SIZE_T n = 1) {
-    while (n-- >= 1 && !runner_->terminated())
-      runner_->step();
+    while (n-- >= 1 && !runner_->terminated()) runner_->step();
   }
 
   void go() {
@@ -150,7 +144,7 @@ class Manager {
         std::cout << "End" << std::endl;
       else
         std::cout << "Stop at breakpoint" << std::endl;
-    } catch (error::Tu4RunError<> &e) {
+    } catch (error::Tu4RunError<>& e) {
       logger::error() << e.what();
       std::cout << "Forsing restart via error while executing\n";
       restart();
@@ -172,16 +166,13 @@ class Manager {
     if (!breakpoints_.lineBreakpoints->contains(fileCode))
       (*breakpoints_.lineBreakpoints)[fileCode] = {};
 
-    if (nLine > 0)
-      (*breakpoints_.lineBreakpoints)[fileCode].add(nLine);
+    if (nLine > 0) (*breakpoints_.lineBreakpoints)[fileCode].add(nLine);
   }
 
-  void processLine_impl(const std::list<std::string> &words) {
+  void processLine_impl(const std::list<std::string>& words) {
     if (words.size() == 0) {
-      if (!runner_)
-        return;
-      if (!runner_->terminated())
-        runner_->step();
+      if (!runner_) return;
+      if (!runner_->terminated()) runner_->step();
       return;
     }
 
@@ -190,54 +181,55 @@ class Manager {
     Command command = commands_.find(*word).value_or(Command::NONE);
 
     switch (command) {
-    case Command::NONE:
-      std::cout << "Error: undefined command: " << *word << std::endl;
-      break;
-    case Command::RUN:
-      if (words.size() < 2) {
-        logger::warning() << "Error: file name to run not given";
-        return;
-      }
-      run(*(++word));
-      break;
-    case Command::STEP:
-      if (words.size() > 2 && *(++word) == "-n")
-        step(atoll(std::next(word)->c_str()));
-      else
-        step(1);
-      break;
-    case Command::GO:
-      go();
-      break;
-    case Command::B:
-      ++word;
-      if (word == std::end(words)) {
-        std::cout << "Add -q or -l flag to set type of breakpoint" << std::endl;
+      case Command::NONE:
+        std::cout << "Error: undefined command: " << *word << std::endl;
         break;
-      }
-      if (*word == "-q") {
-        addBreakpointState(atoll(std::next(word)->c_str()));
-      } else if (*word == "-l") {
-        SIZE_T nLine = atoll(std::next(word)->c_str());
-        addBreakpointLine(nLine);
-      } else {
-        std::cout << "Warning: unrecognized breakpoints type. Awaited -q or "
-                     "-l. Given: "
-                  << *word << std::endl;
-      }
-      break;
-    case Command::RESTART:
-      restart();
-      break;
-    default:
-      std::cout << "Warning: command not supported: " << *word << std::endl;
+      case Command::RUN:
+        if (words.size() < 2) {
+          logger::warning() << "Error: file name to run not given";
+          return;
+        }
+        run(*(++word));
+        break;
+      case Command::STEP:
+        if (words.size() > 2 && *(++word) == "-n")
+          step(atoll(std::next(word)->c_str()));
+        else
+          step(1);
+        break;
+      case Command::GO:
+        go();
+        break;
+      case Command::B:
+        ++word;
+        if (word == std::end(words)) {
+          std::cout << "Add -q or -l flag to set type of breakpoint"
+                    << std::endl;
+          break;
+        }
+        if (*word == "-q") {
+          addBreakpointState(atoll(std::next(word)->c_str()));
+        } else if (*word == "-l") {
+          SIZE_T nLine = atoll(std::next(word)->c_str());
+          addBreakpointLine(nLine);
+        } else {
+          std::cout << "Warning: unrecognized breakpoints type. Awaited -q or "
+                       "-l. Given: "
+                    << *word << std::endl;
+        }
+        break;
+      case Command::RESTART:
+        restart();
+        break;
+      default:
+        std::cout << "Warning: command not supported: " << *word << std::endl;
     }
   }
 
-public:
+ public:
   Manager() : commands_(initCommands()) {}
 
-  void processLine(const std::string &commandLine) {
+  void processLine(const std::string& commandLine) {
     auto words = split(commandLine);
     processLine_impl(words);
 
@@ -248,9 +240,9 @@ public:
   }
 };
 
-void parseCommandArgs(int argc, char *argw[]) {
+void parseCommandArgs(int argc, char* argw[]) {
   SIZE_T nopts = 3;
-  option *options = new option[nopts]{
+  option* options = new option[nopts]{
       {.name = "use-binary-format", .has_arg = 0, .flag = NULL, .val = 'b'},
       {.name = "help", .has_arg = 0, .flag = NULL, .val = 'h'}};
   memset(&options[nopts - 1], 0, sizeof(option));
@@ -258,26 +250,26 @@ void parseCommandArgs(int argc, char *argw[]) {
   int arg, longindex;
   while ((arg = getopt_long(argc, argw, "bh", options, &longindex)) != -1) {
     switch (arg) {
-    case '?':
-      logger::warning() << "Unrecognized option: " << optarg << std::endl;
-      break;
-    case 'b':
-      globals::useBinaryFormat = true;
-      logger::info() << "Binary format to loading enabled";
-      break;
-    case 'h':
-      std::cout << "flags b and h. see ost -h for details" << '\n';
-      exit(0);
-      break;
-    default:
-      logger::warning() << "Given option: [" << char(arg)
-                        << "] can't be processed";
+      case '?':
+        logger::warning() << "Unrecognized option: " << optarg << std::endl;
+        break;
+      case 'b':
+        globals::useBinaryFormat = true;
+        logger::info() << "Binary format to loading enabled";
+        break;
+      case 'h':
+        std::cout << "flags b and h. see ost -h for details" << '\n';
+        exit(0);
+        break;
+      default:
+        logger::warning() << "Given option: [" << char(arg)
+                          << "] can't be processed";
     }
   }
   delete[] options;
 }
 
-int main(int argc, char *argw[]) {
+int main(int argc, char* argw[]) {
   globals::enableBreakpoints = true;
   parseCommandArgs(argc, argw);
   Manager manager;

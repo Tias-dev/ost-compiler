@@ -1,10 +1,10 @@
 #ifndef TOKEN_HPP_
 #define TOKEN_HPP_
 
+#include <string>
+
 #include "FilePosition.hpp"
 #include "trie.hpp"
-#include <cstddef>
-#include <string>
 
 namespace token {
 enum class Type { NAME, KEYWORD, OPERATOR };
@@ -12,16 +12,16 @@ enum class Type { NAME, KEYWORD, OPERATOR };
 class Token {
   static SIZE_T currentId;
   SIZE_T id_;
-	FilePosition begin_, end_;
+  FilePosition begin_, end_;
   Type type_;
 
-protected:
-  Token(const FilePosition & begin, const FilePosition & end, Type type);
+ protected:
+  Token(const FilePosition& begin, const FilePosition& end, Type type);
 
-public:
+ public:
   virtual std::string toString() const = 0;
-  virtual const FilePosition & begin() const { return begin_; }
-  virtual const FilePosition & end() const { return end_; }
+  virtual const FilePosition& begin() const { return begin_; }
+  virtual const FilePosition& end() const { return end_; }
 };
 
 inline SIZE_T Token::currentId = 0;
@@ -29,8 +29,8 @@ inline SIZE_T Token::currentId = 0;
 class Name : public Token {
   std::string name_;
 
-public:
-  Name(std::string name, const FilePosition & begin, const FilePosition & end)
+ public:
+  Name(std::string name, const FilePosition& begin, const FilePosition& end)
       : Token(begin, end, Type::NAME), name_(name) {}
 
   std::string toString() const override {
@@ -38,7 +38,7 @@ public:
   }
   static std::string typeToString() { return "Name"; }
 
-  const std::string &name() const { return name_; }
+  const std::string& name() const { return name_; }
 };
 
 enum class KwType {
@@ -47,7 +47,7 @@ enum class KwType {
   END,
   ALPHABET,
   IF,
-	ELSE,
+  ELSE,
   FI,
   DO,
   OD,
@@ -59,8 +59,8 @@ enum class KwType {
 class Keyword : public Token {
   KwType kwtype_;
 
-public:
-  Keyword(KwType type, const FilePosition & begin, const FilePosition & end)
+ public:
+  Keyword(KwType type, const FilePosition& begin, const FilePosition& end)
       : Token(begin, end, Type::NAME), kwtype_(type) {}
 
   std::string toString() const override;
@@ -77,14 +77,14 @@ enum class OpType {
   POW,
   QUESTION,
   NOT_EQUAL,
-	BRANCH_SEPARATOR
+  BRANCH_SEPARATOR
 };
 
 class Operation : public Token {
   OpType optype_;
 
-public:
-  Operation(OpType type, const FilePosition & begin, const FilePosition & end)
+ public:
+  Operation(OpType type, const FilePosition& begin, const FilePosition& end)
       : Token(begin, end, Type::NAME), optype_(type) {}
 
   std::string toString() const override;
@@ -93,13 +93,13 @@ public:
   static std::string typeToString() { return "Operation"; }
 };
 
-} // namespace token
+}  // namespace token
 
 namespace impl {
 using OpTrie = impl::Trie<token::OpType>;
 using KwTrie = impl::Trie<token::KwType>;
 std::pair<OpTrie, KwTrie> initTries();
-const std::pair<OpTrie::bimap_type, KwTrie::bimap_type> &getBimaps();
-} // namespace impl
+const std::pair<OpTrie::bimap_type, KwTrie::bimap_type>& getBimaps();
+}  // namespace impl
 
-#endif // !TOKEN_HPP_
+#endif  // !TOKEN_HPP_

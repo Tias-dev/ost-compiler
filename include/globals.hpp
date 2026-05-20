@@ -1,7 +1,8 @@
 #ifndef GLOBALS_HPP_
 #define GLOBALS_HPP_
-#include "BreakPointer.hpp"
 #include <string>
+
+#include "BreakPointer.hpp"
 namespace globals {
 
 inline std::string libDir = "./";
@@ -14,5 +15,5 @@ inline bool verboseOutput = false;
 inline std::shared_ptr<IBreakpointer> breakpointer{new DummyBreakpointer{}};
 
 inline std::string debugFirstLine = "// Compiled with breakpoints enabled";
-} // namespace globals
-#endif // !GLOBALS_HPP_
+}  // namespace globals
+#endif  // !GLOBALS_HPP_

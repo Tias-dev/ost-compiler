@@ -1,114 +1,98 @@
 #ifndef LINE_HPP_
 #define LINE_HPP_
 
-#include "exception.hpp"
 #include <cctype>
 #include <string>
 #include <string_view>
+
+#include "exception.hpp"
 namespace tu4run {
 template <typename CharT = char>
 class Line {
-	std::string data_;
-	SIZE_T cursor_;
-	CharT lambda_;
-public:
-	Line(const std::string & data, CharT lambda =  CharT('_'))
-		: data_(data), lambda_(lambda) {
-		for(auto& c : data_) 
-			if(isspace(c)) 
-				c = lambda_;
-		
-		data_ += lambda_;
-		if(data_[0] != lambda_) 
-			data_.insert(std::begin(data_), lambda_);
-			
-		if(data_.size() == 1) {
-			cursor_ = 0;
-			return;
-		}
+  std::string data_;
+  SIZE_T cursor_;
+  CharT lambda_;
 
-		cursor_ = data_.size() - 1;
-		while(cursor_ > 0 && data_[cursor_] == lambda_) {
-			--cursor_;
-		}
-		if(data_[cursor_] != lambda_) 
-			++cursor_;
-	}
+ public:
+  Line(const std::string& data, CharT lambda = CharT('_'))
+      : data_(data), lambda_(lambda) {
+    for (auto& c : data_)
+      if (isspace(c)) c = lambda_;
 
-	void shiftLeft() {
-		if(cursor_ > 0) 
-			--cursor_;
-		else
-		 throw error::Tu4RunError<CharT>(*this, "Trying to go out of line from left border");
-	}
+    data_ += lambda_;
+    if (data_[0] != lambda_) data_.insert(std::begin(data_), lambda_);
 
-	void shiftRight() {
-		if(cursor_ + 1 == data_.size()) 
-			data_.push_back(lambda_);
-		++cursor_;
-	}
+    if (data_.size() == 1) {
+      cursor_ = 0;
+      return;
+    }
 
-	void setLetter(CharT letter) {
-		data_[cursor_] = letter;
-	}
+    cursor_ = data_.size() - 1;
+    while (cursor_ > 0 && data_[cursor_] == lambda_) {
+      --cursor_;
+    }
+    if (data_[cursor_] != lambda_) ++cursor_;
+  }
 
-	const std::basic_string<CharT> & line() const {
-		return data_;
-	}
+  void shiftLeft() {
+    if (cursor_ > 0)
+      --cursor_;
+    else
+      throw error::Tu4RunError<CharT>(
+          *this, "Trying to go out of line from left border");
+  }
 
-	SIZE_T cursor() const {
-		return cursor_;
-	}
+  void shiftRight() {
+    if (cursor_ + 1 == data_.size()) data_.push_back(lambda_);
+    ++cursor_;
+  }
 
-	CharT getLetter() const {
-		return data_[cursor_];
-	}
+  void setLetter(CharT letter) { data_[cursor_] = letter; }
 
-	bool operator==(const Line<CharT> & other) const {
-		auto & line1 = line(), &line2 = other.line();
-		SIZE_T minLen = std::min(line1.size(), line2.size());
-		for(SIZE_T i = 0; i < minLen; ++i) 
-			if(line1[i] != line2[i]) 
-				return false;
-		for(SIZE_T i = minLen; i < line1.size(); ++i) 
-			if(line1[i] != lambda_) 
-				return false;	
-		for(SIZE_T i = minLen; i < line2.size(); ++i) 
-			if(line2[i] != other.lambda_) 
-				return false;	
-			
-		return cursor() == other.cursor();
-	}
+  const std::basic_string<CharT>& line() const { return data_; }
 
-	bool operator!=(const Line<CharT> & other) const {
-		return !(*this == other);
-	}
+  SIZE_T cursor() const { return cursor_; }
+
+  CharT getLetter() const { return data_[cursor_]; }
+
+  bool operator==(const Line<CharT>& other) const {
+    auto &line1 = line(), &line2 = other.line();
+    SIZE_T minLen = std::min(line1.size(), line2.size());
+    for (SIZE_T i = 0; i < minLen; ++i)
+      if (line1[i] != line2[i]) return false;
+    for (SIZE_T i = minLen; i < line1.size(); ++i)
+      if (line1[i] != lambda_) return false;
+    for (SIZE_T i = minLen; i < line2.size(); ++i)
+      if (line2[i] != other.lambda_) return false;
+
+    return cursor() == other.cursor();
+  }
+
+  bool operator!=(const Line<CharT>& other) const { return !(*this == other); }
 };
 
-} // namespace tu4run
+}  // namespace tu4run
 
 template <typename CharT>
-std::ostream & operator<<(std::ostream & os, const tu4run::Line<CharT> & line) {
-	static const std::string space{' '}, cursorMark{"^\n"};
-	auto strline = line.line();
-	auto begin = std::begin(strline);
-	auto end = std::prev(std::end(strline));
-	SIZE_T cursorPos = strline.size() - 1;
-	while(end != begin && *end == '_') {
-		--end;
-		--cursorPos;
-	}
-	++end;
-	++cursorPos;
-	while(cursorPos <= line.cursor())
-		++end, ++cursorPos;
+std::ostream& operator<<(std::ostream& os, const tu4run::Line<CharT>& line) {
+  static const std::string space{' '}, cursorMark{"^\n"};
+  auto strline = line.line();
+  auto begin = std::begin(strline);
+  auto end = std::prev(std::end(strline));
+  SIZE_T cursorPos = strline.size() - 1;
+  while (end != begin && *end == '_') {
+    --end;
+    --cursorPos;
+  }
+  ++end;
+  ++cursorPos;
+  while (cursorPos <= line.cursor()) ++end, ++cursorPos;
 
-	os << std::string_view(begin, end) << "_\n";
-	SIZE_T cursor = line.cursor();
-	for(SIZE_T _ = 0; _ < cursor; ++_) 
-		os << space;
-	os << cursorMark;
+  os << std::string_view(begin, end) << "_\n";
+  SIZE_T cursor = line.cursor();
+  for (SIZE_T _ = 0; _ < cursor; ++_) os << space;
+  os << cursorMark;
 
-	return os;
+  return os;
 }
-#endif // !LINE_HPP_
+#endif  // !LINE_HPP_

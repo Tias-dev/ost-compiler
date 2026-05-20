@@ -1,11 +1,8 @@
 MT TEST5IFELSE;
-	BEGIN
-	ALPHABET: 0,1,2;
-	l;
-	DO 
-		() != _ ? 
-			IF 0 ? a(1) 
-			ELSE a(_); FI;
-			l;
-	OD;
+BEGIN
+ALPHABET: 0,1,2;
+  l;
+  DO () != _ ? 
+    IF 0 ? a(1) ELSE a(_); FI; l;
+  OD;
 END TEST5IFELSE

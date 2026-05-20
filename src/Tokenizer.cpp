@@ -1,11 +1,13 @@
 #include "Tokenizer.hpp"
+
+#include <cctype>
+#include <utility>
+#include <variant>
+
 #include "CharStream.hpp"
 #include "FilePosition.hpp"
 #include "Token.hpp"
 #include "exception.hpp"
-#include <cctype>
-#include <utility>
-#include <variant>
 
 bool isSpace(int c) { return isspace(c) || (c == '"'); }
 
@@ -17,18 +19,17 @@ bool isSpace(int c) { return isspace(c) || (c == '"'); }
  *
  * @return one of tokens in union type
  */
-token::token_union read_token(ICharStream &stream, const IFileRoller & roller) {
+token::token_union read_token(ICharStream& stream, const IFileRoller& roller) {
   static auto [op, kw] = impl::initTries();
   auto opPoint = op.begin();
   auto kwPoint = kw.begin();
-	FilePosition beginPosition{roller, stream.position()};
+  FilePosition beginPosition{roller, stream.position()};
   char c;
   stream >> c;
   if (opPoint->canGoTo(c)) {
     while (opPoint->canGoTo(c) && !opPoint->isTerm()) {
       opPoint->goTo(c);
-      if (stream.eof())
-        break;
+      if (stream.eof()) break;
       stream >> c;
     }
     stream << c;
@@ -37,7 +38,8 @@ token::token_union read_token(ICharStream &stream, const IFileRoller & roller) {
       throw error::UndefinedOperatorError({roller, stream.position()});
 
     auto opType = opPoint->get();
-    return {token::Operation(opType, beginPosition, FilePosition{roller, stream.position()})};
+    return {token::Operation(opType, beginPosition,
+                             FilePosition{roller, stream.position()})};
   }
   std::string buffer = "";
   while (!stream.eof() && !isSpace(c) && !opPoint->canGoTo(c)) {
@@ -45,8 +47,7 @@ token::token_union read_token(ICharStream &stream, const IFileRoller & roller) {
     stream >> c;
   }
 
-  if (!stream.eof())
-    stream << c;
+  if (!stream.eof()) stream << c;
 
   SIZE_T i;
   for (i = 0; i < buffer.size(); ++i)
@@ -56,11 +57,14 @@ token::token_union read_token(ICharStream &stream, const IFileRoller & roller) {
       break;
 
   if (i == buffer.size() && kwPoint->isTerm())
-    return {token::Keyword(kwPoint->get(), beginPosition, FilePosition{roller, stream.position()})};
-  return {token::Name(buffer, beginPosition, FilePosition{roller, stream.position()})};
+    return {token::Keyword(kwPoint->get(), beginPosition,
+                           FilePosition{roller, stream.position()})};
+  return {token::Name(buffer, beginPosition,
+                      FilePosition{roller, stream.position()})};
 }
 
-token::tokens_list token::Tokenizer::parse(ICharStream &stream, const IFileRoller & roller) {
+token::tokens_list token::Tokenizer::parse(ICharStream& stream,
+                                           const IFileRoller& roller) {
   char c;
   token::tokens_list result;
   stream >> c;
@@ -70,9 +74,8 @@ token::tokens_list token::Tokenizer::parse(ICharStream &stream, const IFileRolle
       do {
         stream >> c;
       } while (!stream.eof() && (c != '"'));
-			if(c != '"') 
-				throw error::CommentNotClosedError(commentBegin);
-			stream >> c;
+      if (c != '"') throw error::CommentNotClosedError(commentBegin);
+      stream >> c;
     }
 
     if (!isspace(c)) {
@@ -88,16 +91,16 @@ token::tokens_list token::Tokenizer::parse(ICharStream &stream, const IFileRolle
 namespace token {
 bool token_union::operator==(const KwType type) const {
   return std::visit(
-      overloads{[](const Name &) { return false; },
-                [type](const Keyword &token) { return type == token.type(); },
-                [](const Operation &) { return false; }},
+      overloads{[](const Name&) { return false; },
+                [type](const Keyword& token) { return type == token.type(); },
+                [](const Operation&) { return false; }},
       data_);
 }
 
 bool token_union::operator==(const OpType type) const {
-  return std::visit(overloads{[](const Name &token) { return false; },
-                              [](const Keyword &token) { return false; },
-                              [type](const Operation &token) {
+  return std::visit(overloads{[](const Name& token) { return false; },
+                              [](const Keyword& token) { return false; },
+                              [type](const Operation& token) {
                                 return type == token.type();
                               }},
                     data_);
@@ -112,30 +115,30 @@ bool token_union::operator!=(const OpType type) const {
 }
 
 std::string token_union::toString() const {
-  return std::visit([](const auto &token) { return token.toString(); }, data_);
+  return std::visit([](const auto& token) { return token.toString(); }, data_);
 }
 
 std::string token_union::typeToString() const {
-  return std::visit([](const auto &token) { return token.typeToString(); },
+  return std::visit([](const auto& token) { return token.typeToString(); },
                     data_);
 }
 
 bool token_union::isName() const {
-  return std::visit(overloads{[](const Name &) { return true; },
-                              [](const Keyword &) { return false; },
-                              [](const Operation &) { return false; }},
+  return std::visit(overloads{[](const Name&) { return true; },
+                              [](const Keyword&) { return false; },
+                              [](const Operation&) { return false; }},
                     data_);
 }
 
 std::string token_union::getName() const {
   return std::visit(
-      overloads{[](const Name &token) { return token.name(); },
-                [](const Keyword &token) {
+      overloads{[](const Name& token) { return token.name(); },
+                [](const Keyword& token) {
                   throw error::ExpectedMismatchError(
                       token.begin(), "valid mt name", token.toString());
                   return std::string();
                 },
-                [](const Operation &token) {
+                [](const Operation& token) {
                   throw error::ExpectedMismatchError(
                       token.begin(), "valid mt name", token.toString());
                   return std::string();
@@ -144,32 +147,31 @@ std::string token_union::getName() const {
 }
 
 FilePosition token_union::begin() const {
-  return std::visit([](const auto &token) { return token.begin(); }, data_);
+  return std::visit([](const auto& token) { return token.begin(); }, data_);
 }
 
 FilePosition token_union::end() const {
-  return std::visit([](const auto &token) { return token.end(); }, data_);
+  return std::visit([](const auto& token) { return token.end(); }, data_);
 }
 
-bool operator==(const KwType type, const token_union &token) {
+bool operator==(const KwType type, const token_union& token) {
   return token == type;
 }
 
-bool operator==(const OpType type, const token_union &token) {
+bool operator==(const OpType type, const token_union& token) {
   return token == type;
 }
 
-bool operator!=(const KwType type, const token_union &token) {
+bool operator!=(const KwType type, const token_union& token) {
   return token != type;
 }
 
-bool operator!=(const OpType type, const token_union &token) {
+bool operator!=(const OpType type, const token_union& token) {
   return token != type;
 }
 
 void tokens_list::Session::commit() {
-  while (!cache_.empty())
-    cache_.pop();
+  while (!cache_.empty()) cache_.pop();
 }
 void tokens_list::Session::rollback() {
   while (!cache_.empty()) {
@@ -184,8 +186,7 @@ void tokens_list::Session::popFront() {
 }
 
 token_union tokens_list::Session::popFrontAndReturn() {
-  if (root_->empty())
-    throw error::UnexpectedFileEnd();
+  if (root_->empty()) throw error::UnexpectedFileEnd();
 
   cache_.push(*std::begin(*root_));
   token_union token = *std::begin(*root_);
@@ -194,4 +195,4 @@ token_union tokens_list::Session::popFrontAndReturn() {
 }
 
 tokens_list::Session::~Session() { rollback(); }
-} // namespace token
+}  // namespace token

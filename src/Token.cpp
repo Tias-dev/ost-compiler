@@ -1,16 +1,16 @@
 #include "Token.hpp"
-#include "exception.hpp"
-#include <cstdio>
+
 #include <string>
 #include <utility>
 
+#include "exception.hpp"
+
 namespace token {
-Token::Token(const FilePosition & begin, const FilePosition & end, Type type)
+Token::Token(const FilePosition& begin, const FilePosition& end, Type type)
     : id_(currentId++), begin_(begin), end_(end), type_(type) {
-  if (end < begin)
-    throw error::BordersError(begin, end);
+  if (end < begin) throw error::BordersError(begin, end);
 }
-} // namespace token
+}  // namespace token
 namespace impl {
 std::pair<OpTrie, KwTrie> initTries() {
   KwTrie kw;
@@ -36,12 +36,12 @@ std::pair<OpTrie, KwTrie> initTries() {
   op.add("**", token::OpType::POW);
   op.add("?", token::OpType::QUESTION);
   op.add("!=", token::OpType::NOT_EQUAL);
-	op.add("|", token::OpType::BRANCH_SEPARATOR);
+  op.add("|", token::OpType::BRANCH_SEPARATOR);
 
   return {op, kw};
 }
 
-const std::pair<OpTrie::bimap_type, KwTrie::bimap_type> &getBimaps() {
+const std::pair<OpTrie::bimap_type, KwTrie::bimap_type>& getBimaps() {
   static const auto [op, kw] = initTries();
   static const std::pair<OpTrie::bimap_type, KwTrie::bimap_type> bimaps = {
       op.bimap(), kw.bimap()};
@@ -49,8 +49,8 @@ const std::pair<OpTrie::bimap_type, KwTrie::bimap_type> &getBimaps() {
   return bimaps;
 }
 
-static const auto &[opBimap, kwBimap] = getBimaps();
-} // namespace impl
+static const auto& [opBimap, kwBimap] = getBimaps();
+}  // namespace impl
 
 std::string token::Keyword::toString() const {
   return typeToString() + ": " + impl::kwBimap.toString(kwtype_);
