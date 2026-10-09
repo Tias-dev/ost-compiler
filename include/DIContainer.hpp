@@ -8,27 +8,27 @@ namespace deps {
 
 template <typename... Args>
 class DI {
-  std::unique_ptr<DI<Args...>> next_ = {nullptr};
+    std::unique_ptr<DI<Args...>> next_ = {nullptr};
 
- protected:
-  std::function<void(Args...)> handler_;
+   protected:
+    std::function<void(Args...)> handler_;
 
- public:
-  DI(std::function<void(Args...)> handler) : handler_(handler) {}
+   public:
+    DI(std::function<void(Args...)> handler) : handler_(handler) {}
 
-  DI& inject(std::unique_ptr<DI<Args...>>&& dep) {
-    dep->next_ = std::move(next_);
-    next_ = std::move(dep);
+    DI& inject(std::unique_ptr<DI<Args...>>&& dep) {
+        dep->next_ = std::move(next_);
+        next_ = std::move(dep);
 
-    return *this;
-  }
+        return *this;
+    }
 
-  DI& process(Args... args) {
-    handler_(args...);
-    if (next_) next_->process(args...);
+    DI& process(Args... args) {
+        handler_(args...);
+        if (next_) next_->process(args...);
 
-    return *this;
-  }
+        return *this;
+    }
 };
 }  // namespace deps
 

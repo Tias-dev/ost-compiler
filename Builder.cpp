@@ -64,104 +64,105 @@ void parseCommandArgs(int argc, char* argw[]);
 void compileMainProgram(const std::string& filename);
 
 int main(int argc, char* argw[]) {
-  if (argc < 2)
-    throw std::invalid_argument("Usage: ostbuild <program>.ost [OPTIONS]");
-  std::string fileName = argw[1];
-  parseCommandArgs(argc, argw);
+    if (argc < 2)
+        throw std::invalid_argument("Usage: ostbuild <program>.ost [OPTIONS]");
+    std::string fileName = argw[1];
+    parseCommandArgs(argc, argw);
 
-  if (globals::outDir[globals::outDir.size() - 1] != '/')
-    globals::outDir.push_back('/');
+    if (globals::outDir[globals::outDir.size() - 1] != '/')
+        globals::outDir.push_back('/');
 
-  if (globals::libDir[globals::libDir.size() - 1] != '/')
-    globals::libDir.push_back('/');
-  if (globals::enableBreakpoints)
-    globals::breakpointer =
-        std::shared_ptr<IBreakpointer>{new FileBreakpointer()};
+    if (globals::libDir[globals::libDir.size() - 1] != '/')
+        globals::libDir.push_back('/');
+    if (globals::enableBreakpoints)
+        globals::breakpointer =
+            std::shared_ptr<IBreakpointer>{new FileBreakpointer()};
 
-  if (!sources.empty()) fillSources(sources);
+    if (!sources.empty()) fillSources(sources);
 
-  auto start_ts = std::chrono::system_clock::now();
-  compileMainProgram(fileName);
-  auto end_ts = std::chrono::system_clock::now();
-  logger::debug() << "BUILDER: total building time: "
-                  << std::chrono::duration_cast<std::chrono::milliseconds>(
-                         end_ts - start_ts)
-                         .count()
-                  << "ms";
+    auto start_ts = std::chrono::system_clock::now();
+    compileMainProgram(fileName);
+    auto end_ts = std::chrono::system_clock::now();
+    logger::debug() << "BUILDER: total building time: "
+                    << std::chrono::duration_cast<std::chrono::milliseconds>(
+                           end_ts - start_ts)
+                           .count()
+                    << "ms";
 
-  return 0;
+    return 0;
 }
 
 SIZE_T nWorkers = 1;
 bool forceRecompile = false;
 void parseCommandArgs(int argc, char* argw[]) {
-  SIZE_T nopts = 11;
-  option* options = new option[nopts]{
-      {.name = "libdir", .has_arg = 1, .flag = NULL, .val = 'l'},
-      {.name = "outputdir", .has_arg = 1, .flag = NULL, .val = 'o'},
-      {.name = "enable-breakpoints", .has_arg = 0, .flag = NULL, .val = 'g'},
-      {.name = "print-debug-info", .has_arg = 0, .flag = NULL, .val = 'd'},
-      {.name = "force", .has_arg = 0, .flag = NULL, .val = 'f'},
-      {.name = "use-binary-format", .has_arg = 0, .flag = NULL, .val = 'b'},
-      {.name = "sources", .has_arg = 1, .flag = NULL, .val = 's'},
-      {.name = "jobs", .has_arg = 1, .flag = NULL, .val = 'j'},
-      {.name = "verbose", .has_arg = 0, .flag = NULL, .val = 'v'},
-      {.name = "help", .has_arg = 0, .flag = NULL, .val = 'h'}};
-  memset(&options[nopts - 1], 0, sizeof(option));
+    SIZE_T nopts = 11;
+    option* options = new option[nopts]{
+        {.name = "libdir", .has_arg = 1, .flag = NULL, .val = 'l'},
+        {.name = "outputdir", .has_arg = 1, .flag = NULL, .val = 'o'},
+        {.name = "enable-breakpoints", .has_arg = 0, .flag = NULL, .val = 'g'},
+        {.name = "print-debug-info", .has_arg = 0, .flag = NULL, .val = 'd'},
+        {.name = "force", .has_arg = 0, .flag = NULL, .val = 'f'},
+        {.name = "use-binary-format", .has_arg = 0, .flag = NULL, .val = 'b'},
+        {.name = "sources", .has_arg = 1, .flag = NULL, .val = 's'},
+        {.name = "jobs", .has_arg = 1, .flag = NULL, .val = 'j'},
+        {.name = "verbose", .has_arg = 0, .flag = NULL, .val = 'v'},
+        {.name = "help", .has_arg = 0, .flag = NULL, .val = 'h'}};
+    memset(&options[nopts - 1], 0, sizeof(option));
 
-  int arg, longindex;
-  while ((arg = getopt_long(argc, argw, "l:o:gdbhs:j:fv", options,
-                            &longindex)) != -1) {
-    switch (arg) {
-      case '?':
-        logger::warning() << "Unrecognized option: " << optarg << std::endl;
-        break;
-      case 'l':
-        globals::libDir = optarg;
-        logger::info() << "Used library directory: " << optarg;
-        break;
-      case 'o':
-        globals::outDir = optarg;
-        logger::info() << "Used output directory: " << optarg;
-        break;
-      case 'v':
-        globals::verboseOutput = true;
-        logger::info() << "Verbose output enabled";
-        break;
-      case 'g':
-        globals::enableBreakpoints = true;
-        logger::info() << "Breakpoints enabled";
-        break;
-      case 'd':
-        globals::printDebugInfo = true;
-        logger::info() << "Printing debug info enabled";
-        break;
-      case 'b':
-        globals::useBinaryFormat = true;
-        logger::info() << "Binary format to saving enabled";
-        break;
-      case 's':
-        logger::info() << "Additional sources are added";
-        sources = std::string(optarg);
-        break;
-      case 'f':
-        logger::info() << "Force recompile enabled";
-        forceRecompile = true;
-        break;
-      case 'j':
-        nWorkers = atoll(optarg);
-        logger::info() << "Using " << nWorkers << " jobs";
-        break;
-      case 'h':
-        std::cout << helpMessage << std::endl;
-        exit(0);
-        break;
-      default:
-        logger::warning() << "Given option: [" << char(arg)
-                          << "] can't be processed";
+    int arg, longindex;
+    while ((arg = getopt_long(argc, argw, "l:o:gdbhs:j:fv", options,
+                              &longindex)) != -1) {
+        switch (arg) {
+            case '?':
+                logger::warning()
+                    << "Unrecognized option: " << optarg << std::endl;
+                break;
+            case 'l':
+                globals::libDir = optarg;
+                logger::info() << "Used library directory: " << optarg;
+                break;
+            case 'o':
+                globals::outDir = optarg;
+                logger::info() << "Used output directory: " << optarg;
+                break;
+            case 'v':
+                globals::verboseOutput = true;
+                logger::info() << "Verbose output enabled";
+                break;
+            case 'g':
+                globals::enableBreakpoints = true;
+                logger::info() << "Breakpoints enabled";
+                break;
+            case 'd':
+                globals::printDebugInfo = true;
+                logger::info() << "Printing debug info enabled";
+                break;
+            case 'b':
+                globals::useBinaryFormat = true;
+                logger::info() << "Binary format to saving enabled";
+                break;
+            case 's':
+                logger::info() << "Additional sources are added";
+                sources = std::string(optarg);
+                break;
+            case 'f':
+                logger::info() << "Force recompile enabled";
+                forceRecompile = true;
+                break;
+            case 'j':
+                nWorkers = atoll(optarg);
+                logger::info() << "Using " << nWorkers << " jobs";
+                break;
+            case 'h':
+                std::cout << helpMessage << std::endl;
+                exit(0);
+                break;
+            default:
+                logger::warning()
+                    << "Given option: [" << char(arg) << "] can't be processed";
+        }
     }
-  }
-  delete[] options;
+    delete[] options;
 }
 
 /**
@@ -172,31 +173,32 @@ void parseCommandArgs(int argc, char* argw[]) {
  * @return ast Tree
  */
 ast::Tree toAST(const std::string& fileName) {
-  ast::Tree::clearNamesTable();
-  static token::Tokenizer tokenizer;
-  std::ifstream file(fileName);
-  if (!file.is_open())
-    throw std::invalid_argument(strfast() << "Can't open file: " << fileName);
-  CharStream stream(file);
-  FileRoller roller(std::make_shared<std::string>(fileName));
-  auto tokens = tokenizer.parse(stream, roller);
-  ast::Tree ast{tokens, fileName};
-  if (globals::verboseOutput) {
-    logger::debug out;
-    out << "Detected libs for [" << fileName << "]:\n";
-    for (const auto& lib : ast.libs) out << lib << '\n';
-  }
-  return ast;
+    ast::Tree::clearNamesTable();
+    static token::Tokenizer tokenizer;
+    std::ifstream file(fileName);
+    if (!file.is_open())
+        throw std::invalid_argument(strfast()
+                                    << "Can't open file: " << fileName);
+    CharStream stream(file);
+    FileRoller roller(std::make_shared<std::string>(fileName));
+    auto tokens = tokenizer.parse(stream, roller);
+    ast::Tree ast{tokens, fileName};
+    if (globals::verboseOutput) {
+        logger::debug out;
+        out << "Detected libs for [" << fileName << "]:\n";
+        for (const auto& lib : ast.libs) out << lib << '\n';
+    }
+    return ast;
 }
 
 struct ThrowSourceNotFoundError {
-  ThrowSourceNotFoundError(const std::string& mt) {
-    throw std::invalid_argument(
-        strfast()
-        << "Source(.ost) file for mt [" << mt
-        << "] not found in source directories\n"
-        << "Please ensure that it exist in directories specified by -s flag");
-  }
+    ThrowSourceNotFoundError(const std::string& mt) {
+        throw std::invalid_argument(strfast()
+                                    << "Source(.ost) file for mt [" << mt
+                                    << "] not found in source directories\n"
+                                    << "Please ensure that it exist in "
+                                       "directories specified by -s flag");
+    }
 };
 
 using mt_name_t = std::string;
@@ -204,137 +206,138 @@ using is_resolved_policy_t = std::function<bool(const mt_name_t&)>;
 bool isSrcNotEditedAfterCompilation(const mt_name_t& mt,
                                     bool useOutputDirAsCompiledMTDir);
 static is_resolved_policy_t defaultPolicy = [](const mt_name_t& mt) {
-  return isSrcNotEditedAfterCompilation(mt, false);
+    return isSrcNotEditedAfterCompilation(mt, false);
 };
 
 class DependencyCollector {
-  impl::Trie<std::set<mt_name_t>> deps_;
-  impl::Trie<bool> isresolved_;
-  impl::Trie<std::string> mtNameFileNameMap_;
-  impl::Trie<bool> isbuilded_;
+    impl::Trie<std::set<mt_name_t>> deps_;
+    impl::Trie<bool> isresolved_;
+    impl::Trie<std::string> mtNameFileNameMap_;
+    impl::Trie<bool> isbuilded_;
 
- public:
-  DependencyCollector() = default;
+   public:
+    DependencyCollector() = default;
 
-  std::set<mt_name_t> getDepsFor(const mt_name_t& mt) {
-    return deps_.find(mt).value_or(std::set<mt_name_t>{});
-  }
-
-  std::string getFileNameFor(const mt_name_t& mt) {
-    const auto& value = mtNameFileNameMap_.find(mt);
-    if (!value.has_value()) ThrowSourceNotFoundError error(mt);
-    return value.value();
-  }
-
-  /**
-   * @brief collects depedencies from program
-   *
-   * @param path -- path to program
-   *
-   * @return program main mt name
-   */
-  mt_name_t collect(const std::filesystem::path& path,
-                    is_resolved_policy_t policy = defaultPolicy) {
-    if (globals::verboseOutput) logger::info() << "Parsing: " << path << '\n';
-    auto ast = toAST(path);
-    const auto& mtName = ast.getTreeName();
-
-    mtNameFileNameMap_.add(mtName, path);
-    const auto& libs = ast.libs;
-
-    std::set<mt_name_t> deps;
-    for (const auto& lib : libs) deps.insert(lib);
-    deps_.add(mtName, deps);
-    isresolved_.add(mtName, policy(mtName));
-    if (globals::verboseOutput) logger::log() << "Parsing: OK\n";
-
-    return mtName;
-  }
-
-  bool resolve(const mt_name_t& mt, bool useLibDirAsOutputDir = true) {
-    if (isbuilded_.contains(mt)) return false;
-
-    bool childsChanged = false;
-    // resolving depedencies first
-    const auto& deps = getDepsFor(mt);
-    for (const auto& dep : deps) {
-      childsChanged = resolve(dep) || childsChanged;
+    std::set<mt_name_t> getDepsFor(const mt_name_t& mt) {
+        return deps_.find(mt).value_or(std::set<mt_name_t>{});
     }
 
-    if (isresolved_.find(mt).value_or(false) && !childsChanged &&
-        !forceRecompile) {
-      logger::info() << "MT [" << mt << "] is up to date. Skipping";
-    } else {
-      std::string fileName = getFileNameFor(mt);
-      {
-        logger::info out;
-        if (forceRecompile)
-          out << "MT [" << mt << "] is forced to recompile";
-        else
-          out << "MT [" << mt << "] was changed after compilation";
-        out << "\n\tFollowing file will be recompiled: " << fileName;
-      }
-      compileAndSaveProgram(
-          fileName, globals::libDir,
-          (useLibDirAsOutputDir ? globals::libDir : globals::outDir),
-          globals::useBinaryFormat, globals::enableBreakpoints,
-          globals::verboseOutput);
-      *isresolved_.find(mt) = true;
-      childsChanged = true;
+    std::string getFileNameFor(const mt_name_t& mt) {
+        const auto& value = mtNameFileNameMap_.find(mt);
+        if (!value.has_value()) ThrowSourceNotFoundError error(mt);
+        return value.value();
     }
-    isbuilded_.add(mt, true);
-    return childsChanged;
-  }
+
+    /**
+     * @brief collects depedencies from program
+     *
+     * @param path -- path to program
+     *
+     * @return program main mt name
+     */
+    mt_name_t collect(const std::filesystem::path& path,
+                      is_resolved_policy_t policy = defaultPolicy) {
+        if (globals::verboseOutput)
+            logger::info() << "Parsing: " << path << '\n';
+        auto ast = toAST(path);
+        const auto& mtName = ast.getTreeName();
+
+        mtNameFileNameMap_.add(mtName, path);
+        const auto& libs = ast.libs;
+
+        std::set<mt_name_t> deps;
+        for (const auto& lib : libs) deps.insert(lib);
+        deps_.add(mtName, deps);
+        isresolved_.add(mtName, policy(mtName));
+        if (globals::verboseOutput) logger::log() << "Parsing: OK\n";
+
+        return mtName;
+    }
+
+    bool resolve(const mt_name_t& mt, bool useLibDirAsOutputDir = true) {
+        if (isbuilded_.contains(mt)) return false;
+
+        bool childsChanged = false;
+        // resolving depedencies first
+        const auto& deps = getDepsFor(mt);
+        for (const auto& dep : deps) {
+            childsChanged = resolve(dep) || childsChanged;
+        }
+
+        if (isresolved_.find(mt).value_or(false) && !childsChanged &&
+            !forceRecompile) {
+            logger::info() << "MT [" << mt << "] is up to date. Skipping";
+        } else {
+            std::string fileName = getFileNameFor(mt);
+            {
+                logger::info out;
+                if (forceRecompile)
+                    out << "MT [" << mt << "] is forced to recompile";
+                else
+                    out << "MT [" << mt << "] was changed after compilation";
+                out << "\n\tFollowing file will be recompiled: " << fileName;
+            }
+            compileAndSaveProgram(
+                fileName, globals::libDir,
+                (useLibDirAsOutputDir ? globals::libDir : globals::outDir),
+                globals::useBinaryFormat, globals::enableBreakpoints,
+                globals::verboseOutput);
+            *isresolved_.find(mt) = true;
+            childsChanged = true;
+        }
+        isbuilded_.add(mt, true);
+        return childsChanged;
+    }
 };
 
 static DependencyCollector depsCollector;
 namespace fs = std::filesystem;
 
 void fillSources(const std::string& s) {
-  auto paths = split(s, ',');
-  for (const auto& path : paths) {
-    sourcePaths.insert(strip(path));
-  }
-
-  for (const auto& path : sourcePaths) {
-    logger::debug out;
-    fs::directory_iterator it(path);
-    for (auto& file : it) {
-      if (file.path().extension() == ".ost") {
-        try {
-          depsCollector.collect(file.path());
-        } catch (std::exception& e) {
-          out << "Can't create AST from [" << file << "]. Skipping\n";
-          continue;
-        }
-      }
+    auto paths = split(s, ',');
+    for (const auto& path : paths) {
+        sourcePaths.insert(strip(path));
     }
-  }
+
+    for (const auto& path : sourcePaths) {
+        logger::debug out;
+        fs::directory_iterator it(path);
+        for (auto& file : it) {
+            if (file.path().extension() == ".ost") {
+                try {
+                    depsCollector.collect(file.path());
+                } catch (std::exception& e) {
+                    out << "Can't create AST from [" << file << "]. Skipping\n";
+                    continue;
+                }
+            }
+        }
+    }
 }
 
 void compileMainProgram(const std::string& fileName) {
-  mt_name_t mt = depsCollector.collect(fileName, [](const mt_name_t& mt) {
-    return isSrcNotEditedAfterCompilation(mt, true);
-  });
-  depsCollector.resolve(mt, false);
+    mt_name_t mt = depsCollector.collect(fileName, [](const mt_name_t& mt) {
+        return isSrcNotEditedAfterCompilation(mt, true);
+    });
+    depsCollector.resolve(mt, false);
 }
 
 bool isSrcNotEditedAfterCompilation(const mt_name_t& mt,
                                     bool useOutputDirAsCompiledMTDir = false) {
-  fs::path compiledMtPath;
-  if (useOutputDirAsCompiledMTDir)
-    compiledMtPath = globals::outDir;
-  else
-    compiledMtPath = globals::libDir;
-  compiledMtPath.append(mt + ".tu4");
-  if (!fs::exists(compiledMtPath)) return false;
+    fs::path compiledMtPath;
+    if (useOutputDirAsCompiledMTDir)
+        compiledMtPath = globals::outDir;
+    else
+        compiledMtPath = globals::libDir;
+    compiledMtPath.append(mt + ".tu4");
+    if (!fs::exists(compiledMtPath)) return false;
 
-  std::string srcPath = depsCollector.getFileNameFor(mt);
-  fs::file_time_type srcModifyTime = fs::last_write_time(srcPath),
-                     compiledModifyTime = fs::last_write_time(compiledMtPath);
+    std::string srcPath = depsCollector.getFileNameFor(mt);
+    fs::file_time_type srcModifyTime = fs::last_write_time(srcPath),
+                       compiledModifyTime = fs::last_write_time(compiledMtPath);
 
-  if (globals::verboseOutput)
-    logger::debug() << "mt: " << mt << " src modify time " << srcModifyTime
-                    << " compiled modify time " << compiledModifyTime;
-  return srcModifyTime < compiledModifyTime;
+    if (globals::verboseOutput)
+        logger::debug() << "mt: " << mt << " src modify time " << srcModifyTime
+                        << " compiled modify time " << compiledModifyTime;
+    return srcModifyTime < compiledModifyTime;
 };

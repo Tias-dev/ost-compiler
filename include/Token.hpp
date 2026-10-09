@@ -10,87 +10,87 @@ namespace token {
 enum class Type { NAME, KEYWORD, OPERATOR };
 
 class Token {
-  static SIZE_T currentId;
-  SIZE_T id_;
-  FilePosition begin_, end_;
-  Type type_;
+    static SIZE_T currentId;
+    SIZE_T id_;
+    FilePosition begin_, end_;
+    Type type_;
 
- protected:
-  Token(const FilePosition& begin, const FilePosition& end, Type type);
+   protected:
+    Token(const FilePosition& begin, const FilePosition& end, Type type);
 
- public:
-  virtual std::string toString() const = 0;
-  virtual const FilePosition& begin() const { return begin_; }
-  virtual const FilePosition& end() const { return end_; }
+   public:
+    virtual std::string toString() const = 0;
+    virtual const FilePosition& begin() const { return begin_; }
+    virtual const FilePosition& end() const { return end_; }
 };
 
 inline SIZE_T Token::currentId = 0;
 
 class Name : public Token {
-  std::string name_;
+    std::string name_;
 
- public:
-  Name(std::string name, const FilePosition& begin, const FilePosition& end)
-      : Token(begin, end, Type::NAME), name_(name) {}
+   public:
+    Name(std::string name, const FilePosition& begin, const FilePosition& end)
+        : Token(begin, end, Type::NAME), name_(name) {}
 
-  std::string toString() const override {
-    return typeToString() + ": " + name_;
-  }
-  static std::string typeToString() { return "Name"; }
+    std::string toString() const override {
+        return typeToString() + ": " + name_;
+    }
+    static std::string typeToString() { return "Name"; }
 
-  const std::string& name() const { return name_; }
+    const std::string& name() const { return name_; }
 };
 
 enum class KwType {
-  MT,
-  BEGIN,
-  END,
-  ALPHABET,
-  IF,
-  ELSE,
-  FI,
-  DO,
-  OD,
-  LIB,
-  LAMBDA,
-  SET_LETTER
+    MT,
+    BEGIN,
+    END,
+    ALPHABET,
+    IF,
+    ELSE,
+    FI,
+    DO,
+    OD,
+    LIB,
+    LAMBDA,
+    SET_LETTER
 };
 
 class Keyword : public Token {
-  KwType kwtype_;
+    KwType kwtype_;
 
- public:
-  Keyword(KwType type, const FilePosition& begin, const FilePosition& end)
-      : Token(begin, end, Type::NAME), kwtype_(type) {}
+   public:
+    Keyword(KwType type, const FilePosition& begin, const FilePosition& end)
+        : Token(begin, end, Type::NAME), kwtype_(type) {}
 
-  std::string toString() const override;
-  static std::string typeToString() { return "Keyword"; }
-  KwType type() const { return kwtype_; }
+    std::string toString() const override;
+    static std::string typeToString() { return "Keyword"; }
+    KwType type() const { return kwtype_; }
 };
 
 enum class OpType {
-  TERMINATOR,
-  COMA,
-  SEMICOLON,
-  LEFT_BRACKET,
-  RIGHT_BRACKET,
-  POW,
-  QUESTION,
-  NOT_EQUAL,
-  BRANCH_SEPARATOR
+    TERMINATOR,
+    COMA,
+    SEMICOLON,
+    LEFT_BRACKET,
+    RIGHT_BRACKET,
+    POW,
+    QUESTION,
+    NOT_EQUAL,
+    BRANCH_SEPARATOR
 };
 
 class Operation : public Token {
-  OpType optype_;
+    OpType optype_;
 
- public:
-  Operation(OpType type, const FilePosition& begin, const FilePosition& end)
-      : Token(begin, end, Type::NAME), optype_(type) {}
+   public:
+    Operation(OpType type, const FilePosition& begin, const FilePosition& end)
+        : Token(begin, end, Type::NAME), optype_(type) {}
 
-  std::string toString() const override;
-  OpType type() const { return optype_; }
+    std::string toString() const override;
+    OpType type() const { return optype_; }
 
-  static std::string typeToString() { return "Operation"; }
+    static std::string typeToString() { return "Operation"; }
 };
 
 }  // namespace token
