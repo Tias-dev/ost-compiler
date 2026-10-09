@@ -36,3 +36,4 @@
 *.app
 build-debug
 build-release/
+result

@@ -38,3 +38,4 @@ target_link_libraries(ostdb src_lib)
 add_executable(ostbuild Builder.cpp)
 target_link_libraries(ostbuild src_lib)
 
+install(TARGETS ost tu4run osttest ostdb ostbuild)
