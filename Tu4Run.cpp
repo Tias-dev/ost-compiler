@@ -15,19 +15,23 @@ void usage() {
     std::cout << "Options:" << std::endl;
     std::cout << "-d, --print-debug-info : see ost -h" << std::endl;
     std::cout << "-b, --use-binary-format : see ost -h" << std::endl;
+    std::cout << "-j, --json-output : output as json" << std::endl;
     std::cout << "-h, --help : write this message" << std::endl;
 }
 
+bool jsonOutput = false;
+
 void parseCommandArgs(int argc, char* argw[]) {
-    SIZE_T nopts = 4;
+    SIZE_T nopts = 5;
     option* options = new option[nopts]{
         {.name = "print-debug-info", .has_arg = 0, .flag = NULL, .val = 'd'},
         {.name = "use-binary-format", .has_arg = 0, .flag = NULL, .val = 'b'},
+        {.name = "json-output", .has_arg = 0, .flag = NULL, .val = 'j'},
         {.name = "help", .has_arg = 0, .flag = NULL, .val = 'h'}};
     memset(&options[nopts - 1], 0, sizeof(option));
 
     int arg, longindex;
-    while ((arg = getopt_long(argc, argw, "dbh", options, &longindex)) != -1) {
+    while ((arg = getopt_long(argc, argw, "dbhj", options, &longindex)) != -1) {
         switch (arg) {
             case '?':
                 logger::warning()
@@ -44,6 +48,9 @@ void parseCommandArgs(int argc, char* argw[]) {
             case 'h':
                 usage();
                 exit(0);
+                break;
+            case 'j':
+                jsonOutput = true;
                 break;
             default:
                 logger::warning()
@@ -84,8 +91,16 @@ int main(int argc, char* argw[]) {
         << std::chrono::duration_cast<duration_t>(end_ts - start_ts).count()
         << durationSuffix;
 
-    std::cout << "Steps: " << steps << " Out line:" << std::endl;
-    std::cout << runner->line() << std::endl;
+    if (jsonOutput) {
+        std::cout << std::format(
+                         R"({{ "steps": {}, "out_line": "{}", "cursor": {} }})",
+                         steps, runner->line().line(), runner->line().cursor())
+                  << std::endl;
+
+    } else {
+        std::cout << "Steps: " << steps << " Out line:" << std::endl;
+        std::cout << runner->line() << std::endl;
+    }
 
     return 0;
 }
