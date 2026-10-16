@@ -38,3 +38,6 @@ build-debug
 build-release/
 result
 compile_commands.json
+.direnv
+build-nix
+build

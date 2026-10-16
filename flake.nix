@@ -26,6 +26,9 @@
           ost-toolkit = pkgs.callPackage ./default.nix {};
           default = self'.packages.ost-toolkit;
         };
+        devShells.default = pkgs.mkShell {
+          inputsFrom = [self'.packages.default];
+        };
         treefmt = import ./treefmt.nix;
       };
     };
