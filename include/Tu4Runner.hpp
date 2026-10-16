@@ -47,6 +47,9 @@ class Tu4Runner {
 
     void addBreakpointManager(
         std::unique_ptr<deps::DI<tu4::tu4_union<TQ>, bool&>>&& manager) {
+        if (!manager) {
+            return;
+        }
         if (breakpointManager_)
             breakpointManager_->inject(std::move(manager));
         else

@@ -74,7 +74,7 @@ int main(int argc, char* argw[]) {
 
     if (globals::libDir[globals::libDir.size() - 1] != '/')
         globals::libDir.push_back('/');
-    if (globals::enableBreakpoints)
+    if (globals::debugMode)
         globals::breakpointer =
             std::shared_ptr<IBreakpointer>{new FileBreakpointer()};
 
@@ -130,7 +130,7 @@ void parseCommandArgs(int argc, char* argw[]) {
                 logger::info() << "Verbose output enabled";
                 break;
             case 'g':
-                globals::enableBreakpoints = true;
+                globals::debugMode = true;
                 logger::info() << "Breakpoints enabled";
                 break;
             case 'd':
@@ -280,7 +280,7 @@ class DependencyCollector {
             compileAndSaveProgram(
                 fileName, globals::libDir,
                 (useLibDirAsOutputDir ? globals::libDir : globals::outDir),
-                globals::useBinaryFormat, globals::enableBreakpoints,
+                globals::useBinaryFormat, globals::debugMode,
                 globals::verboseOutput);
             *isresolved_.find(mt) = true;
             childsChanged = true;

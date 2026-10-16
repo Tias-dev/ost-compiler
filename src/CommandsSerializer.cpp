@@ -57,7 +57,7 @@ void serialize(const commands_type& commands,
         if (!fout.is_open())
             throw std::invalid_argument(strfast() << "Can't open file ["
                                                   << outFileName << "]");
-        if (globals::enableBreakpoints) {
+        if (globals::debugMode) {
             fout << globals::debugFirstLine
                  << "\n// Please not modify comments in program below\n";
             const auto& fileCodeEntries = fileCodes.backward();
@@ -68,7 +68,7 @@ void serialize(const commands_type& commands,
         return;
     }
     SerializePreambule preambule{
-        .isBreakpointsEnabled = globals::enableBreakpoints,
+        .isBreakpointsEnabled = globals::debugMode,
         .nUsedFiles = fileCodes.size(),
         .nCommands = commands.size()};
     std::vector<FileNameEntry> fileNameEntries;
@@ -90,7 +90,7 @@ void serialize(const commands_type& commands,
         fwrite(fileEntry.str, sizeof(char), fileEntry.strlen, fout);
     }
 
-    if (globals::enableBreakpoints) {
+    if (globals::debugMode) {
         std::vector<DebugCommandEntry> commandEntries;
         for (const auto& command : commands)
             commandEntries.push_back(DebugCommandEntry{
@@ -121,14 +121,11 @@ commands_type deserialize(const std::string& fileName, bool useBinaryFormat) {
             std::string line, temp;
             SIZE_T code, indexBegin = 0, indexEnd;
             std::getline(fin, line);
-            if (globals::enableBreakpoints && line != globals::debugFirstLine)
-                throw std::logic_error(
-                    strfast() << "Trying to load file [" << fileName
-                              << "] compiled without debug support(-g) to "
-                                 "program that needs debug support!");
+            if (globals::debugMode && line != globals::debugFirstLine)
+                throw NoDebugSignsException(fileName);
 
             if (line == globals::debugFirstLine)
-                globals::enableBreakpoints = true;
+                globals::debugMode = true;
             std::getline(fin, line);
 
             while (std::getline(fin, line) && line.starts_with("//")) {
@@ -201,11 +198,8 @@ commands_type deserialize(const std::string& fileName, bool useBinaryFormat) {
                 }
             }
         } else {
-            if (globals::enableBreakpoints)
-                throw std::logic_error(
-                    strfast() << "Trying to load file [" << fileName
-                              << "] compiled without debug support(-g) to "
-                                 "program that needs debug support!");
+            if (globals::debugMode)
+                throw NoDebugSignsException(fileName);
             std::vector<CommandEntry> commandEntries(preambule.nCommands);
             fread(commandEntries.data(), sizeof(CommandEntry),
                   preambule.nCommands, fin);

@@ -70,7 +70,7 @@ void parseCommandArgs(int argc, char* argw[]) {
                 logger::info() << "Used output directory: " << optarg;
                 break;
             case 'g':
-                globals::enableBreakpoints = true;
+                globals::debugMode = true;
                 logger::info() << "Breakpoints enabled";
                 break;
             case 'd':
@@ -105,9 +105,9 @@ int main(int argc, char* argw[]) {
     if (globals::libDir[globals::libDir.size() - 1] != '/')
         globals::libDir.push_back('/');
 
-    if (globals::enableBreakpoints)
+    if (globals::debugMode)
         globals::breakpointer = std::make_shared<FileBreakpointer>();
     compileAndSaveProgram(fileName, globals::libDir, globals::outDir,
-                          globals::useBinaryFormat, globals::enableBreakpoints);
+                          globals::useBinaryFormat, globals::debugMode);
     return 0;
 }

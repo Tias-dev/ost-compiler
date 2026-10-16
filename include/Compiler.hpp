@@ -1,6 +1,7 @@
 #ifndef COMPILER_HPP_
 #define COMPILER_HPP_
 
+#include <exception>
 #include <list>
 #include <set>
 #include <unordered_map>
@@ -129,6 +130,18 @@ std::pair<commands_type, mt_name_t> compileProgram(const std::string& fileName,
                                                    bool enableBreakpoints,
                                                    bool printDebugInfo = true);
 namespace serializer {
+class NoDebugSignsException : std::exception {
+public:
+    NoDebugSignsException(std::string fileName)
+        : errorMessage_(std::string{"No debug signs found in file: "} + fileName) {};
+    const char* what() const noexcept override {
+        return errorMessage_.c_str();
+    };
+
+private:
+    const std::string errorMessage_;
+};
+
 void serialize(const commands_type& commands,
                const bimap<std::string, SIZE_T>& fileCodes,
                const std::string& outFileName, bool useBinaryFormat);

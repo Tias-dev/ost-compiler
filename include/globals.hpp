@@ -9,7 +9,7 @@ inline std::string libDir = "./";
 inline std::string outDir = "./";
 
 inline bool printDebugInfo = false;
-inline bool enableBreakpoints = false;
+inline bool debugMode = false;
 inline bool useBinaryFormat = false;
 inline bool verboseOutput = false;
 inline std::shared_ptr<IBreakpointer> breakpointer{new DummyBreakpointer{}};

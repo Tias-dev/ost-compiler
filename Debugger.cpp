@@ -18,10 +18,10 @@
 #include "utils.hpp"
 
 const char* preview =
-    "ost programm debugger\n"
-    "input: 'run <program name .tu4>' to start debug(program must be "
-    "compiled "
-    "with -g flag)\n"
+    "OST program debugger\n"
+    "Usage: ostdb <program name .tu4> [OPTIONS]\n"
+    "input: 'run <input line>' to start debug\n"
+    "(for line breakpoints support program must be compiled with -g flag)\n"
     "input: 'step' or empty line to do step and show file state\n"
     "input: 'step -n [number]' to do 'n' steps and show file state\n"
     "input: 'go' to start stepping loop until program's end or breakpoint "
@@ -60,50 +60,54 @@ void printState(const tu4run::Tu4Runner<SIZE_T, char>& runner) {
 
     auto command = runner.nextCommand();
     auto debugInfo = command.debugBreakpoint();
-    if (!debugInfo.has_value()) {
+    if (globals::debugMode && !debugInfo.has_value()) {
         logger::debug() << "No debug information in line: "
                         << (strfast() << command).bump() << std::endl;
         return;
     }
-    const std::string& fileName =
-        FilePosition::fileCodesBimap()[debugInfo.value().fileCode];
-    std::string line;
+    if (globals::debugMode) {
+        const std::string& fileName =
+            FilePosition::fileCodesBimap()[debugInfo.value().fileCode];
+        std::string line;
 
-    const std::pair<row_t, column_t> begin = debugInfo.value().begin,
-                                     end = debugInfo.value().end,
-                                     *position = &begin;
-    if (runner.terminated()) position = &end;
+        const std::pair<row_t, column_t> begin = debugInfo.value().begin,
+                                         end = debugInfo.value().end,
+                                         *position = &begin;
+        if (runner.terminated()) position = &end;
 
-    if (!filesData.contains(fileName)) filesData[fileName] = FileData{};
-    FileData& fdata = filesData[fileName];
+        if (!filesData.contains(fileName)) filesData[fileName] = FileData{};
+        FileData& fdata = filesData[fileName];
 
-    if (fdata.nLine > position->first) {
-        if (!fdata.file.is_open())
-            fdata.file.open(fileName);
-        else {
-            fdata.file.clear();
-            fdata.file.seekg(0);
+        if (fdata.nLine > position->first) {
+            if (!fdata.file.is_open())
+                fdata.file.open(fileName);
+            else {
+                fdata.file.clear();
+                fdata.file.seekg(0);
+            }
+            fdata.nLine = 1;
         }
-        fdata.nLine = 1;
+
+        while (!fdata.file.eof() && fdata.nLine <= position->first) {
+            std::getline(fdata.file, line);
+            ++fdata.nLine;
+        }
+
+        for (auto& c : line)
+            if (c == '\t') c = ' ';
+
+        std::cout << fdata.nLine - 1 << " :" << line << std::endl;
+        std::cout << fdata.nLine - 1 << " :";
+        if (!runner.terminated())
+            for (SIZE_T i = 0; i + 1 < position->second; ++i) std::cout << " ";
+        SIZE_T endIndex = (begin.first == end.first ? end.second : line.size());
+        for (SIZE_T i = position->second; i < endIndex; ++i) std::cout << "^";
+        std::cout << std::endl;
     }
-
-    while (!fdata.file.eof() && fdata.nLine <= position->first) {
-        std::getline(fdata.file, line);
-        ++fdata.nLine;
-    }
-
-    for (auto& c : line)
-        if (c == '\t') c = ' ';
-
-    std::cout << fdata.nLine - 1 << " :" << line << std::endl;
-    std::cout << fdata.nLine - 1 << " :";
-    if (!runner.terminated())
-        for (SIZE_T i = 0; i + 1 < position->second; ++i) std::cout << " ";
-    SIZE_T endIndex = (begin.first == end.first ? end.second : line.size());
-    for (SIZE_T i = position->second; i < endIndex; ++i) std::cout << "^";
-    std::cout << std::endl;
     std::cout << "command: " << command << std::endl;
 }
+
+static std::string fileName = "";
 
 class Manager {
     impl::Trie<Command> commands_;
@@ -124,10 +128,7 @@ class Manager {
         (*runner_).reset(tu4run::Line<char>{line});
     }
 
-    void run(const std::string& fileName) {
-        std::string line;
-        std::cout << "Input line: ";
-        std::getline(std::cin, line);
+    void run(std::string line) {
         auto runnerInitData = tu4run::initRunnerWithBreakpoints(fileName, line);
         runner_ = std::move(runnerInitData.runner);
         breakpoints_ = runnerInitData.breakpoints;
@@ -155,6 +156,12 @@ class Manager {
     void addBreakpointState(SIZE_T q) { breakpoints_.stateBreakpoints->add(q); }
 
     void addBreakpointLine(SIZE_T nLine) {
+        if (!globals::debugMode) {
+            std::cout << "Line breakpoints only allowed when program compiled "
+                         "in debug mode(-g)\n"
+                      << "Not this case\n";
+            return;
+        }
         std::cout << "Choose file name in which set line breakpoint:\n";
         for (SIZE_T i = 0; i < usedFileNames_.size(); ++i)
             std::cout << i << ") " << usedFileNames_[i] << '\n';
@@ -181,6 +188,7 @@ class Manager {
         std::string line;
         auto word = std::begin(words);
         Command command = commands_.find(*word).value_or(Command::NONE);
+        ++word;
 
         switch (command) {
             case Command::NONE:
@@ -188,10 +196,14 @@ class Manager {
                 break;
             case Command::RUN:
                 if (words.size() < 2) {
-                    logger::warning() << "Error: file name to run not given";
+                    logger::warning() << "Error: no input line given";
                     return;
                 }
-                run(*(++word));
+                line = *( word++ );
+                for (; word != std::end(words); ++word) {
+                    line += " " + *word;
+                }
+                run(line);
                 break;
             case Command::STEP:
                 if (words.size() > 2 && *(++word) == "-n")
@@ -275,7 +287,13 @@ void parseCommandArgs(int argc, char* argw[]) {
 }
 
 int main(int argc, char* argw[]) {
-    globals::enableBreakpoints = true;
+    globals::debugMode = true;
+    if (argc < 2) {
+        std::cerr << "No file name given!\n";
+        return 1;
+    }
+    fileName = argw[1];
+    logger::info() << "Loading file: " << fileName << "\n\n";
     parseCommandArgs(argc, argw);
     Manager manager;
     std::cout << preview;

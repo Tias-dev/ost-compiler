@@ -82,7 +82,7 @@ commands_type MT::Call::to4_impl(const compiler::Alphabet<char>& alphabet) {
     NodeBase* definition = definitions_[id_];
     definition->begin_ = begin();
     definition->end_ = end();
-    if (globals::enableBreakpoints) {
+    if (globals::debugMode) {
         globals::breakpointer->onEnter(
             FileRange::fromPositions(begin(), end()));
         SIZE_T qCurrent = states.currentState(), qNext = states.nextState();
@@ -97,7 +97,7 @@ commands_type MT::Call::to4_impl(const compiler::Alphabet<char>& alphabet) {
         result.extend(subCommands);
     }
 
-    if (globals::enableBreakpoints) globals::breakpointer->onExit();
+    if (globals::debugMode) globals::breakpointer->onExit();
 
     return result;
 }

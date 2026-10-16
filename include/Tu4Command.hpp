@@ -24,7 +24,7 @@ class Tu4Command {
    public:
     Tu4Command(TQ q0, TQ q, TLetter letterToCheck, bool loadBreakpoint = true)
         : q0_(q0), q_(q), letterToCheck_(letterToCheck) {
-        if (globals::enableBreakpoints && loadBreakpoint)
+        if (globals::debugMode && loadBreakpoint)
             debugBreakpoint_ = globals::breakpointer->getCurrentPosition();
     }
 
@@ -252,7 +252,7 @@ tu4::tu4_union<TQ, TLetter> load(std::istream& is) {
     iss >> q0 >> temp >> c1 >> temp >> c2 >> temp >> q;
     SIZE_T commentPos;
 
-    if (globals::enableBreakpoints && (commentPos = line.find("//"))) {
+    if (globals::debugMode && (commentPos = line.find("//"))) {
         while (commentPos + 2 < line.size() && line[commentPos + 2] == ' ')
             ++commentPos;
         range = FileRange::fromString(line.substr(commentPos + 2));
@@ -266,11 +266,11 @@ tu4::tu4_union<TQ, TLetter> load(std::istream& is) {
             q0, c1,
             (c2 == '<' ? tu4::MoveDirection::LEFT : tu4::MoveDirection::RIGHT),
             q, false};
-        if (globals::enableBreakpoints) command.setBreakpoint(range);
+        if (globals::debugMode) command.setBreakpoint(range);
         return {command};
     } else {
         auto command = tu4::Tu4SetLetter<TQ, TLetter>(q0, c1, c2, q, false);
-        if (globals::enableBreakpoints) command.setBreakpoint(range);
+        if (globals::debugMode) command.setBreakpoint(range);
         return {command};
     }
 }
