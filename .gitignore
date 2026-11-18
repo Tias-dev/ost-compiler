@@ -42,3 +42,4 @@ compile_commands.json
 build-nix
 build
 .gdb_history
+result
