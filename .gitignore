@@ -41,3 +41,4 @@ compile_commands.json
 .direnv
 build-nix
 build
+.gdb_history

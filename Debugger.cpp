@@ -55,10 +55,18 @@ struct FileData {
     SIZE_T nColumn = 0;
     SIZE_T nLine = std::numeric_limits<SIZE_T>::max();
 };
+
 void printState(const tu4run::Tu4Runner<SIZE_T, char>& runner) {
     static std::map<std::string, FileData> filesData;
 
-    auto command = runner.nextCommand();
+    tu4::tu4_union<SIZE_T> command;
+    try {
+        command = runner.nextCommand();
+    } catch (error::Tu4RunError<>& e) {
+        logger::error() << e.what();
+        std::cout << "Error while printing state\n";
+        return;
+    }
     auto debugInfo = command.debugBreakpoint();
     if (globals::debugMode && !debugInfo.has_value()) {
         logger::debug() << "No debug information in line: "
@@ -136,7 +144,17 @@ class Manager {
     }
 
     void step(SIZE_T n = 1) {
-        while (n-- >= 1 && !runner_->terminated()) runner_->step();
+        if (!runner_) {
+            std::cerr << "Program is not running!\n";
+            return;
+        }
+        try {
+            while (n-- >= 1 && !runner_->terminated()) runner_->step();
+        } catch (error::Tu4RunError<>& e) {
+            logger::error() << e.what();
+            std::cerr << "Forsing restart via error while executing\n";
+            restart();
+        }
     }
 
     void go() {
@@ -181,7 +199,14 @@ class Manager {
     void processLine_impl(const std::list<std::string>& words) {
         if (words.size() == 0) {
             if (!runner_) return;
-            if (!runner_->terminated()) runner_->step();
+            try {
+                if (!runner_->terminated()) runner_->step();
+            } catch (error::Tu4RunError<>& e) {
+                logger::error() << e.what();
+                std::cout << "Forsing restart via error while executing\n";
+                restart();
+                return;
+            }
             return;
         }
 
@@ -199,15 +224,15 @@ class Manager {
                     logger::warning() << "Error: no input line given";
                     return;
                 }
-                line = *( word++ );
+                line = *(word++);
                 for (; word != std::end(words); ++word) {
                     line += " " + *word;
                 }
                 run(line);
                 break;
             case Command::STEP:
-                if (words.size() > 2 && *(++word) == "-n")
-                    step(atoll(std::next(word)->c_str()));
+                if (words.size() > 2 && *word == "-n")
+                    step(std::stoll(std::next(word)->c_str()));
                 else
                     step(1);
                 break;
@@ -215,7 +240,6 @@ class Manager {
                 go();
                 break;
             case Command::B:
-                ++word;
                 if (word == std::end(words)) {
                     std::cout << "Add -q or -l flag to set type of breakpoint"
                               << std::endl;
